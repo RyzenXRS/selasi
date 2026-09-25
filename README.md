@@ -82,7 +82,7 @@ Semua endpoint diawali dengan prefix: `http://127.0.0.1:8000/api/v1`
 ### 3. Modul Pembeli & Katalog (`role: buyer` / Public)
 
 | Method | Endpoint | Access | Keterangan |
-|---|---|---|---|
+|---|---|---|---| 
 | `GET` | `/products` | Public | Browse katalog produk selada (filter `search`, `type`) |
 | `GET` | `/products/{id}` | Public | Detail produk selada & rating ulasan |
 | `GET` | `/buyer/dashboard` | Buyer | Metric dashboard transaksi pembeli |
@@ -95,8 +95,27 @@ Semua endpoint diawali dengan prefix: `http://127.0.0.1:8000/api/v1`
 | `POST` | `/orders/checkout` | Buyer | Checkout keranjang belanja (`delivery_address`, `payment_method`) |
 | `GET` | `/orders/{id}` | Buyer | Detail pesanan & status pengiriman |
 | `POST` | `/orders/{id}/cancel` | Buyer | Batalkan pesanan |
-| `POST` | `/orders/{id}/pay` | Buyer | Unggah bukti pembayaran (QRIS) |
+| `POST` | `/orders/{id}/pay` | Buyer | Unggah bukti pembayaran manual (jika COD/manual) |
+| `POST` | `/midtrans/callback` | Public | Webhook Notifikasi otomatis dari Midtrans (Update status order) |
 | `POST` | `/products/{productId}/reviews` | Buyer | Beri ulasan & rating bintang (1-5) setelah order selesai |
+
+---
+
+## 💳 Integrasi Midtrans Payment Gateway (Snap API)
+
+Sistem ini telah terintegrasi dengan **Midtrans Snap**, mendukung metode pembayaran otomatis:
+- **QRIS**: GoPay, OVO, ShopeePay, Dana, LinkAja
+- **Virtual Account**: BCA, BNI, BRI, Mandiri, Permata
+- **Credit Card / Debit Card**
+- **Convenience Store**: Indomaret, Alfamart
+
+### Alur Kerja Midtrans:
+1. Pembeli melakukan checkout dengan `payment_method: 'midtrans'`.
+2. Backend menghasilkan dan mengembalikan `snap_token` serta `snap_redirect_url`.
+3. Frontend membuka popup pembayaran Midtrans menggunakan `window.snap.pay(snapToken)`.
+4. Setelah pembeli membayar, Midtrans secara otomatis memanggil Webhook Backend:
+   `POST /api/v1/midtrans/callback`.
+5. Backend memvalidasi signature SHA512 dan mengubah status pesanan menjadi `paid` dan `processing`.
 
 ---
 
@@ -216,16 +235,52 @@ export const addToCart = async (productId, quantity) => {
   return res.data.data;
 };
 
-// 2. Checkout Pesanan
-export const checkoutOrder = async (deliveryAddress, paymentMethod) => {
+// 2. Checkout Pesanan dengan Midtrans & Buka Popup Snap
+export const checkoutWithMidtrans = async (deliveryAddress) => {
+  // Request checkout ke backend
   const res = await api.post('/orders/checkout', {
     delivery_address: deliveryAddress,
-    payment_method: paymentMethod, // 'qris' atau 'cod'
-    notes: 'Mohon dikemas dengan rapi',
+    payment_method: 'midtrans',
+    notes: 'Tolong kemas segar',
   });
-  return res.data.data;
+
+  const order = res.data.data;
+  const snapToken = order.payment.snap_token;
+
+  // Buka popup Midtrans Snap di browser pembeli
+  if (window.snap && snapToken) {
+    window.snap.pay(snapToken, {
+      onSuccess: function (result) {
+        console.log('Pembayaran Sukses!', result);
+        alert('Pembayaran berhasil!');
+        window.location.href = `/orders/${order.id}`;
+      },
+      onPending: function (result) {
+        console.log('Menunggu Pembayaran:', result);
+        alert('Silakan selesaikan pembayaran sesuai petunjuk.');
+      },
+      onError: function (result) {
+        console.error('Pembayaran Gagal:', result);
+        alert('Pembayaran gagal, silakan coba lagi.');
+      },
+      onClose: function () {
+        console.log('Popup ditutup sebelum pembayaran selesai');
+      }
+    });
+  }
+
+  return order;
 };
 ```
+
+> **Catatan Frontend:** Pasang script Midtrans Snap di `index.html` aplikasi web Anda:
+> ```html
+> <!-- Untuk Mode Sandbox (Uji Coba): -->
+> <script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="CLIENT_KEY_ANDA"></script>
+> 
+> <!-- Untuk Mode Production: -->
+> <!-- <script src="https://app.midtrans.com/snap/snap.js" data-client-key="CLIENT_KEY_ANDA"></script> -->
+> ```
 
 ---
 

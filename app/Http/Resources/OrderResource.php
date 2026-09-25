@@ -19,9 +19,12 @@ class OrderResource extends JsonResource
             'notes' => $this->notes,
             'payment' => [
                 'method' => $this->payment_method,
+                'type' => $this->payment_type,
                 'status' => $this->payment_status,
                 'paid_at' => $this->paid_at?->toIso8601String(),
                 'proof' => $this->payment_proof ? asset('storage/' . $this->payment_proof) : null,
+                'snap_token' => $this->snap_token,
+                'snap_redirect_url' => $this->snap_redirect_url,
             ],
             'order_status' => $this->order_status,
             'cancellation_reason' => $this->cancellation_reason,

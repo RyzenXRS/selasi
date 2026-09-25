@@ -12,7 +12,8 @@ use Illuminate\Validation\ValidationException;
 class OrderService
 {
     public function __construct(
-        protected CartService $cartService
+        protected CartService $cartService,
+        protected MidtransService $midtransService
     ) {}
 
     public function checkout(User $buyer, array $data): Order
@@ -27,8 +28,6 @@ class OrderService
         }
 
         // Group items by cultivator (user_id of product)
-        // Note: For simplicity and standard marketplace design, we enforce single cultivator order per checkout or create order per cultivator.
-        // Here we validate that all items come from the same cultivator or create separate orders.
         $cultivatorId = $cart->items->first()->product->user_id;
 
         foreach ($cart->items as $item) {
@@ -45,7 +44,9 @@ class OrderService
             }
         }
 
-        return DB::transaction(function () use ($buyer, $cultivatorId, $cart, $data) {
+        $isMidtrans = ($data['payment_method'] ?? 'midtrans') === 'midtrans';
+
+        return DB::transaction(function () use ($buyer, $cultivatorId, $cart, $data, $isMidtrans) {
             $totalPrice = $cart->items->sum(fn($item) => $item->quantity * $item->price);
             $orderNumber = 'ORD-' . date('Ymd') . '-' . strtoupper(Str::random(5));
 
@@ -61,11 +62,11 @@ class OrderService
                 'total_price' => $totalPrice,
                 'delivery_address' => $data['delivery_address'],
                 'notes' => $data['notes'] ?? null,
-                'payment_method' => $data['payment_method'],
-                'payment_status' => $data['payment_method'] === 'cod' ? 'pending' : ($paymentProofPath ? 'paid' : 'pending'),
+                'payment_method' => $data['payment_method'] ?? 'midtrans',
+                'payment_status' => $paymentProofPath ? 'paid' : 'pending',
                 'paid_at' => $paymentProofPath ? now() : null,
                 'payment_proof' => $paymentProofPath,
-                'order_status' => 'processing',
+                'order_status' => $isMidtrans ? 'waiting_payment' : 'processing',
             ]);
 
             foreach ($cart->items as $item) {
@@ -88,7 +89,18 @@ class OrderService
             // Clear cart after successful checkout
             $this->cartService->clearCart($buyer);
 
-            return $order->load(['items', 'buyer', 'cultivator']);
+            $order->load(['items', 'buyer', 'cultivator']);
+
+            // If Midtrans payment method, generate Snap Token
+            if ($isMidtrans && config('midtrans.server_key')) {
+                try {
+                    $this->midtransService->createSnapTransaction($order);
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::warning('Midtrans Snap generation deferred: ' . $e->getMessage());
+                }
+            }
+
+            return $order->fresh(['items', 'buyer', 'cultivator']);
         });
     }
 
