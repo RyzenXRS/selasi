@@ -10,13 +10,20 @@ class ReviewResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'buyer' => new UserResource($this->whenLoaded('buyer')),
-            'product_id' => $this->product_id,
-            'order_id' => $this->order_id,
-            'rating' => $this->rating,
-            'comment' => $this->comment,
-            'created_at' => $this->created_at?->toIso8601String(),
+            'id_ulasan'      => $this->id_ulasan,
+            'id'             => $this->id_ulasan,
+            'id_pembeli'     => $this->id_pembeli,
+            'pembeli'        => new UserResource($this->whenLoaded('pembeli')),
+            'buyer'          => new UserResource($this->whenLoaded('pembeli')),
+            'id_produk'      => $this->id_produk,
+            'product_id'     => $this->id_produk,
+            'id_pesanan'     => $this->id_pesanan,
+            'order_id'       => $this->id_pesanan,
+            'rating'         => (int) $this->rating,
+            'komentar'       => $this->komentar,
+            'comment'        => $this->komentar,
+            'tanggal_ulasan' => $this->tanggal_ulasan?->toIso8601String(),
+            'created_at'     => $this->tanggal_ulasan?->toIso8601String(),
         ];
     }
 }

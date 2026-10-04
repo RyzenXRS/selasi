@@ -10,16 +10,18 @@ class TaskResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'user_id' => $this->user_id,
-            'batch_id' => $this->batch_id,
-            'title' => $this->title,
-            'description' => $this->description,
-            'task_date' => $this->task_date?->format('Y-m-d'),
-            'status' => $this->status,
-            'priority' => $this->priority,
-            'completed_at' => $this->completed_at?->toIso8601String(),
-            'created_at' => $this->created_at?->toIso8601String(),
+            'id_todo'        => $this->id_todo,
+            'id'             => $this->id_todo,
+            'id_pembudidaya' => $this->id_pembudidaya,
+            'user_id'        => $this->id_pembudidaya,
+            'id_pengelolaan' => $this->id_pengelolaan,
+            'batch_id'       => $this->id_pengelolaan,
+            'nama_tugas'     => $this->nama_tugas,
+            'title'          => $this->nama_tugas,
+            'tanggal_tugas'  => $this->tanggal_tugas?->format('Y-m-d'),
+            'task_date'      => $this->tanggal_tugas?->format('Y-m-d'),
+            'status'         => (bool) $this->status,
+            'created_at'     => $this->created_at?->toIso8601String(),
         ];
     }
 }

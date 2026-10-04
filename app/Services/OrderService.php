@@ -2,11 +2,13 @@
 
 namespace App\Services;
 
-use App\Models\Order;
-use App\Models\Product;
-use App\Models\User;
+use App\Models\DetailPesanan;
+use App\Models\Pembayaran;
+use App\Models\Pengguna;
+use App\Models\Pesanan;
+use App\Models\Stok;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class OrderService
@@ -16,10 +18,10 @@ class OrderService
         protected MidtransService $midtransService
     ) {}
 
-    public function checkout(User $buyer, array $data): Order
+    public function checkout(Pengguna $pembeli, array $data): Pesanan
     {
-        $cart = $this->cartService->getOrCreateCart($buyer);
-        $cart->load('items.product');
+        $cart = $this->cartService->getOrCreateCart($pembeli);
+        $cart->load('items.produk.stok');
 
         if ($cart->items->isEmpty()) {
             throw ValidationException::withMessages([
@@ -27,127 +29,122 @@ class OrderService
             ]);
         }
 
-        // Group items by cultivator (user_id of product)
-        $cultivatorId = $cart->items->first()->product->user_id;
+        $firstItem = $cart->items->first();
+        $cultivatorId = $firstItem->produk?->id_pembudidaya;
 
         foreach ($cart->items as $item) {
-            if ($item->product->user_id !== $cultivatorId) {
+            $prodStock = $item->produk?->stok?->jumlah_stok ?? 0;
+            if ($prodStock < $item->jumlah) {
                 throw ValidationException::withMessages([
-                    'cart' => ['Pemesanan dari beberapa pembudidaya sekaligus belum didukung. Silakan lakukan checkout terpisah.'],
-                ]);
-            }
-
-            if ($item->product->stock < $item->quantity) {
-                throw ValidationException::withMessages([
-                    'stock' => ["Stok untuk produk '{$item->product->name}' tidak cukup."],
+                    'stock' => ["Stok untuk produk '{$item->produk?->nama_produk}' tidak cukup."],
                 ]);
             }
         }
 
-        $isMidtrans = ($data['payment_method'] ?? 'midtrans') === 'midtrans';
+        $metodePembayaran = strtoupper($data['metode_pembayaran'] ?? $data['payment_method'] ?? 'QRIS');
 
-        return DB::transaction(function () use ($buyer, $cultivatorId, $cart, $data, $isMidtrans) {
-            $totalPrice = $cart->items->sum(fn($item) => $item->quantity * $item->price);
-            $orderNumber = 'ORD-' . date('Ymd') . '-' . strtoupper(Str::random(5));
+        return DB::transaction(function () use ($pembeli, $cultivatorId, $cart, $metodePembayaran) {
+            $totalHarga = $cart->items->sum(fn($item) => $item->jumlah * ($item->harga_satuan ?? $item->produk?->harga ?? 0));
 
-            $paymentProofPath = null;
-            if (isset($data['payment_proof']) && $data['payment_proof']) {
-                $paymentProofPath = $data['payment_proof']->store('payments', 'public');
-            }
-
-            $order = Order::create([
-                'buyer_id' => $buyer->id,
-                'cultivator_id' => $cultivatorId,
-                'order_number' => $orderNumber,
-                'total_price' => $totalPrice,
-                'delivery_address' => $data['delivery_address'],
-                'notes' => $data['notes'] ?? null,
-                'payment_method' => $data['payment_method'] ?? 'midtrans',
-                'payment_status' => $paymentProofPath ? 'paid' : 'pending',
-                'paid_at' => $paymentProofPath ? now() : null,
-                'payment_proof' => $paymentProofPath,
-                'order_status' => $isMidtrans ? 'waiting_payment' : 'processing',
+            $pesanan = Pesanan::create([
+                'id_pembeli'        => $pembeli->id_pengguna,
+                'tanggal_pesanan'   => Carbon::now(),
+                'total_harga'       => $totalHarga,
+                'metode_pembayaran' => $metodePembayaran,
+                'status_pesanan'    => ($metodePembayaran === 'COD') ? Pesanan::STATUS_DIPROSES : Pesanan::STATUS_MENUNGGU_PEMBAYARAN,
             ]);
 
             foreach ($cart->items as $item) {
-                $order->items()->create([
-                    'product_id' => $item->product_id,
-                    'product_name' => $item->product->name,
-                    'lettuce_type' => $item->product->lettuce_type,
-                    'quantity' => $item->quantity,
-                    'price' => $item->price,
-                    'subtotal' => $item->quantity * $item->price,
+                $harga = (float) ($item->harga_satuan ?? $item->produk?->harga ?? 0);
+                DetailPesanan::create([
+                    'id_pesanan'   => $pesanan->id_pesanan,
+                    'id_produk'    => $item->id_produk,
+                    'jumlah'       => $item->jumlah,
+                    'harga_satuan' => $harga,
+                    'subtotal'     => $item->jumlah * $harga,
                 ]);
 
-                // Reduce stock
-                $item->product->decrement('stock', $item->quantity);
-                if ($item->product->stock <= 0) {
-                    $item->product->update(['status' => 'out_of_stock']);
-                }
+                // Kurangi stok di tabel stok
+                Stok::where('id_produk', $item->id_produk)->decrement('jumlah_stok', $item->jumlah);
             }
 
-            // Clear cart after successful checkout
-            $this->cartService->clearCart($buyer);
+            // Catat data pembayaran awal
+            Pembayaran::create([
+                'id_pesanan'        => $pesanan->id_pesanan,
+                'id_pembudidaya'    => $cultivatorId,
+                'metode_pembayaran' => $metodePembayaran,
+                'status_pembayaran' => ($metodePembayaran === 'COD') ? Pembayaran::STATUS_MENUNGGU : Pembayaran::STATUS_MENUNGGU,
+                'jumlah_bayar'      => $totalHarga,
+                'order_id_gateway'  => 'ORD-' . $pesanan->id_pesanan . '-' . time(),
+                'waktu_kadaluarsa'  => Carbon::now()->addHours(24),
+            ]);
 
-            $order->load(['items', 'buyer', 'cultivator']);
+            // Kosongkan keranjang
+            $this->cartService->clearCart($pembeli);
 
-            // If Midtrans payment method, generate Snap Token
-            if ($isMidtrans && config('midtrans.server_key')) {
+            $pesanan->load(['detailPesanan.produk', 'pembeli', 'pembayaran']);
+
+            if ($metodePembayaran === 'QRIS' && config('midtrans.server_key')) {
                 try {
-                    $this->midtransService->createSnapTransaction($order);
+                    $this->midtransService->createSnapTransaction($pesanan);
                 } catch (\Exception $e) {
                     \Illuminate\Support\Facades\Log::warning('Midtrans Snap generation deferred: ' . $e->getMessage());
                 }
             }
 
-            return $order->fresh(['items', 'buyer', 'cultivator']);
+            return $pesanan->fresh(['detailPesanan.produk', 'pembeli', 'pembayaran']);
         });
     }
 
-    public function updateOrderStatus(Order $order, array $data): Order
+    public function updateOrderStatus(Pesanan $pesanan, array $data): Pesanan
     {
-        if (isset($data['order_status']) && $data['order_status'] === 'cancelled') {
-            return $this->cancelOrder($order, $data['cancellation_reason'] ?? 'Dibatalkan oleh pembudidaya');
+        $status = strtoupper($data['status_pesanan'] ?? $data['order_status'] ?? '');
+
+        if ($status === 'DIBATALKAN' || $status === 'CANCELLED') {
+            return $this->cancelOrder($pesanan, $data['cancellation_reason'] ?? 'Dibatalkan oleh pembudidaya');
         }
 
-        if (isset($data['order_status']) && $data['order_status'] === 'completed') {
-            $data['completed_at'] = now();
-            if ($order->payment_method === 'cod') {
-                $data['payment_status'] = 'paid';
-                $data['paid_at'] = now();
+        if ($status === 'SELESAI' || $status === 'COMPLETED') {
+            $pesanan->status_pesanan = Pesanan::STATUS_SELESAI;
+            if ($pesanan->pembayaran && $pesanan->metode_pembayaran === 'COD') {
+                $pesanan->pembayaran->update([
+                    'status_pembayaran' => Pembayaran::STATUS_LUNAS,
+                    'waktu_pembayaran'  => Carbon::now(),
+                ]);
             }
+        } elseif (!empty($status)) {
+            $pesanan->status_pesanan = $status;
         }
 
-        $order->update($data);
-        return $order->fresh(['items', 'buyer', 'cultivator']);
+        $pesanan->save();
+        return $pesanan->fresh(['detailPesanan.produk', 'pembeli', 'pembayaran']);
     }
 
-    public function cancelOrder(Order $order, string $reason): Order
+    public function cancelOrder(Pesanan $pesanan, string $reason = ''): Pesanan
     {
-        if (in_array($order->order_status, ['completed', 'cancelled'])) {
+        if (in_array($pesanan->status_pesanan, [Pesanan::STATUS_SELESAI, Pesanan::STATUS_DIBATALKAN])) {
             throw ValidationException::withMessages([
-                'order_status' => ["Pesanan sudah {$order->order_status} dan tidak dapat dibatalkan."],
+                'status_pesanan' => ["Pesanan sudah dalam status {$pesanan->status_pesanan} dan tidak dapat dibatalkan."],
             ]);
         }
 
-        return DB::transaction(function () use ($order, $reason) {
-            // Restore stock
-            foreach ($order->items as $item) {
-                if ($item->product) {
-                    $item->product->increment('stock', $item->quantity);
-                    if ($item->product->status === 'out_of_stock') {
-                        $item->product->update(['status' => 'active']);
-                    }
-                }
+        return DB::transaction(function () use ($pesanan) {
+            // Kembalikan stok
+            foreach ($pesanan->detailPesanan as $item) {
+                Stok::where('id_produk', $item->id_produk)->increment('jumlah_stok', $item->jumlah);
             }
 
-            $order->update([
-                'order_status' => 'cancelled',
-                'cancellation_reason' => $reason,
-                'cancelled_at' => now(),
+            $pesanan->update([
+                'status_pesanan' => Pesanan::STATUS_DIBATALKAN,
             ]);
 
-            return $order->fresh(['items', 'buyer', 'cultivator']);
+            if ($pesanan->pembayaran) {
+                $pesanan->pembayaran->update([
+                    'status_pembayaran' => Pembayaran::STATUS_DIBATALKAN,
+                ]);
+            }
+
+            return $pesanan->fresh(['detailPesanan.produk', 'pembeli', 'pembayaran']);
         });
     }
 }

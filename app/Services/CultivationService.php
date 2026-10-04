@@ -2,76 +2,89 @@
 
 namespace App\Services;
 
-use App\Models\CultivationBatch;
-use App\Models\CultivationCheck;
-use App\Models\Harvest;
-use App\Models\PhaseHistory;
-use App\Models\User;
+use App\Models\Panen;
+use App\Models\Pengelolaan;
+use App\Models\Pengguna;
+use App\Models\PerpindahanFase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 class CultivationService
 {
-    public function createBatch(User $user, array $data): CultivationBatch
+    public function createBatch(Pengguna $pembudidaya, array $data): Pengelolaan
     {
-        $batchCode = 'BATCH-' . date('Ymd') . '-' . strtoupper(Str::random(4));
+        $batchCode = $data['kode_pengelolaan'] ?? $data['batch_code'] ?? ('BATCH-' . date('Ymd') . '-' . strtoupper(Str::random(4)));
 
-        return CultivationBatch::create([
-            'user_id' => $user->id,
-            'batch_code' => $batchCode,
-            'seed_date' => $data['seed_date'],
-            'plant_quantity' => $data['plant_quantity'],
-            'current_phase' => $data['current_phase'],
-            'location' => $data['location'] ?? null,
-            'plant_condition' => $data['plant_condition'] ?? 'baik',
-            'water_condition' => $data['water_condition'] ?? 'baik',
-            'nutrition_condition' => $data['nutrition_condition'] ?? 'baik',
-            'installation_condition' => $data['installation_condition'] ?? 'baik',
-            'environment_condition' => $data['environment_condition'] ?? 'baik',
-            'notes' => $data['notes'] ?? null,
-            'status' => 'normal',
+        $pengelolaan = Pengelolaan::create([
+            'id_pembudidaya'      => $pembudidaya->id_pengguna,
+            'kode_pengelolaan'    => $batchCode,
+            'tanggal_tanam'       => $data['tanggal_tanam'] ?? $data['seed_date'] ?? Carbon::now()->toDateString(),
+            'jumlah_tanaman'      => $data['jumlah_tanaman'] ?? $data['plant_quantity'] ?? 100,
+            'lokasi'              => $data['lokasi'] ?? $data['location'] ?? null,
+            'kondisi_tanaman'     => $data['kondisi_tanaman'] ?? $data['plant_condition'] ?? 'Baik',
+            'kondisi_air_nutrisi' => $data['kondisi_air_nutrisi'] ?? $data['water_condition'] ?? 'Baik',
+            'kondisi_instalasi'   => $data['kondisi_instalasi'] ?? $data['installation_condition'] ?? 'Baik',
+            'kondisi_lingkungan'  => $data['kondisi_lingkungan'] ?? $data['environment_condition'] ?? 'Baik',
+            'nilai_ph'            => $data['nilai_ph'] ?? $data['water_ph'] ?? null,
+            'catatan'             => $data['catatan'] ?? $data['notes'] ?? null,
+            'created_at'          => Carbon::now(),
+            'updated_at'          => Carbon::now(),
         ]);
+
+        return $pengelolaan;
     }
 
-    public function updateBatch(CultivationBatch $batch, array $data): CultivationBatch
+    public function updateBatch(Pengelolaan $pengelolaan, array $data): Pengelolaan
     {
-        $batch->update($data);
-        return $batch->fresh();
-    }
+        $payload = [];
+        $mappings = [
+            'kode_pengelolaan'    => ['kode_pengelolaan', 'batch_code'],
+            'tanggal_tanam'       => ['tanggal_tanam', 'seed_date'],
+            'jumlah_tanaman'      => ['jumlah_tanaman', 'plant_quantity'],
+            'lokasi'              => ['lokasi', 'location'],
+            'kondisi_tanaman'     => ['kondisi_tanaman', 'plant_condition'],
+            'kondisi_air_nutrisi' => ['kondisi_air_nutrisi', 'water_condition'],
+            'kondisi_instalasi'   => ['kondisi_instalasi', 'installation_condition'],
+            'kondisi_lingkungan'  => ['kondisi_lingkungan', 'environment_condition'],
+            'nilai_ph'            => ['nilai_ph', 'water_ph'],
+            'catatan'             => ['catatan', 'notes'],
+        ];
 
-    public function addCheck(CultivationBatch $batch, array $data): CultivationCheck
-    {
-        $check = $batch->checks()->create($data);
-
-        // Auto update plant_condition and status in batch based on check data
-        if (isset($data['plant_condition'])) {
-            $batch->update(['plant_condition' => $data['plant_condition']]);
+        foreach ($mappings as $col => $keys) {
+            foreach ($keys as $k) {
+                if (array_key_exists($k, $data)) {
+                    $payload[$col] = $data[$k];
+                    break;
+                }
+            }
         }
 
-        return $check;
+        $payload['updated_at'] = Carbon::now();
+        $pengelolaan->update($payload);
+
+        return $pengelolaan->fresh();
     }
 
-    public function changePhase(CultivationBatch $batch, array $data): PhaseHistory
+    public function recordPhaseTransition(Pengelolaan $pengelolaan, array $data): PerpindahanFase
     {
-        $phaseHistory = $batch->phaseHistories()->create($data);
-
-        $batch->update([
-            'current_phase' => $data['next_phase'],
-            'plant_quantity' => $data['plant_quantity'],
-            'location' => $data['destination_location'] ?? $batch->location,
+        return PerpindahanFase::create([
+            'id_pengelolaan'  => $pengelolaan->id_pengelolaan,
+            'id_fase'         => $data['id_fase'] ?? 1,
+            'tanggal_mulai'   => $data['tanggal_mulai'] ?? $data['moved_date'] ?? Carbon::now()->toDateString(),
+            'tanggal_selesai' => $data['tanggal_selesai'] ?? null,
+            'catatan'         => $data['catatan'] ?? $data['notes'] ?? null,
         ]);
-
-        return $phaseHistory;
     }
 
-    public function recordHarvest(CultivationBatch $batch, array $data): Harvest
+    public function recordHarvest(Pengelolaan $pengelolaan, array $data): Panen
     {
-        $harvest = $batch->harvests()->create($data);
-
-        $batch->update([
-            'status' => 'harvested',
-            'harvested_at' => now(),
+        return Panen::create([
+            'id_pengelolaan' => $pengelolaan->id_pengelolaan,
+            'tanggal_panen'  => $data['tanggal_panen'] ?? $data['harvest_date'] ?? Carbon::now()->toDateString(),
+            'jumlah_panen'   => $data['jumlah_panen'] ?? $data['quantity'] ?? 0,
+            'berat_total_kg' => $data['berat_total_kg'] ?? $data['total_weight_kg'] ?? 0,
+            'kualitas'       => $data['kualitas'] ?? $data['quality'] ?? 'A',
+            'catatan'        => $data['catatan'] ?? $data['notes'] ?? null,
         ]);
-
-        return $harvest;
     }
 }

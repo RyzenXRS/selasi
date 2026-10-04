@@ -5,7 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Product\ProductRequest;
 use App\Http\Resources\ProductResource;
-use App\Models\Product;
+use App\Models\Produk;
 use App\Services\ProductService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -21,12 +21,17 @@ class ProductController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $products = Product::with(['cultivator', 'reviews'])
-            ->when($request->get('search'), fn($q, $s) => $q->where('name', 'like', "%{$s}%"))
-            ->when($request->get('type'), fn($q, $type) => $q->where('lettuce_type', $type))
-            ->when($request->get('cultivator_id'), fn($q, $cid) => $q->where('user_id', $cid))
-            ->where('status', 'active')
-            ->orderBy('created_at', 'desc')
+        $products = Produk::with(['pembudidaya', 'stok', 'ulasan'])
+            ->withCount('ulasan')
+            ->when($request->get('search'), function ($q, $s) {
+                $q->where('nama_produk', 'like', "%{$s}%")
+                  ->orWhere('deskripsi', 'like', "%{$s}%");
+            })
+            ->when($request->get('cultivator_id') || $request->get('id_pembudidaya'), function ($q) use ($request) {
+                $q->where('id_pembudidaya', $request->get('id_pembudidaya', $request->get('cultivator_id')));
+            })
+            ->where('status_produk', true)
+            ->orderBy('id_produk', 'desc')
             ->paginate($request->get('per_page', 15));
 
         return $this->paginatedResponse(
@@ -37,8 +42,8 @@ class ProductController extends Controller
 
     public function show(int $id): JsonResponse
     {
-        $product = Product::with(['cultivator', 'reviews.buyer'])
-            ->withCount('reviews')
+        $product = Produk::with(['pembudidaya', 'stok', 'ulasan.pembeli'])
+            ->withCount('ulasan')
             ->findOrFail($id);
 
         return $this->successResponse(
@@ -62,7 +67,7 @@ class ProductController extends Controller
 
     public function update(ProductRequest $request, int $id): JsonResponse
     {
-        $product = Product::where('user_id', $request->user()->id)->findOrFail($id);
+        $product = Produk::where('id_pembudidaya', $request->user()->id_pengguna)->findOrFail($id);
 
         $updatedProduct = $this->productService->updateProduct(
             $product,
@@ -77,7 +82,7 @@ class ProductController extends Controller
 
     public function destroy(Request $request, int $id): JsonResponse
     {
-        $product = Product::where('user_id', $request->user()->id)->findOrFail($id);
+        $product = Produk::where('id_pembudidaya', $request->user()->id_pengguna)->findOrFail($id);
 
         $this->productService->deleteProduct($product);
 

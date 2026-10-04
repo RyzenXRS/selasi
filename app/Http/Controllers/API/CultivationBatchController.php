@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Cultivation\StoreBatchRequest;
 use App\Http\Requests\Cultivation\UpdateBatchRequest;
 use App\Http\Resources\CultivationBatchResource;
-use App\Models\CultivationBatch;
+use App\Models\Pengelolaan;
 use App\Services\CultivationService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -22,15 +22,14 @@ class CultivationBatchController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $batches = CultivationBatch::where('user_id', $request->user()->id)
-            ->withCount(['checks', 'harvests'])
-            ->with(['checks' => fn($q) => $q->latest()->limit(1)])
-            ->orderBy('created_at', 'desc')
+        $batches = Pengelolaan::where('id_pembudidaya', $request->user()->id_pengguna)
+            ->with(['perpindahanFase.fase', 'panen', 'prediksiPanen'])
+            ->orderBy('id_pengelolaan', 'desc')
             ->paginate($request->get('per_page', 15));
 
         return $this->paginatedResponse(
             CultivationBatchResource::collection($batches),
-            'Daftar batch budidaya berhasil diambil.'
+            'Daftar pengelolaan budidaya berhasil diambil.'
         );
     }
 
@@ -43,25 +42,25 @@ class CultivationBatchController extends Controller
 
         return $this->createdResponse(
             new CultivationBatchResource($batch),
-            'Batch budidaya berhasil dibuat.'
+            'Pengelolaan budidaya berhasil dibuat.'
         );
     }
 
     public function show(Request $request, int $id): JsonResponse
     {
-        $batch = CultivationBatch::where('user_id', $request->user()->id)
-            ->with(['checks' => fn($q) => $q->orderBy('check_date', 'desc'), 'phaseHistories', 'harvests'])
+        $batch = Pengelolaan::where('id_pembudidaya', $request->user()->id_pengguna)
+            ->with(['perpindahanFase.fase', 'panen', 'prediksiPanen', 'todoList'])
             ->findOrFail($id);
 
         return $this->successResponse(
             new CultivationBatchResource($batch),
-            'Detail batch budidaya berhasil diambil.'
+            'Detail pengelolaan budidaya berhasil diambil.'
         );
     }
 
     public function update(UpdateBatchRequest $request, int $id): JsonResponse
     {
-        $batch = CultivationBatch::where('user_id', $request->user()->id)->findOrFail($id);
+        $batch = Pengelolaan::where('id_pembudidaya', $request->user()->id_pengguna)->findOrFail($id);
 
         $updatedBatch = $this->cultivationService->updateBatch(
             $batch,
@@ -70,15 +69,15 @@ class CultivationBatchController extends Controller
 
         return $this->successResponse(
             new CultivationBatchResource($updatedBatch),
-            'Batch budidaya berhasil diperbarui.'
+            'Pengelolaan budidaya berhasil diperbarui.'
         );
     }
 
     public function destroy(Request $request, int $id): JsonResponse
     {
-        $batch = CultivationBatch::where('user_id', $request->user()->id)->findOrFail($id);
+        $batch = Pengelolaan::where('id_pembudidaya', $request->user()->id_pengguna)->findOrFail($id);
         $batch->delete();
 
-        return $this->noContentResponse('Batch budidaya berhasil dihapus.');
+        return $this->noContentResponse('Pengelolaan budidaya berhasil dihapus.');
     }
 }

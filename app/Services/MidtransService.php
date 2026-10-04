@@ -2,8 +2,11 @@
 
 namespace App\Services;
 
-use App\Models\Order;
+use App\Models\Pembayaran;
+use App\Models\Pesanan;
+use App\Models\Stok;
 use Exception;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Midtrans\Config;
@@ -25,35 +28,37 @@ class MidtransService
     }
 
     /**
-     * Generate Midtrans Snap Token and Redirect URL for an order
+     * Generate Midtrans Snap Token and QRIS for an order
      */
-    public function createSnapTransaction(Order $order): array
+    public function createSnapTransaction(Pesanan $pesanan): array
     {
-        $order->loadMissing(['items', 'buyer']);
+        $pesanan->loadMissing(['detailPesanan.produk', 'pembeli']);
 
         $itemDetails = [];
-        foreach ($order->items as $item) {
+        $firstCultivatorId = null;
+        foreach ($pesanan->detailPesanan as $item) {
+            if (!$firstCultivatorId && $item->produk) {
+                $firstCultivatorId = $item->produk->id_pembudidaya;
+            }
             $itemDetails[] = [
-                'id' => (string) $item->product_id,
-                'price' => (int) round($item->price),
-                'quantity' => (int) $item->quantity,
-                'name' => mb_substr($item->product_name, 0, 50),
+                'id'       => (string) $item->id_produk,
+                'price'    => (int) round($item->harga_satuan),
+                'quantity' => (int) $item->jumlah,
+                'name'     => mb_substr($item->produk?->nama_produk ?? 'Produk Selada', 0, 50),
             ];
         }
 
+        $orderIdGateway = 'ORDER-' . $pesanan->id_pesanan . '-' . time();
+
         $params = [
             'transaction_details' => [
-                'order_id' => $order->order_number,
-                'gross_amount' => (int) round($order->total_price),
+                'order_id'     => $orderIdGateway,
+                'gross_amount' => (int) round($pesanan->total_harga),
             ],
             'customer_details' => [
-                'first_name' => $order->buyer->name,
-                'email' => $order->buyer->email,
-                'phone' => $order->buyer->phone ?? '08123456789',
-                'shipping_address' => [
-                    'first_name' => $order->buyer->name,
-                    'address' => $order->delivery_address,
-                ],
+                'first_name' => $pesanan->pembeli?->nama ?? 'Pembeli',
+                'email'      => $pesanan->pembeli?->email ?? 'buyer@lettuce.com',
+                'phone'      => $pesanan->pembeli?->no_telepon ?? '08123456789',
             ],
             'item_details' => $itemDetails,
         ];
@@ -61,17 +66,27 @@ class MidtransService
         try {
             $transaction = Snap::createTransaction($params);
 
-            $order->update([
-                'snap_token' => $transaction->token ?? null,
-                'snap_redirect_url' => $transaction->redirect_url ?? null,
-            ]);
+            $pembayaran = Pembayaran::updateOrInsert(
+                ['id_pesanan' => $pesanan->id_pesanan],
+                [
+                    'id_pembudidaya'       => $firstCultivatorId,
+                    'metode_pembayaran'    => $pesanan->metode_pembayaran,
+                    'status_pembayaran'    => Pembayaran::STATUS_MENUNGGU,
+                    'jumlah_bayar'         => $pesanan->total_harga,
+                    'order_id_gateway'     => $orderIdGateway,
+                    'snap_token'           => $transaction->token ?? null,
+                    'redirect_url'         => $transaction->redirect_url ?? null,
+                    'waktu_kadaluarsa'     => Carbon::now()->addHours(24),
+                ]
+            );
 
             return [
-                'snap_token' => $transaction->token ?? null,
+                'snap_token'        => $transaction->token ?? null,
                 'snap_redirect_url' => $transaction->redirect_url ?? null,
+                'order_id_gateway'  => $orderIdGateway,
             ];
         } catch (Exception $e) {
-            Log::error('Midtrans Snap Error: ' . $e->getMessage(), ['order_id' => $order->id]);
+            Log::error('Midtrans Snap Error: ' . $e->getMessage(), ['id_pesanan' => $pesanan->id_pesanan]);
             throw $e;
         }
     }
@@ -79,71 +94,68 @@ class MidtransService
     /**
      * Handle notification webhook payload from Midtrans
      */
-    public function handleNotification(array $payload): Order
+    public function handleNotification(array $payload): Pesanan
     {
-        $orderNumber = $payload['order_id'] ?? null;
-        $statusCode = $payload['status_code'] ?? null;
-        $grossAmount = $payload['gross_amount'] ?? null;
-        $signatureKey = $payload['signature_key'] ?? null;
-        $serverKey = config('midtrans.server_key');
+        $orderIdGateway    = $payload['order_id'] ?? null;
+        $statusCode        = $payload['status_code'] ?? null;
+        $grossAmount       = $payload['gross_amount'] ?? null;
+        $signatureKey      = $payload['signature_key'] ?? null;
+        $serverKey         = config('midtrans.server_key');
 
-        // Verify SHA512 Signature Key
-        $expectedSignature = hash('sha512', $orderNumber . $statusCode . $grossAmount . $serverKey);
+        $expectedSignature = hash('sha512', $orderIdGateway . $statusCode . $grossAmount . $serverKey);
 
         if ($signatureKey !== $expectedSignature) {
             Log::warning('Midtrans Webhook: Invalid Signature', [
-                'order_id' => $orderNumber,
+                'order_id' => $orderIdGateway,
                 'received' => $signatureKey,
                 'expected' => $expectedSignature,
             ]);
             throw new Exception('Invalid signature key from Midtrans.');
         }
 
-        $order = Order::with('items.product')->where('order_number', $orderNumber)->firstOrFail();
+        $pembayaran = Pembayaran::where('order_id_gateway', $orderIdGateway)->firstOrFail();
+        $pesanan    = Pesanan::with('detailPesanan.produk')->findOrFail($pembayaran->id_pesanan);
 
         $transactionStatus = $payload['transaction_status'] ?? null;
-        $fraudStatus = $payload['fraud_status'] ?? null;
-        $paymentType = $payload['payment_type'] ?? null;
+        $fraudStatus       = $payload['fraud_status'] ?? null;
+        $transactionId     = $payload['transaction_id'] ?? null;
 
-        Log::info("Midtrans Webhook received for {$orderNumber}: status={$transactionStatus}, fraud={$fraudStatus}");
+        Log::info("Midtrans Webhook received for {$orderIdGateway}: status={$transactionStatus}, fraud={$fraudStatus}");
 
-        return DB::transaction(function () use ($order, $transactionStatus, $fraudStatus, $paymentType) {
-            $order->payment_type = $paymentType;
+        return DB::transaction(function () use ($pembayaran, $pesanan, $transactionStatus, $fraudStatus, $transactionId, $payload) {
+            $pembayaran->id_transaksi_gateway = $transactionId;
+            $pembayaran->respons_gateway      = $payload;
 
             if ($transactionStatus === 'capture') {
                 if ($fraudStatus === 'accept') {
-                    $order->payment_status = 'paid';
-                    $order->order_status = 'processing';
-                    $order->paid_at = now();
+                    $pembayaran->status_pembayaran = Pembayaran::STATUS_LUNAS;
+                    $pembayaran->waktu_pembayaran  = Carbon::now();
+                    $pesanan->status_pesanan       = Pesanan::STATUS_DIBAYAR;
                 } else {
-                    $order->payment_status = 'pending';
+                    $pembayaran->status_pembayaran = Pembayaran::STATUS_MENUNGGU;
                 }
             } elseif ($transactionStatus === 'settlement') {
-                $order->payment_status = 'paid';
-                $order->order_status = 'processing';
-                $order->paid_at = now();
+                $pembayaran->status_pembayaran = Pembayaran::STATUS_LUNAS;
+                $pembayaran->waktu_pembayaran  = Carbon::now();
+                $pesanan->status_pesanan       = Pesanan::STATUS_DIBAYAR;
             } elseif ($transactionStatus === 'pending') {
-                $order->payment_status = 'pending';
+                $pembayaran->status_pembayaran = Pembayaran::STATUS_MENUNGGU;
             } elseif (in_array($transactionStatus, ['deny', 'expire', 'cancel'])) {
-                $order->payment_status = 'failed';
-                $order->order_status = 'cancelled';
-                $order->cancellation_reason = "Pembayaran Midtrans {$transactionStatus}";
-                $order->cancelled_at = now();
+                $pembayaran->status_pembayaran = ($transactionStatus === 'expire')
+                    ? Pembayaran::STATUS_KADALUARSA
+                    : Pembayaran::STATUS_GAGAL;
+                $pesanan->status_pesanan = Pesanan::STATUS_DIBATALKAN;
 
-                // Restore products stock
-                foreach ($order->items as $item) {
-                    if ($item->product) {
-                        $item->product->increment('stock', $item->quantity);
-                        if ($item->product->status === 'out_of_stock') {
-                            $item->product->update(['status' => 'active']);
-                        }
-                    }
+                // Kembalikan stok
+                foreach ($pesanan->detailPesanan as $item) {
+                    Stok::where('id_produk', $item->id_produk)->increment('jumlah_stok', $item->jumlah);
                 }
             }
 
-            $order->save();
+            $pembayaran->save();
+            $pesanan->save();
 
-            return $order->fresh(['items', 'buyer', 'cultivator']);
+            return $pesanan->fresh(['detailPesanan.produk', 'pembeli', 'pembayaran']);
         });
     }
 }

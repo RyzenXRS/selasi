@@ -1,325 +1,127 @@
-# Smart Lettuce Cultivation Management System — API Documentation & Web Integration Guide
+# Smart Lettuce Cultivation & Marketplace Management System
+## API Documentation & Indonesian ERD Integration Guide
 
-Dokumentasi lengkap REST API dan panduan integrasi ke aplikasi frontend (Web/Mobile).
+Dokumentasi lengkap REST API Backend yang telah disesuaikan secara menyeluruh dengan **Entity Relationship Diagram (ERD) Bahasa Indonesia**.
 
 ---
 
-## 🚀 Persiapan & Menjalankan Server API
+## 🗄️ Struktur Database & ERD Bahasa Indonesia
 
-### 1. Requirements
-- PHP 8.3+
-- MySQL Database (`lettuce_db`)
-- Composer
+Backend ini menggunakan 17 tabel terstruktur dengan penamaan Bahasa Indonesia dan relasi terstandardisasi:
 
-### 2. Langkah Menjalankan Server
+```mermaid
+erDiagram
+    PENGGUNA ||--o{ PENGELOLAAN : "id_pembudidaya"
+    PENGGUNA ||--o{ TO_DO : "id_pembudidaya"
+    PENGGUNA ||--o{ PRODUK : "id_pembudidaya"
+    PENGGUNA ||--o{ KERANJANG : "id_pembeli"
+    PENGGUNA ||--o{ PESANAN : "id_pembeli"
+    PENGGUNA ||--o{ ULASAN : "id_pembeli"
+    PENGGUNA ||--o{ NOTIFIKASI : "id_pengguna"
+    PENGGUNA ||--o{ PREDIKSI_PERMINTAAN : "id_pembudidaya"
+
+    PENGELOLAAN ||--o{ PERPINDAHAN_FASE : "id_pengelolaan"
+    PENGELOLAAN ||--o{ PANEN : "id_pengelolaan"
+    PENGELOLAAN ||--o{ PREDIKSI_PANEN : "id_pengelolaan"
+    PENGELOLAAN ||--o{ TO_DO : "id_pengelolaan"
+    FASE_BUDIDAYA ||--o{ PERPINDAHAN_FASE : "id_fase"
+
+    PRODUK ||--|| STOK : "id_produk"
+    PRODUK ||--o{ ITEM_KERANJANG : "id_produk"
+    PRODUK ||--o{ DETAIL_PESANAN : "id_produk"
+    PRODUK ||--o{ ULASAN : "id_produk"
+    KERANJANG ||--o{ ITEM_KERANJANG : "id_keranjang"
+
+    PESANAN ||--o{ DETAIL_PESANAN : "id_pesanan"
+    PESANAN ||--|| PEMBAYARAN : "id_pesanan"
+    PESANAN ||--o{ ULASAN : "id_pesanan"
+```
+
+---
+
+## 📋 Daftar Tabel & Kolom
+
+1. **`pengguna`**: `id_pengguna`, `nama`, `email`, `password_hash`, `no_telepon`, `role` (`PEMBUDIDAYA`, `PEMBELI`), `foto_profil`, `created_at`, `updated_at`
+2. **`fase_budidaya`**: `id_fase`, `nama_fase` (Semai, Vegetatif, Pendewasaan, Panen), `urutan_fase`
+3. **`pengelolaan`**: `id_pengelolaan`, `id_pembudidaya`, `kode_pengelolaan`, `tanggal_tanam`, `jumlah_tanaman`, `lokasi`, `kondisi_tanaman`, `kondisi_air_nutrisi`, `kondisi_instalasi`, `kondisi_lingkungan`, `nilai_ph`, `catatan`, `created_at`, `updated_at`
+4. **`perpindahan_fase`**: `id_perpindahan`, `id_pengelolaan`, `id_fase`, `tanggal_mulai`, `tanggal_selesai`, `catatan`
+5. **`panen`**: `id_panen`, `id_pengelolaan`, `tanggal_panen`, `jumlah_panen`, `berat_total_kg`, `kualitas`, `catatan`
+6. **`to_do`**: `id_todo`, `id_pembudidaya`, `id_pengelolaan`, `nama_tugas`, `tanggal_tugas`, `status` (boolean), `created_at`
+7. **`notifikasi`**: `id_notifikasi`, `id_pengguna`, `id_pengelolaan`, `jenis_notifikasi`, `isi_notifikasi`, `status_dibaca`, `waktu_notifikasi`
+8. **`prediksi_panen`**: `id_prediksi_panen`, `id_pengelolaan`, `status_kesiapan`, `perkiraan_tanggal_mulai`, `perkiraan_tanggal_selesai`, `nilai_prediksi`, `created_at`
+9. **`prediksi_permintaan`**: `id_prediksi_permintaan`, `id_pembudidaya`, `periode_mulai`, `periode_selesai`, `tanggal_prediksi`, `hasil_prediksi`, `satuan`, `created_at`
+10. **`produk`**: `id_produk`, `id_pembudidaya`, `nama_produk`, `deskripsi`, `harga`, `foto_produk`, `status_produk` (boolean)
+11. **`stok`**: `id_stok`, `id_produk`, `jumlah_stok`, `tanggal_update`
+12. **`keranjang`**: `id_keranjang`, `id_pembeli`, `created_at`, `updated_at`
+13. **`item_keranjang`**: `id_item_keranjang`, `id_keranjang`, `id_produk`, `jumlah`, `harga_satuan`, `created_at`, `updated_at`
+14. **`pesanan`**: `id_pesanan`, `id_pembeli`, `tanggal_pesanan`, `total_harga`, `metode_pembayaran` (`QRIS`, `COD`), `status_pesanan` (`MENUNGGU_PEMBAYARAN`, `DIBAYAR`, `DIPROSES`, `SIAP_DIAMBIL`, `SELESAI`, `DIBATALKAN`)
+15. **`detail_pesanan`**: `id_detail`, `id_pesanan`, `id_produk`, `jumlah`, `harga_satuan`, `subtotal`
+16. **`pembayaran`**: `id_pembayaran`, `id_pesanan`, `id_pembudidaya`, `metode_pembayaran`, `status_pembayaran` (`MENUNGGU`, `LUNAS`, `GAGAL`, `KADALUARSA`, `DIBATALKAN`), `jumlah_bayar`, `order_id_gateway`, `id_transaksi_gateway`, `snap_token`, `redirect_url`, `waktu_kadaluarsa`, `waktu_pembayaran`, `respons_gateway`
+17. **`ulasan`**: `id_ulasan`, `id_produk`, `id_pembeli`, `id_pesanan`, `rating` (1-5), `komentar`, `tanggal_ulasan`
+
+---
+
+## 🚀 Menjalankan Server & Database Seeder
+
 ```bash
-# Migration database
-php artisan migrate
+# Jalankan migrasi dan isi data realistis dalam Bahasa Indonesia
+php artisan migrate:fresh --seed
 
-# Jalankan server lokal
+# Jalankan server API
 php artisan serve
-# Server akan berjalan di: http://127.0.0.1:8000
+# Berjalan di: http://127.0.0.1:8000
 ```
 
----
-
-## 🔑 Konsep Autentikasi (Sanctum Token)
-
-Sistem ini menggunakan **Bearer Token** via Laravel Sanctum.
-1. Frontend melakukan permintaan `POST /api/v1/auth/login` atau `POST /api/v1/auth/register`.
-2. Backend merespon dengan membawa string `token`.
-3. Frontend menyimpan `token` tersebut di `localStorage` / `sessionStorage` / `Cookie`.
-4. Untuk setiap *request* yang membutuhkan login, tambahkan header:
-   ```http
-   Authorization: Bearer <TOKEN_ANDA>
-   Accept: application/json
-   ```
+Akun Demo bawaan Seeder:
+- **Pembudidaya**: `petani@lettuce.com` / `password123` (Role: `PEMBUDIDAYA`)
+- **Pembeli**: `pembeli@lettuce.com` / `password123` (Role: `PEMBELI`)
 
 ---
 
-## 📚 Ringkasan API Endpoints
+## 📚 Ringkasan Endpoint API (Prefix: `/api/v1`)
 
-Semua endpoint diawali dengan prefix: `http://127.0.0.1:8000/api/v1`
+### 1. Autentikasi & Profil (`Public / Protected`)
+- `POST /api/v1/auth/register` — Registrasi (`nama`, `email`, `password`, `role`: `PEMBUDIDAYA` / `PEMBELI`)
+- `POST /api/v1/auth/login` — Login & dapatkan token Sanctum
+- `POST /api/v1/auth/logout` — Logout token aktif
+- `GET /api/v1/profile` — Profil user aktif
+- `PUT /api/v1/profile` — Update profil (`nama`, `no_telepon`, `foto_profil`, `password`)
 
-### 1. Autentikasi & Profil (`/auth`, `/profile`)
+### 2. Modul Pembudidaya (`role: pembudidaya / cultivator`)
+- `GET /api/v1/dashboard` — Metrik ringkasan budidaya, AI prediksi, pesanan & to-do
+- `GET /api/v1/fase-budidaya` — Data master tahapan fase pertumbuhan
+- `GET /api/v1/pengelolaan` atau `/batches` — Daftar batch budidaya
+- `POST /api/v1/pengelolaan` atau `/batches` — Buat batch baru
+- `GET /api/v1/pengelolaan/{id}` — Detail batch + riwayat fase & panen
+- `PUT /api/v1/pengelolaan/{id}` — Update parameter & kondisi batch
+- `DELETE /api/v1/pengelolaan/{id}` — Hapus batch
+- `POST /api/v1/pengelolaan/{id}/fase` — Catat perpindahan fase tanaman
+- `POST /api/v1/pengelolaan/{id}/panen` — Catat panen batch
+- `GET /api/v1/pengelolaan/{id}/prediksi-panen` — Prediksi AI kesiapan & estimasi panen
+- `GET /api/v1/prediksi-permintaan` — Prediksi AI permintaan pasar
+- `GET /api/v1/to-do` atau `/tasks` — Daftar to-do list harian
+- `POST /api/v1/to-do` atau `/tasks` — Buat to-do tugas harian baru
+- `POST /api/v1/to-do/{id}/complete` — Tandai to-do selesai
+- `POST /api/v1/produk` — Tambah produk selada ke marketplace
+- `PUT /api/v1/produk/{id}` — Update info & stok produk
+- `DELETE /api/v1/produk/{id}` — Hapus produk
+- `GET /api/v1/cultivator/orders` — Daftar pesanan masuk dari pembeli
+- `PUT /api/v1/cultivator/orders/{id}/status` — Update status pesanan
 
-| Method | Endpoint | Access | Keterangan |
-|---|---|---|---|
-| `POST` | `/auth/register` | Public | Registrasi pembudidaya (`cultivator`) / pembeli (`buyer`) |
-| `POST` | `/auth/login` | Public | Login akun & mendapatkan Bearer token |
-| `POST` | `/auth/logout` | Protected | Logout & hapus token aktif |
-| `POST` | `/auth/forgot-password` | Public | Request link/token reset password |
-| `GET` | `/profile` | Protected | Ambil data profil user yang sedang login |
-| `PUT` | `/profile` | Protected | Update data profil (nama, phone, address, profile_photo) |
+### 3. Modul Pembeli & Marketplace (`role: pembeli / buyer`)
+- `GET /api/v1/produk` atau `/products` — Katalog marketplace selada segar
+- `GET /api/v1/produk/{id}` — Detail produk, stok & rating ulasan
+- `GET /api/v1/buyer/dashboard` — Ringkasan transaksi & pesanan pembeli
+- `GET /api/v1/keranjang` atau `/cart` — Lihat isi keranjang belanja
+- `POST /api/v1/keranjang` atau `/cart` — Tambah produk ke keranjang (`id_produk`, `jumlah`)
+- `PUT /api/v1/keranjang/items/{itemId}` — Ubah jumlah item di keranjang
+- `DELETE /api/v1/keranjang/items/{itemId}` — Hapus item dari keranjang
+- `DELETE /api/v1/keranjang` — Kosongkan keranjang
+- `GET /api/v1/pesanan` atau `/orders` — Riwayat pesanan pembeli
+- `POST /api/v1/pesanan/checkout` — Checkout pesanan (`metode_pembayaran`: `QRIS` / `COD`)
+- `GET /api/v1/pesanan/{id}` — Detail pesanan & status pembayaran
+- `POST /api/v1/pesanan/{id}/cancel` — Batalkan pesanan
+- `POST /api/v1/produk/{productId}/ulasan` — Berikan rating & ulasan (setelah pesanan `SELESAI`)
 
----
-
-### 2. Modul Pembudidaya (`role: cultivator`)
-
-| Method | Endpoint | Keterangan |
-|---|---|---|
-| `GET` | `/dashboard` | Metric dashboard (jumlah tanaman, fase, estimasi panen, stok, pesanan masuk) |
-| `GET` | `/batches` | Ambil daftar batch budidaya (paginated) |
-| `POST` | `/batches` | Tambah batch budidaya baru |
-| `GET` | `/batches/{id}` | Detail batch budidaya + riwayat pengecekan & panen |
-| `PUT` | `/batches/{id}` | Update status/kondisi batch budidaya |
-| `DELETE` | `/batches/{id}` | Hapus batch budidaya |
-| `GET` | `/batches/{batchId}/checks` | Ambil riwayat monitoring harian batch (pH, TDS ppm, suhu) |
-| `POST` | `/batches/{batchId}/checks` | Tambah catatan monitoring harian |
-| `POST` | `/batches/{batchId}/phases` | Catat perpindahan fase tanaman (Semai → Vegetatif → Pendewasaan → Panen) |
-| `POST` | `/batches/{batchId}/harvests` | Catat hasil panen (jumlah & berat gram) |
-| `GET` | `/tasks` | Daftar tugas/to-do list harian |
-| `POST` | `/tasks` | Tambah tugas baru |
-| `POST` | `/tasks/{id}/complete` | Tandai tugas selesai |
-| `POST` | `/products` | Tambah produk selada ke katalog toko |
-| `PUT` | `/products/{id}` | Update produk & stok selada |
-| `DELETE` | `/products/{id}` | Hapus produk |
-| `GET` | `/cultivator/orders` | Lihat pesanan masuk dari pembeli |
-| `PUT` | `/cultivator/orders/{id}/status` | Update status pesanan (`processing`, `ready_pickup`, `completed`, `cancelled`) |
-
----
-
-### 3. Modul Pembeli & Katalog (`role: buyer` / Public)
-
-| Method | Endpoint | Access | Keterangan |
-|---|---|---|---| 
-| `GET` | `/products` | Public | Browse katalog produk selada (filter `search`, `type`) |
-| `GET` | `/products/{id}` | Public | Detail produk selada & rating ulasan |
-| `GET` | `/buyer/dashboard` | Buyer | Metric dashboard transaksi pembeli |
-| `GET` | `/cart` | Buyer | Lihat keranjang belanja saat ini |
-| `POST` | `/cart` | Buyer | Tambah item ke keranjang (`product_id`, `quantity`) |
-| `PUT` | `/cart/items/{itemId}` | Buyer | Update jumlah item di keranjang |
-| `DELETE` | `/cart/items/{itemId}` | Buyer | Hapus item dari keranjang |
-| `DELETE` | `/cart` | Buyer | Kosongkan keranjang belanja |
-| `GET` | `/orders` | Buyer | Daftar riwayat pesanan pembeli |
-| `POST` | `/orders/checkout` | Buyer | Checkout keranjang belanja (`delivery_address`, `payment_method`) |
-| `GET` | `/orders/{id}` | Buyer | Detail pesanan & status pengiriman |
-| `POST` | `/orders/{id}/cancel` | Buyer | Batalkan pesanan |
-| `POST` | `/orders/{id}/pay` | Buyer | Unggah bukti pembayaran manual (jika COD/manual) |
-| `POST` | `/midtrans/callback` | Public | Webhook Notifikasi otomatis dari Midtrans (Update status order) |
-| `POST` | `/products/{productId}/reviews` | Buyer | Beri ulasan & rating bintang (1-5) setelah order selesai |
-
----
-
-## 💳 Integrasi Midtrans Payment Gateway (Snap API)
-
-Sistem ini telah terintegrasi dengan **Midtrans Snap**, mendukung metode pembayaran otomatis:
-- **QRIS**: GoPay, OVO, ShopeePay, Dana, LinkAja
-- **Virtual Account**: BCA, BNI, BRI, Mandiri, Permata
-- **Credit Card / Debit Card**
-- **Convenience Store**: Indomaret, Alfamart
-
-### Alur Kerja Midtrans:
-1. Pembeli melakukan checkout dengan `payment_method: 'midtrans'`.
-2. Backend menghasilkan dan mengembalikan `snap_token` serta `snap_redirect_url`.
-3. Frontend membuka popup pembayaran Midtrans menggunakan `window.snap.pay(snapToken)`.
-4. Setelah pembeli membayar, Midtrans secara otomatis memanggil Webhook Backend:
-   `POST /api/v1/midtrans/callback`.
-5. Backend memvalidasi signature SHA512 dan mengubah status pesanan menjadi `paid` dan `processing`.
-
----
-
-## 💻 Panduan Integrasi ke Aplikasi Web (Frontend JavaScript)
-
-Berikut adalah contoh implementasi pada aplikasi Web (React, Vue, atau Vanilla JS) menggunakan **Fetch API** / **Axios**.
-
-### 1. Setup Axios Client (Recommended)
-
-```javascript
-// api.js
-import axios from 'axios';
-
-const api = axios.create({
-  baseURL: 'http://127.0.0.1:8000/api/v1',
-  headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-  },
-});
-
-// Interceptor untuk otomatis menyisipkan Bearer Token dari localStorage
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-export default api;
-```
-
----
-
-### 2. Alur Login & Simpan Token
-
-```javascript
-// authService.js
-import api from './api';
-
-export const login = async (email, password) => {
-  try {
-    const response = await api.post('/auth/login', { email, password });
-    
-    // Simpan token & data user ke localStorage
-    const { token, user } = response.data.data;
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(user));
-    
-    console.log('Login berhasil! Role:', user.role);
-    return user;
-  } catch (error) {
-    console.error('Login gagal:', error.response?.data?.message);
-    throw error;
-  }
-};
-```
-
----
-
-### 3. Pembudidaya: Mengambil Data Dashboard
-
-```javascript
-// cultivatorDashboard.js
-import api from './api';
-
-export const getCultivatorDashboard = async () => {
-  const res = await api.get('/dashboard');
-  const dashboardData = res.data.data;
-
-  console.log('Total Tanaman Aktif:', dashboardData.summary.total_active_plants);
-  console.log('Distribusi Fase:', dashboardData.phase_distribution);
-  console.log('Estimasi Panen:', dashboardData.estimated_harvests);
-  
-  return dashboardData;
-};
-```
-
----
-
-### 4. Pembudidaya: Menambah Catatan Monitoring Harian (pH & TDS)
-
-```javascript
-// cultivationService.js
-import api from './api';
-
-export const addDailyCheck = async (batchId, checkData) => {
-  const res = await api.post(`/batches/${batchId}/checks`, {
-    check_date: checkData.date, // '2026-09-23'
-    plant_condition: 'sangat_baik',
-    water_ph: 6.2,
-    tds_ppm: 1050,
-    temperature: 25.8,
-    installation_condition: 'baik',
-    notes: 'Kondisi air dan nutrisi sangat stabil',
-  });
-
-  return res.data.data;
-};
-```
-
----
-
-### 5. Pembeli: Tambah ke Keranjang & Checkout
-
-```javascript
-// buyerService.js
-import api from './api';
-
-// 1. Tambah ke keranjang
-export const addToCart = async (productId, quantity) => {
-  const res = await api.post('/cart', {
-    product_id: productId,
-    quantity: quantity,
-  });
-  return res.data.data;
-};
-
-// 2. Checkout Pesanan dengan Midtrans & Buka Popup Snap
-export const checkoutWithMidtrans = async (deliveryAddress) => {
-  // Request checkout ke backend
-  const res = await api.post('/orders/checkout', {
-    delivery_address: deliveryAddress,
-    payment_method: 'midtrans',
-    notes: 'Tolong kemas segar',
-  });
-
-  const order = res.data.data;
-  const snapToken = order.payment.snap_token;
-
-  // Buka popup Midtrans Snap di browser pembeli
-  if (window.snap && snapToken) {
-    window.snap.pay(snapToken, {
-      onSuccess: function (result) {
-        console.log('Pembayaran Sukses!', result);
-        alert('Pembayaran berhasil!');
-        window.location.href = `/orders/${order.id}`;
-      },
-      onPending: function (result) {
-        console.log('Menunggu Pembayaran:', result);
-        alert('Silakan selesaikan pembayaran sesuai petunjuk.');
-      },
-      onError: function (result) {
-        console.error('Pembayaran Gagal:', result);
-        alert('Pembayaran gagal, silakan coba lagi.');
-      },
-      onClose: function () {
-        console.log('Popup ditutup sebelum pembayaran selesai');
-      }
-    });
-  }
-
-  return order;
-};
-```
-
-> **Catatan Frontend:** Pasang script Midtrans Snap di `index.html` aplikasi web Anda:
-> ```html
-> <!-- Untuk Mode Sandbox (Uji Coba): -->
-> <script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="CLIENT_KEY_ANDA"></script>
-> 
-> <!-- Untuk Mode Production: -->
-> <!-- <script src="https://app.midtrans.com/snap/snap.js" data-client-key="CLIENT_KEY_ANDA"></script> -->
-> ```
-
----
-
-## 🎨 Contoh Format Response JSON Standard
-
-Semua endpoint memberikan respon konsisten dengan struktur berikut:
-
-### Success Response (200 / 201)
-```json
-{
-  "success": true,
-  "message": "Batch budidaya berhasil dibuat.",
-  "data": {
-    "id": 1,
-    "batch_code": "BATCH-20260923-A8F2",
-    "seed_date": "2026-09-01",
-    "plant_quantity": 200,
-    "current_phase": "Semai",
-    "conditions": {
-      "plant": "baik",
-      "water": "baik",
-      "nutrition": "baik",
-      "installation": "baik",
-      "environment": "baik"
-    },
-    "status": "normal"
-  }
-}
-```
-
-### Error / Validation Response (422)
-```json
-{
-  "success": false,
-  "message": "Validation error.",
-  "errors": {
-    "email": [
-      "Email ini sudah terdaftar."
-    ]
-  }
-}
-```
+### 4. Midtrans Payment Webhook
+- `POST /api/v1/midtrans/callback` — Webhook otomatis Midtrans saat QRIS/Virtual Account terbayar

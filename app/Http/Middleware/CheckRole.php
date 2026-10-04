@@ -26,7 +26,26 @@ class CheckRole
             ], 401);
         }
 
-        if (!in_array($request->user()->role, $roles)) {
+        $userRole = strtoupper((string) $request->user()->role);
+        
+        $roleMap = [
+            'CULTIVATOR'  => ['CULTIVATOR', 'PEMBUDIDAYA'],
+            'PEMBUDIDAYA' => ['CULTIVATOR', 'PEMBUDIDAYA'],
+            'BUYER'       => ['BUYER', 'PEMBELI'],
+            'PEMBELI'     => ['BUYER', 'PEMBELI'],
+        ];
+
+        $allowed = false;
+        foreach ($roles as $role) {
+            $normalized = strtoupper($role);
+            $mapped = $roleMap[$normalized] ?? [$normalized];
+            if (in_array($userRole, $mapped, true)) {
+                $allowed = true;
+                break;
+            }
+        }
+
+        if (!$allowed) {
             return response()->json([
                 'success' => false,
                 'message' => 'Forbidden. You do not have permission to access this resource.',

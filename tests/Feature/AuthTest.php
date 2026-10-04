@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
+use App\Models\Pengguna;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -13,13 +13,12 @@ class AuthTest extends TestCase
     public function test_user_can_register_as_cultivator(): void
     {
         $response = $this->postJson('/api/v1/auth/register', [
-            'name' => 'Petani Selada',
-            'email' => 'cultivator@lettuce.com',
-            'password' => 'password123',
+            'name'                  => 'Petani Selada',
+            'email'                 => 'cultivator@lettuce.com',
+            'password'              => 'password123',
             'password_confirmation' => 'password123',
-            'role' => 'cultivator',
-            'phone' => '08123456789',
-            'address' => 'Bandung, Jawa Barat',
+            'role'                  => 'cultivator',
+            'phone'                 => '08123456789',
         ]);
 
         $response->assertStatus(201)
@@ -28,42 +27,42 @@ class AuthTest extends TestCase
                 'success',
                 'message',
                 'data' => [
-                    'user' => ['id', 'name', 'email', 'role'],
+                    'user' => ['id', 'nama', 'email', 'role'],
                     'token',
                     'token_type',
                 ],
             ]);
 
-        $this->assertDatabaseHas('users', [
+        $this->assertDatabaseHas('pengguna', [
             'email' => 'cultivator@lettuce.com',
-            'role' => 'cultivator',
+            'role'  => Pengguna::PERAN_PEMBUDIDAYA,
         ]);
     }
 
     public function test_user_can_register_as_buyer(): void
     {
         $response = $this->postJson('/api/v1/auth/register', [
-            'name' => 'Pembeli Selada',
-            'email' => 'buyer@lettuce.com',
-            'password' => 'password123',
+            'nama'                  => 'Pembeli Selada',
+            'email'                 => 'buyer@lettuce.com',
+            'password'              => 'password123',
             'password_confirmation' => 'password123',
-            'role' => 'buyer',
+            'role'                  => 'buyer',
         ]);
 
         $response->assertStatus(201)
             ->assertJsonPath('success', true)
-            ->assertJsonPath('data.user.role', 'buyer');
+            ->assertJsonPath('data.user.role', Pengguna::PERAN_PEMBELI);
     }
 
     public function test_user_can_login(): void
     {
-        $user = User::factory()->create([
-            'email' => 'test@lettuce.com',
-            'password' => bcrypt('password123'),
+        $user = Pengguna::factory()->create([
+            'email'         => 'test@lettuce.com',
+            'password_hash' => bcrypt('password123'),
         ]);
 
         $response = $this->postJson('/api/v1/auth/login', [
-            'email' => 'test@lettuce.com',
+            'email'    => 'test@lettuce.com',
             'password' => 'password123',
         ]);
 
@@ -76,7 +75,7 @@ class AuthTest extends TestCase
 
     public function test_authenticated_user_can_get_profile(): void
     {
-        $user = User::factory()->create();
+        $user = Pengguna::factory()->create();
 
         $response = $this->actingAs($user, 'sanctum')
             ->getJson('/api/v1/profile');

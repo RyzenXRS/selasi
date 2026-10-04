@@ -14,12 +14,11 @@ class StorePhaseRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'previous_phase' => ['required', 'string', 'in:Semai,Vegetatif,Pendewasaan,Panen'],
-            'next_phase' => ['required', 'string', 'in:Semai,Vegetatif,Pendewasaan,Panen'],
-            'moved_date' => ['required', 'date'],
-            'plant_quantity' => ['required', 'integer', 'min:1'],
-            'destination_location' => ['nullable', 'string', 'max:255'],
-            'notes' => ['nullable', 'string'],
+            'id_fase'         => ['required', 'integer', 'exists:fase_budidaya,id_fase'],
+            'tanggal_mulai'   => ['required', 'date'],
+            'tanggal_selesai' => ['nullable', 'date'],
+            'catatan'         => ['nullable', 'string'],
+            'notes'           => ['nullable', 'string'],
         ];
     }
 }

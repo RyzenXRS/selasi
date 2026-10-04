@@ -16,14 +16,18 @@ class ProductRequest extends FormRequest
         $isUpdate = $this->isMethod('PUT') || $this->isMethod('PATCH');
 
         return [
-            'name' => [$isUpdate ? 'sometimes' : 'required', 'string', 'max:255'],
-            'lettuce_type' => [$isUpdate ? 'sometimes' : 'required', 'string', 'max:100'],
-            'description' => ['nullable', 'string'],
-            'price' => [$isUpdate ? 'sometimes' : 'required', 'numeric', 'min:0'],
-            'price_unit' => ['nullable', 'string', 'max:50'],
-            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
-            'stock' => [$isUpdate ? 'sometimes' : 'required', 'integer', 'min:0'],
-            'status' => ['nullable', 'string', 'in:active,inactive,out_of_stock'],
+            'nama_produk'   => [$isUpdate ? 'nullable' : 'required_without:name', 'string', 'max:100'],
+            'name'          => [$isUpdate ? 'nullable' : 'required_without:nama_produk', 'string', 'max:100'],
+            'deskripsi'     => ['nullable', 'string'],
+            'description'   => ['nullable', 'string'],
+            'harga'         => [$isUpdate ? 'nullable' : 'required_without:price', 'numeric', 'min:0'],
+            'price'         => [$isUpdate ? 'nullable' : 'required_without:harga', 'numeric', 'min:0'],
+            'foto_produk'   => ['nullable'],
+            'image'         => ['nullable'],
+            'status_produk' => ['nullable'],
+            'status'        => ['nullable'],
+            'jumlah_stok'   => ['nullable', 'numeric', 'min:0'],
+            'stock'         => ['nullable', 'numeric', 'min:0'],
         ];
     }
 }

@@ -14,10 +14,8 @@ class CheckoutRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'delivery_address' => ['required', 'string'],
-            'notes' => ['nullable', 'string'],
-            'payment_method' => ['required', 'string', 'in:midtrans,cod,qris'],
-            'payment_proof' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
+            'metode_pembayaran' => ['nullable', 'string'],
+            'payment_method'    => ['nullable', 'string'],
         ];
     }
 }

@@ -5,8 +5,8 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cultivation\StorePhaseRequest;
 use App\Http\Resources\PhaseHistoryResource;
-use App\Models\CultivationBatch;
-use App\Models\PhaseHistory;
+use App\Models\Pengelolaan;
+use App\Models\PerpindahanFase;
 use App\Services\CultivationService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -22,10 +22,11 @@ class PhaseHistoryController extends Controller
 
     public function index(Request $request, int $batchId): JsonResponse
     {
-        $batch = CultivationBatch::where('user_id', $request->user()->id)->findOrFail($batchId);
+        $batch = Pengelolaan::where('id_pembudidaya', $request->user()->id_pengguna)->findOrFail($batchId);
 
-        $phases = $batch->phaseHistories()
-            ->orderBy('moved_date', 'desc')
+        $phases = $batch->perpindahanFase()
+            ->with('fase')
+            ->orderBy('tanggal_mulai', 'desc')
             ->get();
 
         return $this->successResponse(
@@ -36,21 +37,21 @@ class PhaseHistoryController extends Controller
 
     public function store(StorePhaseRequest $request, int $batchId): JsonResponse
     {
-        $batch = CultivationBatch::where('user_id', $request->user()->id)->findOrFail($batchId);
+        $batch = Pengelolaan::where('id_pembudidaya', $request->user()->id_pengguna)->findOrFail($batchId);
 
-        $phase = $this->cultivationService->changePhase($batch, $request->validated());
+        $phase = $this->cultivationService->recordPhaseTransition($batch, $request->validated());
 
         return $this->createdResponse(
-            new PhaseHistoryResource($phase),
+            new PhaseHistoryResource($phase->load('fase')),
             'Perpindahan fase tanaman berhasil dicatat.'
         );
     }
 
     public function show(Request $request, int $id): JsonResponse
     {
-        $phase = PhaseHistory::whereHas('batch', function ($q) use ($request) {
-            $q->where('user_id', $request->user()->id);
-        })->findOrFail($id);
+        $phase = PerpindahanFase::whereHas('pengelolaan', function ($q) use ($request) {
+            $q->where('id_pembudidaya', $request->user()->id_pengguna);
+        })->with('fase')->findOrFail($id);
 
         return $this->successResponse(
             new PhaseHistoryResource($phase),
@@ -60,22 +61,22 @@ class PhaseHistoryController extends Controller
 
     public function update(StorePhaseRequest $request, int $id): JsonResponse
     {
-        $phase = PhaseHistory::whereHas('batch', function ($q) use ($request) {
-            $q->where('user_id', $request->user()->id);
+        $phase = PerpindahanFase::whereHas('pengelolaan', function ($q) use ($request) {
+            $q->where('id_pembudidaya', $request->user()->id_pengguna);
         })->findOrFail($id);
 
         $phase->update($request->validated());
 
         return $this->successResponse(
-            new PhaseHistoryResource($phase->fresh()),
+            new PhaseHistoryResource($phase->fresh()->load('fase')),
             'Data perpindahan fase berhasil diperbarui.'
         );
     }
 
     public function destroy(Request $request, int $id): JsonResponse
     {
-        $phase = PhaseHistory::whereHas('batch', function ($q) use ($request) {
-            $q->where('user_id', $request->user()->id);
+        $phase = PerpindahanFase::whereHas('pengelolaan', function ($q) use ($request) {
+            $q->where('id_pembudidaya', $request->user()->id_pengguna);
         })->findOrFail($id);
 
         $phase->delete();

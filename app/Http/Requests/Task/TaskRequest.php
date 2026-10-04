@@ -14,12 +14,13 @@ class TaskRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'batch_id' => ['nullable', 'exists:cultivation_batches,id'],
-            'title' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'task_date' => ['required', 'date'],
-            'priority' => ['nullable', 'string', 'in:low,medium,high'],
-            'status' => ['nullable', 'string', 'in:pending,in_progress,completed,cancelled'],
+            'id_pengelolaan' => ['nullable', 'exists:pengelolaan,id_pengelolaan'],
+            'batch_id'       => ['nullable', 'exists:pengelolaan,id_pengelolaan'],
+            'nama_tugas'     => ['required_without:title', 'string', 'max:150'],
+            'title'          => ['required_without:nama_tugas', 'string', 'max:150'],
+            'tanggal_tugas'  => ['required_without:task_date', 'date'],
+            'task_date'      => ['required_without:tanggal_tugas', 'date'],
+            'status'         => ['nullable'],
         ];
     }
 }

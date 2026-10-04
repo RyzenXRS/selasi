@@ -5,8 +5,8 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cultivation\StoreHarvestRequest;
 use App\Http\Resources\HarvestResource;
-use App\Models\CultivationBatch;
-use App\Models\Harvest;
+use App\Models\Panen;
+use App\Models\Pengelolaan;
 use App\Services\CultivationService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -22,10 +22,10 @@ class HarvestController extends Controller
 
     public function index(Request $request, int $batchId): JsonResponse
     {
-        $batch = CultivationBatch::where('user_id', $request->user()->id)->findOrFail($batchId);
+        $batch = Pengelolaan::where('id_pembudidaya', $request->user()->id_pengguna)->findOrFail($batchId);
 
-        $harvests = $batch->harvests()
-            ->orderBy('harvest_date', 'desc')
+        $harvests = $batch->panen()
+            ->orderBy('tanggal_panen', 'desc')
             ->get();
 
         return $this->successResponse(
@@ -36,7 +36,7 @@ class HarvestController extends Controller
 
     public function store(StoreHarvestRequest $request, int $batchId): JsonResponse
     {
-        $batch = CultivationBatch::where('user_id', $request->user()->id)->findOrFail($batchId);
+        $batch = Pengelolaan::where('id_pembudidaya', $request->user()->id_pengguna)->findOrFail($batchId);
 
         $harvest = $this->cultivationService->recordHarvest($batch, $request->validated());
 
@@ -48,8 +48,8 @@ class HarvestController extends Controller
 
     public function show(Request $request, int $id): JsonResponse
     {
-        $harvest = Harvest::whereHas('batch', function ($q) use ($request) {
-            $q->where('user_id', $request->user()->id);
+        $harvest = Panen::whereHas('pengelolaan', function ($q) use ($request) {
+            $q->where('id_pembudidaya', $request->user()->id_pengguna);
         })->findOrFail($id);
 
         return $this->successResponse(
@@ -60,8 +60,8 @@ class HarvestController extends Controller
 
     public function update(StoreHarvestRequest $request, int $id): JsonResponse
     {
-        $harvest = Harvest::whereHas('batch', function ($q) use ($request) {
-            $q->where('user_id', $request->user()->id);
+        $harvest = Panen::whereHas('pengelolaan', function ($q) use ($request) {
+            $q->where('id_pembudidaya', $request->user()->id_pengguna);
         })->findOrFail($id);
 
         $harvest->update($request->validated());
@@ -74,8 +74,8 @@ class HarvestController extends Controller
 
     public function destroy(Request $request, int $id): JsonResponse
     {
-        $harvest = Harvest::whereHas('batch', function ($q) use ($request) {
-            $q->where('user_id', $request->user()->id);
+        $harvest = Panen::whereHas('pengelolaan', function ($q) use ($request) {
+            $q->where('id_pembudidaya', $request->user()->id_pengguna);
         })->findOrFail($id);
 
         $harvest->delete();

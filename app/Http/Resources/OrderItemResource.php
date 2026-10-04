@@ -10,14 +10,19 @@ class OrderItemResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'order_id' => $this->order_id,
-            'product_id' => $this->product_id,
-            'product_name' => $this->product_name,
-            'lettuce_type' => $this->lettuce_type,
-            'quantity' => $this->quantity,
-            'price' => $this->price,
-            'subtotal' => $this->subtotal,
+            'id_detail'    => $this->id_detail,
+            'id'           => $this->id_detail,
+            'id_pesanan'   => $this->id_pesanan,
+            'order_id'     => $this->id_pesanan,
+            'id_produk'    => $this->id_produk,
+            'product_id'   => $this->id_produk,
+            'nama_produk'  => $this->produk?->nama_produk,
+            'product_name' => $this->produk?->nama_produk,
+            'jumlah'       => (int) $this->jumlah,
+            'quantity'     => (int) $this->jumlah,
+            'harga_satuan' => (float) $this->harga_satuan,
+            'price'        => (float) $this->harga_satuan,
+            'subtotal'     => (float) $this->subtotal,
         ];
     }
 }

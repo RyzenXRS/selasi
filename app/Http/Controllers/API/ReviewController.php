@@ -5,12 +5,13 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Review\StoreReviewRequest;
 use App\Http\Resources\ReviewResource;
-use App\Models\Order;
-use App\Models\Product;
-use App\Models\Review;
+use App\Models\Pesanan;
+use App\Models\Produk;
+use App\Models\Ulasan;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 class ReviewController extends Controller
 {
@@ -18,11 +19,11 @@ class ReviewController extends Controller
 
     public function index(int $productId): JsonResponse
     {
-        $product = Product::findOrFail($productId);
+        $product = Produk::findOrFail($productId);
 
-        $reviews = $product->reviews()
-            ->with('buyer')
-            ->orderBy('created_at', 'desc')
+        $reviews = $product->ulasan()
+            ->with('pembeli')
+            ->orderBy('id_ulasan', 'desc')
             ->get();
 
         return $this->successResponse(
@@ -34,25 +35,31 @@ class ReviewController extends Controller
     public function store(StoreReviewRequest $request, int $productId): JsonResponse
     {
         $buyer = $request->user();
-        $product = Product::findOrFail($productId);
+        $product = Produk::findOrFail($productId);
+        $orderId = $request->id_pesanan ?? $request->order_id;
 
         // Verify that order exists, belongs to buyer, contains product, and is completed
-        $order = Order::where('id', $request->order_id)
-            ->where('buyer_id', $buyer->id)
-            ->where('order_status', 'completed')
-            ->whereHas('items', fn($q) => $q->where('product_id', $productId))
+        $order = Pesanan::where('id_pesanan', $orderId)
+            ->where('id_pembeli', $buyer->id_pengguna)
+            ->where('status_pesanan', Pesanan::STATUS_SELESAI)
+            ->whereHas('detailPesanan', fn($q) => $q->where('id_produk', $productId))
             ->firstOrFail();
 
-        $review = Review::create([
-            'buyer_id' => $buyer->id,
-            'product_id' => $product->id,
-            'order_id' => $order->id,
-            'rating' => $request->rating,
-            'comment' => $request->comment,
-        ]);
+        $review = Ulasan::updateOrCreate(
+            [
+                'id_pembeli' => $buyer->id_pengguna,
+                'id_produk'  => $product->id_produk,
+                'id_pesanan' => $order->id_pesanan,
+            ],
+            [
+                'rating'         => $request->rating,
+                'komentar'       => $request->komentar ?? $request->comment,
+                'tanggal_ulasan' => Carbon::now(),
+            ]
+        );
 
         return $this->createdResponse(
-            new ReviewResource($review->load('buyer')),
+            new ReviewResource($review->load('pembeli')),
             'Ulasan produk berhasil dikirim.'
         );
     }
@@ -60,23 +67,33 @@ class ReviewController extends Controller
     public function update(Request $request, int $id): JsonResponse
     {
         $request->validate([
-            'rating' => ['sometimes', 'integer', 'min:1', 'max:5'],
-            'comment' => ['nullable', 'string'],
+            'rating'   => ['sometimes', 'integer', 'min:1', 'max:5'],
+            'komentar' => ['nullable', 'string'],
+            'comment'  => ['nullable', 'string'],
         ]);
 
-        $review = Review::where('buyer_id', $request->user()->id)->findOrFail($id);
+        $review = Ulasan::where('id_pembeli', $request->user()->id_pengguna)->findOrFail($id);
 
-        $review->update($request->only(['rating', 'comment']));
+        $payload = [];
+        if ($request->has('rating')) {
+            $payload['rating'] = $request->rating;
+        }
+        if ($request->has('komentar') || $request->has('comment')) {
+            $payload['komentar'] = $request->komentar ?? $request->comment;
+        }
+        $payload['tanggal_ulasan'] = Carbon::now();
+
+        $review->update($payload);
 
         return $this->successResponse(
-            new ReviewResource($review->fresh('buyer')),
+            new ReviewResource($review->fresh('pembeli')),
             'Ulasan produk berhasil diperbarui.'
         );
     }
 
     public function destroy(Request $request, int $id): JsonResponse
     {
-        $review = Review::where('buyer_id', $request->user()->id)->findOrFail($id);
+        $review = Ulasan::where('id_pembeli', $request->user()->id_pengguna)->findOrFail($id);
         $review->delete();
 
         return $this->noContentResponse('Ulasan produk berhasil dihapus.');

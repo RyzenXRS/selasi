@@ -10,14 +10,20 @@ class HarvestResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'batch_id' => $this->batch_id,
-            'harvest_date' => $this->harvest_date?->format('Y-m-d'),
-            'quantity' => $this->quantity,
-            'weight' => $this->weight,
-            'condition' => $this->condition,
-            'notes' => $this->notes,
-            'created_at' => $this->created_at?->toIso8601String(),
+            'id_panen'       => $this->id_panen,
+            'id'             => $this->id_panen,
+            'id_pengelolaan' => $this->id_pengelolaan,
+            'batch_id'       => $this->id_pengelolaan,
+            'tanggal_panen'  => $this->tanggal_panen?->format('Y-m-d'),
+            'harvest_date'   => $this->tanggal_panen?->format('Y-m-d'),
+            'jumlah_panen'   => $this->jumlah_panen,
+            'quantity'       => $this->jumlah_panen,
+            'berat_total_kg' => $this->berat_total_kg,
+            'total_weight'   => $this->berat_total_kg,
+            'kualitas'       => $this->kualitas,
+            'quality'        => $this->kualitas,
+            'catatan'        => $this->catatan,
+            'notes'          => $this->catatan,
         ];
     }
 }

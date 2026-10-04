@@ -5,10 +5,11 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Task\TaskRequest;
 use App\Http\Resources\TaskResource;
-use App\Models\Task;
+use App\Models\ToDo;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 class TaskController extends Controller
 {
@@ -16,10 +17,12 @@ class TaskController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $tasks = Task::where('user_id', $request->user()->id)
-            ->when($request->get('status'), fn($q, $status) => $q->where('status', $status))
-            ->when($request->get('date'), fn($q, $date) => $q->whereDate('task_date', $date))
-            ->orderBy('task_date', 'asc')
+        $tasks = ToDo::where('id_pembudidaya', $request->user()->id_pengguna)
+            ->when($request->has('status'), fn($q) => $q->where('status', filter_var($request->get('status'), FILTER_VALIDATE_BOOLEAN)))
+            ->when($request->get('date') || $request->get('tanggal_tugas'), function ($q) use ($request) {
+                $q->whereDate('tanggal_tugas', $request->get('tanggal_tugas', $request->get('date')));
+            })
+            ->orderBy('tanggal_tugas', 'asc')
             ->paginate($request->get('per_page', 15));
 
         return $this->paginatedResponse(
@@ -30,14 +33,13 @@ class TaskController extends Controller
 
     public function store(TaskRequest $request): JsonResponse
     {
-        $task = Task::create([
-            'user_id' => $request->user()->id,
-            'batch_id' => $request->batch_id,
-            'title' => $request->title,
-            'description' => $request->description,
-            'task_date' => $request->task_date,
-            'priority' => $request->priority ?? 'medium',
-            'status' => $request->status ?? 'pending',
+        $task = ToDo::create([
+            'id_pembudidaya' => $request->user()->id_pengguna,
+            'id_pengelolaan' => $request->id_pengelolaan ?? $request->batch_id,
+            'nama_tugas'     => $request->nama_tugas ?? $request->title,
+            'tanggal_tugas'  => $request->tanggal_tugas ?? $request->task_date,
+            'status'         => (bool) ($request->status ?? false),
+            'created_at'     => Carbon::now(),
         ]);
 
         return $this->createdResponse(
@@ -48,7 +50,7 @@ class TaskController extends Controller
 
     public function show(Request $request, int $id): JsonResponse
     {
-        $task = Task::where('user_id', $request->user()->id)->findOrFail($id);
+        $task = ToDo::where('id_pembudidaya', $request->user()->id_pengguna)->findOrFail($id);
 
         return $this->successResponse(
             new TaskResource($task),
@@ -58,8 +60,23 @@ class TaskController extends Controller
 
     public function update(TaskRequest $request, int $id): JsonResponse
     {
-        $task = Task::where('user_id', $request->user()->id)->findOrFail($id);
-        $task->update($request->validated());
+        $task = ToDo::where('id_pembudidaya', $request->user()->id_pengguna)->findOrFail($id);
+        
+        $payload = [];
+        if ($request->has('nama_tugas') || $request->has('title')) {
+            $payload['nama_tugas'] = $request->nama_tugas ?? $request->title;
+        }
+        if ($request->has('tanggal_tugas') || $request->has('task_date')) {
+            $payload['tanggal_tugas'] = $request->tanggal_tugas ?? $request->task_date;
+        }
+        if ($request->has('id_pengelolaan') || $request->has('batch_id')) {
+            $payload['id_pengelolaan'] = $request->id_pengelolaan ?? $request->batch_id;
+        }
+        if ($request->has('status')) {
+            $payload['status'] = filter_var($request->status, FILTER_VALIDATE_BOOLEAN);
+        }
+
+        $task->update($payload);
 
         return $this->successResponse(
             new TaskResource($task->fresh()),
@@ -69,7 +86,7 @@ class TaskController extends Controller
 
     public function destroy(Request $request, int $id): JsonResponse
     {
-        $task = Task::where('user_id', $request->user()->id)->findOrFail($id);
+        $task = ToDo::where('id_pembudidaya', $request->user()->id_pengguna)->findOrFail($id);
         $task->delete();
 
         return $this->noContentResponse('Tugas harian berhasil dihapus.');
@@ -77,11 +94,10 @@ class TaskController extends Controller
 
     public function complete(Request $request, int $id): JsonResponse
     {
-        $task = Task::where('user_id', $request->user()->id)->findOrFail($id);
+        $task = ToDo::where('id_pembudidaya', $request->user()->id_pengguna)->findOrFail($id);
 
         $task->update([
-            'status' => 'completed',
-            'completed_at' => now(),
+            'status' => true,
         ]);
 
         return $this->successResponse(

@@ -10,11 +10,18 @@ class NotificationResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'type' => class_basename($this->type),
-            'data' => $this->data,
-            'read_at' => $this->read_at?->toIso8601String(),
-            'created_at' => $this->created_at?->toIso8601String(),
+            'id_notifikasi'    => $this->id_notifikasi,
+            'id'               => $this->id_notifikasi,
+            'id_pengguna'      => $this->id_pengguna,
+            'id_pengelolaan'   => $this->id_pengelolaan,
+            'jenis_notifikasi' => $this->jenis_notifikasi,
+            'type'             => $this->jenis_notifikasi,
+            'isi_notifikasi'   => $this->isi_notifikasi,
+            'message'          => $this->isi_notifikasi,
+            'status_dibaca'    => (bool) $this->status_dibaca,
+            'is_read'          => (bool) $this->status_dibaca,
+            'waktu_notifikasi' => $this->waktu_notifikasi?->toIso8601String(),
+            'created_at'       => $this->waktu_notifikasi?->toIso8601String(),
         ];
     }
 }

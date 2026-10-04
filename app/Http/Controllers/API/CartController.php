@@ -23,7 +23,7 @@ class CartController extends Controller
     public function index(Request $request): JsonResponse
     {
         $cart = $this->cartService->getOrCreateCart($request->user());
-        $cart->load(['items.product.cultivator']);
+        $cart->load(['items.produk.pembudidaya', 'items.produk.stok']);
 
         return $this->successResponse(
             new CartResource($cart),
@@ -33,10 +33,13 @@ class CartController extends Controller
 
     public function addItem(AddToCartRequest $request): JsonResponse
     {
+        $productId = $request->id_produk ?? $request->product_id;
+        $quantity  = $request->jumlah ?? $request->quantity;
+
         $item = $this->cartService->addItem(
             $request->user(),
-            $request->product_id,
-            $request->quantity
+            (int) $productId,
+            (int) $quantity
         );
 
         return $this->createdResponse(
@@ -47,10 +50,12 @@ class CartController extends Controller
 
     public function updateItem(UpdateCartItemRequest $request, int $itemId): JsonResponse
     {
+        $quantity = $request->jumlah ?? $request->quantity;
+
         $item = $this->cartService->updateItem(
             $request->user(),
             $itemId,
-            $request->quantity
+            (int) $quantity
         );
 
         return $this->successResponse(

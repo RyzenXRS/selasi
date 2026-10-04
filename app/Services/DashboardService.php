@@ -2,95 +2,112 @@
 
 namespace App\Services;
 
-use App\Models\CultivationBatch;
-use App\Models\Harvest;
-use App\Models\Order;
-use App\Models\Product;
-use App\Models\Task;
-use App\Models\User;
+use App\Models\Pengelolaan;
+use App\Models\Pengguna;
+use App\Models\Pesanan;
+use App\Models\PrediksiPanen;
+use App\Models\PrediksiPermintaan;
+use App\Models\Produk;
+use App\Models\Stok;
+use App\Models\ToDo;
 use Illuminate\Support\Carbon;
 
 class DashboardService
 {
-    public function getCultivatorDashboard(User $cultivator): array
+    public function getCultivatorDashboard(Pengguna $pembudidaya): array
     {
-        $batches = CultivationBatch::where('user_id', $cultivator->id)->get();
-        $activeBatches = $batches->where('status', '!=', 'harvested');
+        $userId = $pembudidaya->id_pengguna;
 
-        $totalActivePlants = $activeBatches->sum('plant_quantity');
+        $pengelolaanList = Pengelolaan::where('id_pembudidaya', $userId)
+            ->with(['perpindahanFase.fase', 'prediksiPanen'])
+            ->get();
 
-        // Phase distribution
-        $phaseCounts = [
-            'Semai' => $activeBatches->where('current_phase', 'Semai')->count(),
-            'Vegetatif' => $activeBatches->where('current_phase', 'Vegetatif')->count(),
-            'Pendewasaan' => $activeBatches->where('current_phase', 'Pendewasaan')->count(),
-            'Panen' => $activeBatches->where('current_phase', 'Panen')->count(),
-        ];
+        $totalTanaman = $pengelolaanList->sum('jumlah_tanaman');
 
-        // Harvest prediction estimate (rule-based estimate for non-AI dataset collection phase)
-        // Average hydroponic lettuce cycle: ~35-42 days from seed
-        $estimatedHarvests = $activeBatches->map(function ($batch) {
-            $daysSinceSeed = Carbon::parse($batch->seed_date)->diffInDays(now());
-            $estimatedHarvestDays = max(0, 40 - $daysSinceSeed);
-            return [
-                'batch_id' => $batch->id,
-                'batch_code' => $batch->batch_code,
-                'plant_quantity' => $batch->plant_quantity,
-                'days_since_seed' => $daysSinceSeed,
-                'estimated_days_to_harvest' => $estimatedHarvestDays,
-                'estimated_harvest_date' => now()->addDays($estimatedHarvestDays)->format('Y-m-d'),
-            ];
-        })->values();
+        // Prediksi Panen AI
+        $prediksiPanen = PrediksiPanen::whereHas('pengelolaan', fn($q) => $q->where('id_pembudidaya', $userId))
+            ->with('pengelolaan')
+            ->orderBy('id_prediksi_panen', 'desc')
+            ->take(5)
+            ->get();
 
-        // Tasks count
-        $pendingTasksCount = Task::where('user_id', $cultivator->id)
-            ->where('status', 'pending')
+        // Prediksi Permintaan AI
+        $prediksiPermintaan = PrediksiPermintaan::where('id_pembudidaya', $userId)
+            ->orderBy('id_prediksi_permintaan', 'desc')
+            ->first();
+
+        // Tasks / To-Do
+        $pendingTasksCount = ToDo::where('id_pembudidaya', $userId)
+            ->where('status', false)
             ->count();
 
-        // Products & Stock
-        $productsCount = Product::where('user_id', $cultivator->id)->count();
-        $totalStock = Product::where('user_id', $cultivator->id)->sum('stock');
+        // Produk & Stok
+        $productsCount = Produk::where('id_pembudidaya', $userId)->count();
+        $totalStock = Stok::whereHas('produk', fn($q) => $q->where('id_pembudidaya', $userId))->sum('jumlah_stok');
 
-        // Incoming orders
-        $incomingOrdersCount = Order::where('cultivator_id', $cultivator->id)
-            ->whereIn('order_status', ['waiting_payment', 'processing', 'ready_pickup'])
+        // Pesanan masuk
+        $incomingOrdersCount = Pesanan::whereHas('detailPesanan.produk', fn($q) => $q->where('id_pembudidaya', $userId))
+            ->whereIn('status_pesanan', [Pesanan::STATUS_MENUNGGU_PEMBAYARAN, Pesanan::STATUS_DIBAYAR, Pesanan::STATUS_DIPROSES, Pesanan::STATUS_SIAP_DIAMBIL])
             ->count();
 
-        $totalRevenue = Order::where('cultivator_id', $cultivator->id)
-            ->where('order_status', 'completed')
-            ->sum('total_price');
+        $totalRevenue = Pesanan::whereHas('detailPesanan.produk', fn($q) => $q->where('id_pembudidaya', $userId))
+            ->where('status_pesanan', Pesanan::STATUS_SELESAI)
+            ->sum('total_harga');
 
         return [
-            'summary' => [
-                'active_batches_count' => $activeBatches->count(),
-                'total_active_plants' => $totalActivePlants,
-                'pending_tasks_count' => $pendingTasksCount,
-                'products_count' => $productsCount,
-                'total_stock' => $totalStock,
-                'incoming_orders_count' => $incomingOrdersCount,
-                'total_revenue' => round($totalRevenue, 2),
+            'ringkasan' => [
+                'total_batch_pengelolaan' => $pengelolaanList->count(),
+                'total_tanaman'           => $totalTanaman,
+                'tugas_belum_selesai'     => $pendingTasksCount,
+                'total_produk'            => $productsCount,
+                'total_stok_tersedia'     => (float) $totalStock,
+                'pesanan_masuk_aktif'     => $incomingOrdersCount,
+                'total_pendapatan'        => (float) $totalRevenue,
             ],
-            'phase_distribution' => $phaseCounts,
-            'estimated_harvests' => $estimatedHarvests,
+            'summary' => [
+                'active_batches_count'  => $pengelolaanList->count(),
+                'total_active_plants'   => $totalTanaman,
+                'pending_tasks_count'   => $pendingTasksCount,
+                'products_count'        => $productsCount,
+                'total_stock'           => (float) $totalStock,
+                'incoming_orders_count' => $incomingOrdersCount,
+                'total_revenue'         => (float) $totalRevenue,
+            ],
+            'prediksi_panen'      => $prediksiPanen,
+            'prediksi_permintaan' => $prediksiPermintaan,
         ];
     }
 
-    public function getBuyerDashboard(User $buyer): array
+    public function getBuyerDashboard(Pengguna $pembeli): array
     {
-        $orders = Order::where('buyer_id', $buyer->id)->get();
+        $orders = Pesanan::where('id_pembeli', $pembeli->id_pengguna)
+            ->with(['detailPesanan.produk', 'pembayaran'])
+            ->get();
 
-        $activeOrdersCount = $orders->whereIn('order_status', ['waiting_payment', 'processing', 'ready_pickup'])->count();
-        $completedOrdersCount = $orders->where('order_status', 'completed')->count();
-        $totalSpent = $orders->where('order_status', 'completed')->sum('total_price');
+        $activeOrdersCount = $orders->whereIn('status_pesanan', [
+            Pesanan::STATUS_MENUNGGU_PEMBAYARAN,
+            Pesanan::STATUS_DIBAYAR,
+            Pesanan::STATUS_DIPROSES,
+            Pesanan::STATUS_SIAP_DIAMBIL,
+        ])->count();
+
+        $completedOrdersCount = $orders->where('status_pesanan', Pesanan::STATUS_SELESAI)->count();
+        $totalSpent = $orders->where('status_pesanan', Pesanan::STATUS_SELESAI)->sum('total_harga');
 
         return [
-            'summary' => [
-                'total_orders' => $orders->count(),
-                'active_orders' => $activeOrdersCount,
-                'completed_orders' => $completedOrdersCount,
-                'total_spent' => round($totalSpent, 2),
+            'ringkasan' => [
+                'total_pesanan'    => $orders->count(),
+                'pesanan_aktif'    => $activeOrdersCount,
+                'pesanan_selesai'  => $completedOrdersCount,
+                'total_pengeluaran'=> (float) $totalSpent,
             ],
-            'recent_orders' => $orders->sortByDesc('created_at')->take(5)->values(),
+            'summary' => [
+                'total_orders'     => $orders->count(),
+                'active_orders'    => $activeOrdersCount,
+                'completed_orders' => $completedOrdersCount,
+                'total_spent'      => (float) $totalSpent,
+            ],
+            'pesanan_terbaru' => $orders->sortByDesc('id_pesanan')->take(5)->values(),
         ];
     }
 }

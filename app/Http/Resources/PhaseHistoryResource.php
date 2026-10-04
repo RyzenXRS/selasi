@@ -10,15 +10,16 @@ class PhaseHistoryResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'batch_id' => $this->batch_id,
-            'previous_phase' => $this->previous_phase,
-            'next_phase' => $this->next_phase,
-            'moved_date' => $this->moved_date?->format('Y-m-d'),
-            'plant_quantity' => $this->plant_quantity,
-            'destination_location' => $this->destination_location,
-            'notes' => $this->notes,
-            'created_at' => $this->created_at?->toIso8601String(),
+            'id_perpindahan'  => $this->id_perpindahan,
+            'id'              => $this->id_perpindahan,
+            'id_pengelolaan'  => $this->id_pengelolaan,
+            'batch_id'        => $this->id_pengelolaan,
+            'id_fase'         => $this->id_fase,
+            'fase'            => $this->fase?->nama_fase,
+            'tanggal_mulai'   => $this->tanggal_mulai?->format('Y-m-d'),
+            'tanggal_selesai' => $this->tanggal_selesai?->format('Y-m-d'),
+            'catatan'         => $this->catatan,
+            'notes'           => $this->catatan,
         ];
     }
 }

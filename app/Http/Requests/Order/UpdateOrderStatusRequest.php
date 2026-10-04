@@ -14,9 +14,9 @@ class UpdateOrderStatusRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'order_status' => ['sometimes', 'string', 'in:waiting_payment,processing,ready_pickup,completed,cancelled'],
-            'payment_status' => ['sometimes', 'string', 'in:pending,paid,failed'],
-            'cancellation_reason' => ['required_if:order_status,cancelled', 'nullable', 'string'],
+            'status_pesanan'      => ['nullable', 'string'],
+            'order_status'        => ['nullable', 'string'],
+            'cancellation_reason' => ['nullable', 'string'],
         ];
     }
 }
