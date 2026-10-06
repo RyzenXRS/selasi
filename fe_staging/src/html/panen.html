@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Data Panen | SelaSI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/dashboard.css">
+  <style>
+    [hidden]{display:none!important}
+    .alert{padding:12px 16px;border-radius:12px;margin:0 0 16px;background:#fde8e3;color:#b3321b;font-size:.92rem;line-height:1.5}
+    .alert.success{background:#e3f3d2;color:#25611f}
+    .list-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}
+    .list-info{margin:0;color:#4d6a3a;font-weight:500}
+    .btn{display:inline-block;position:relative;z-index:1;padding:10px 20px;border:0;border-radius:999px;background:#2f5230;color:#fff;font:inherit;font-weight:600;font-size:.92rem;cursor:pointer}
+    .btn:hover{background:#1f3a22}
+    .btn-danger{background:#b3321b}.btn-danger:hover{background:#8f2814}
+    .btn-ghost{background:transparent;color:#2f5230;box-shadow:inset 0 0 0 2px #2f5230}.btn-ghost:hover{background:#dde8b0}
+    .btn:focus-visible,.link-kode:focus-visible{outline:3px solid #8fbf4d;outline-offset:2px}
+    .table-wrap{background:#fff;border:1px solid #e3ebc6;border-radius:18px;overflow-x:auto}
+    table{width:100%;border-collapse:collapse;font-size:.92rem}
+    th,td{padding:14px 18px;text-align:left;border-bottom:1px solid #eef3d8}
+    th{background:#f7f9e4;color:#2f5230;font-weight:600}
+    tr:last-child td{border-bottom:0}
+    .link-kode{border:0;background:none;padding:0;font:inherit;font-weight:600;color:#2f5230;text-decoration:underline;cursor:pointer;text-align:left}
+    .empty{margin:0;padding:24px;text-align:center;color:#5d7549}
+    .panel{background:#fff;border:1px solid #e3ebc6;border-radius:20px;padding:26px}
+    .panel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+    .panel-title{margin:0 0 8px;font-size:1.3rem;color:#2f5230}
+    .actions{display:flex;gap:10px;flex-wrap:wrap}
+    .confirm{margin:0 0 18px;padding:16px 20px;border-radius:14px;background:#fde8e3;color:#7a2210}
+    .confirm p{margin:0 0 12px}
+    .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin:0}
+    .facts div{padding:12px 16px;border-radius:12px;background:#f7f9e4}
+    .facts dt{font-size:.78rem;color:#5d7549}.facts dd{margin:2px 0 0;font-weight:500;color:#1f3a22;overflow-wrap:anywhere}
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+    .field label{display:block;margin:0 0 6px;font-size:.84rem;font-weight:600;color:#2f5230}
+    .field input,.field select{width:100%;padding:11px 14px;border:2px solid #d5e2b3;border-radius:12px;background:#fff;font:inherit;font-size:.92rem;color:#1f3a22}
+    .field input:focus-visible,.field select:focus-visible{outline:none;border-color:#2f5230}
+    @media(max-width:800px){.form-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <span class="brand">SelaSI</span>
+      <nav class="nav" aria-label="Menu utama">
+        <a href="dashboard.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Dashboard</span></a>
+        <a href="budidaya.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-9"/><path d="M12 13c0-4 3-6 7-6 0 4-3 6-7 6z"/><path d="M12 16c0-3-2-5-6-5 0 3 2 5 6 5z"/></svg><span>Data Budidaya</span></a>
+        <a aria-current="page" href="panen.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18l-2 11H5z"/><path d="M8 9l4-6 4 6"/></svg><span>Data Panen</span></a>
+        <a href="todo.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg><span>To-Do List</span></a>
+        <a href="profil.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg><span>Akun Saya</span></a>
+      </nav>
+      <div class="sidebar-foot">
+        <span id="user-email" class="user-email"></span>
+        <button type="button" class="btn-logout" id="btn-logout"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg><span>Keluar</span></button>
+      </div>
+    </aside>
+
+    <main class="page">
+      <div class="page-head">
+        <h1>Data Panen</h1>
+        <p class="sub">Catat hasil panen setiap batch.</p>
+      </div>
+
+      <div id="alert" class="alert" role="alert" hidden></div>
+      <div id="notice" class="alert success" role="status" tabindex="-1" hidden></div>
+
+      <!-- Halaman Daftar Batch Panen (hanya kode_panen) -->
+      <section id="list" hidden>
+        <div class="list-head">
+          <p class="list-info" id="list-info"></p>
+          <button type="button" class="btn" id="btn-add">+ Tambah Data Panen</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Kode panen</th></tr></thead>
+            <tbody id="rows"></tbody>
+          </table>
+          <p class="empty" id="empty" hidden>Belum ada data panen. Tekan Tambah Data Panen untuk mulai.</p>
+        </div>
+      </section>
+
+      <!-- Halaman Data Panen batch yang dipilih (UC11) -->
+      <section id="detail" class="panel" hidden>
+        <div class="panel-head">
+          <h2 id="dt-kode" class="panel-title"></h2>
+          <div class="actions">
+            <button type="button" class="btn" id="btn-edit">Ubah Data</button>
+            <button type="button" class="btn btn-danger" id="btn-delete">Hapus</button>
+            <button type="button" class="btn btn-ghost" id="btn-back">Kembali</button>
+          </div>
+        </div>
+
+        <!-- Konfirmasi hapus (UC13) -->
+        <div id="confirm" class="confirm" role="alertdialog" aria-labelledby="confirm-text" hidden>
+          <p id="confirm-text"></p>
+          <div class="actions">
+            <button type="button" class="btn btn-danger" id="btn-yes">Konfirmasi</button>
+            <button type="button" class="btn btn-ghost" id="btn-no">Batal</button>
+          </div>
+        </div>
+
+        <dl class="facts">
+          <div><dt>Batch budidaya</dt><dd id="dt-batch"></dd></div>
+          <div><dt>Tanggal panen</dt><dd id="dt-tgl"></dd></div>
+          <div><dt>Jumlah panen</dt><dd id="dt-jumlah"></dd></div>
+          <div><dt>Berat panen</dt><dd id="dt-berat"></dd></div>
+          <div><dt>Kondisi hasil panen</dt><dd id="dt-kondisi"></dd></div>
+        </dl>
+      </section>
+
+      <!-- Form tambah (UC10) / ubah (UC12) -->
+      <form id="form" class="panel" novalidate hidden>
+        <h2 id="form-title" class="panel-title"></h2>
+        <div id="form-alert" class="alert" role="alert" hidden></div>
+        <div class="form-grid">
+          <div class="field"><label for="f-batch">Batch budidaya</label><select id="f-batch"></select></div>
+          <div class="field"><label for="f-kode">Kode panen</label><input type="text" id="f-kode" maxlength="50" required></div>
+          <div class="field"><label for="f-tgl">Tanggal panen</label><input type="date" id="f-tgl" required></div>
+          <div class="field"><label for="f-jumlah">Jumlah panen (tanaman)</label><input type="number" id="f-jumlah" min="1" step="1" placeholder="Contoh: 40" required></div>
+          <div class="field"><label for="f-berat">Berat panen (kg)</label><input type="number" id="f-berat" min="0.01" step="0.01" placeholder="Contoh: 12.50" required></div>
+          <div class="field"><label for="f-kondisi">Kondisi hasil panen</label>
+            <input type="text" id="f-kondisi" maxlength="50" list="kondisi-saran" placeholder="Contoh: Baik" required>
+            <datalist id="kondisi-saran"><option value="Baik"><option value="Cukup"><option value="Kurang"></datalist></div>
+        </div>
+        <div class="actions">
+          <button type="submit" class="btn">Simpan</button>
+          <button type="button" class="btn btn-ghost" id="btn-cancel">Batal</button>
+        </div>
+      </form>
+    </main>
+  </div>
+
+  <script>
+    window.addEventListener("error", function (e) {
+      var a = document.getElementById("alert");
+      if (a) { a.textContent = "Error: " + e.message + " (" + String(e.filename || "").split("/").pop() + " baris " + e.lineno + ")"; a.hidden = false; }
+    });
+  </script>
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/guard.js"></script>
+  <script src="../assets/js/panen.js"></script>
+</body>
+</html>

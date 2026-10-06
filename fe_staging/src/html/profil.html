@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Akun Saya | SelaSI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/dashboard.css">
+  <link rel="stylesheet" href="../assets/css/profil.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <span class="brand">SelaSI</span>
+
+      <nav class="nav" aria-label="Menu utama">
+        <a href="dashboard.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Dashboard</span></a>
+        <a href="budidaya.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-9"/><path d="M12 13c0-4 3-6 7-6 0 4-3 6-7 6z"/><path d="M12 16c0-3-2-5-6-5 0 3 2 5 6 5z"/></svg><span>Data Budidaya</span></a>
+        <a href="todo.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg><span>To-Do List</span></a>
+        <a aria-current="page" href="profil.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg><span>Akun Saya</span></a>
+      </nav>
+
+      <div class="sidebar-foot">
+        <span id="user-email" class="user-email"></span>
+        <button type="button" class="btn-logout" id="btn-logout"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg><span>Keluar</span></button>
+      </div>
+    </aside>
+
+  <main class="page">
+    <div class="page-head">
+      <h1>Akun Saya</h1>
+      <p class="sub">Data akun Pembudidaya yang sedang masuk.</p>
+    </div>
+
+    <div id="alert" class="alert" role="alert" hidden></div>
+    <div id="notice" class="alert success" role="status" tabindex="-1" hidden></div>
+
+    <!-- UC4: Melihat data akun -->
+    <section id="view" class="bento" hidden>
+
+      <div class="b-card b-hero">
+        <div id="v-avatar" class="avatar avatar-lg" aria-hidden="true"></div>
+        <div class="b-id">
+          <h2 id="v-nama" class="profile-name"></h2>
+          <span id="v-role" class="badge"></span>
+        </div>
+        <button type="button" class="btn b-edit" id="btn-edit" aria-label="Ubah profil">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+          <span>Ubah Profil</span>
+        </button>
+      </div>
+
+      <div class="b-card b-tile b-nama tile">
+        <p class="tile-label">Nama</p>
+        <p class="tile-value" id="d-nama"></p>
+      </div>
+
+      <div class="b-card b-tile b-email tile">
+        <p class="tile-label">Email</p>
+        <p class="tile-value" id="d-email"></p>
+      </div>
+
+      <div class="b-card b-tile b-telp tile">
+        <p class="tile-label">No. telepon</p>
+        <p class="tile-value" id="d-telp"></p>
+      </div>
+
+      <div class="b-card b-tile b-role tile">
+        <p class="tile-label">Role</p>
+        <p class="tile-value" id="d-role"></p>
+      </div>
+    </section>
+
+    <!-- UC05: Mengubah data akun -->
+    <form id="edit" class="profile" novalidate hidden>
+      <div class="profile-body">
+        <h2 class="form-title">Ubah Profil</h2>
+
+        <div id="form-alert" class="alert" role="alert" hidden></div>
+
+        <div class="photo-row">
+          <div id="e-avatar" class="avatar" aria-hidden="true"></div>
+          <div>
+            <label for="foto">Foto profil</label>
+            <input type="file" id="foto" name="foto" accept="image/png,image/jpeg,image/webp">
+            <p class="help">JPG, PNG, atau WEBP. Maksimal 2 MB. Kosongkan kalau tidak ingin mengganti.</p>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="field span-2">
+            <label for="nama">Nama</label>
+            <input type="text" id="nama" name="nama" maxlength="100" autocomplete="name" required>
+          </div>
+
+          <div class="field">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" maxlength="100" autocomplete="email" required>
+          </div>
+
+          <div class="field">
+            <label for="telp">No. telepon</label>
+            <input type="tel" id="telp" name="no_telepon" maxlength="20" autocomplete="tel" required>
+          </div>
+
+          <div class="field">
+            <label for="role">Role</label>
+            <input type="text" id="role" name="role" maxlength="20" disabled>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn" id="btn-save">Simpan</button>
+          <button type="button" class="btn btn-ghost" id="btn-cancel">Batal</button>
+        </div>
+      </div>
+    </form>
+  </main>
+  </div>
+
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/guard.js"></script>
+  <script src="../assets/js/profil.js"></script>
+</body>
+</html>

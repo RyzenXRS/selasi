@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SelaSI | Sistem Informasi Budidaya Selada</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --forest:#2f5230; --deep:#1f3a22; --mid:#3f7a35; --leaf:#8fbf4d; --lime:#dde8b0; --cream:#f7f9e4; }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; font-family: "Poppins", system-ui, sans-serif; color: var(--deep); background: var(--cream); }
+    a { color: inherit; }
+    :focus-visible { outline: 3px solid var(--leaf); outline-offset: 3px; }
+
+    /* ===== Hero layar penuh: panel hijau bergelombang + foto ===== */
+    .stage { position: relative; min-height: 100vh; min-height: max(100dvh, 600px); display: flex; flex-direction: column; background: var(--deep); }
+    .nav { position: absolute; z-index: 5; top: 0; left: 0; display: flex; align-items: center; gap: 64px; padding: 28px 5vw; }
+    .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #fff; font-weight: 600; font-size: 1.35rem; letter-spacing: .04em; }
+    .logo svg { width: 32px; height: 32px; color: #dff0a8; }
+    .logo b { font-weight: 600; } .logo b span { color: #dff0a8; }
+    .links { display: flex; gap: 30px; }
+    .links a { text-decoration: none; color: #fff; font-size: .9rem; font-weight: 500; padding: 4px 0; border-bottom: 2px solid transparent; }
+    .links a:hover { border-bottom-color: #dff0a8; }
+
+    .hero { position: relative; flex: 1; min-height: 560px; }
+    .photo { position: absolute; top: 0; right: 0; bottom: 0; width: 72%; background: url("assets/img/selada2.jpeg") center 58% / cover no-repeat, var(--forest); }
+    .panel { position: absolute; top: 0; left: 0; bottom: 0; width: 66%; display: flex; align-items: center; overflow: hidden; }
+    .panel .wave { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .panel .leaves { position: absolute; left: 0; bottom: 0; width: 190px; height: 190px; opacity: .9; }
+    .copy { position: relative; z-index: 1; padding: 50px 0 0 5vw; max-width: 40vw; }
+    .eyebrow { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 18px; font-size: .78rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: #cfe3a8; }
+    .eyebrow svg { width: 18px; height: 18px; color: var(--leaf); }
+    h1 { margin: 0 0 16px; font-size: clamp(1.9rem, 3.3vw, 3rem); line-height: 1.12; color: #fff; }
+    h1 em { font-style: normal; color: #dff0a8; }
+    .lead { margin: 0 0 28px; font-size: .96rem; line-height: 1.7; color: #d6e7b3; }
+    .btn { display: inline-block; padding: 13px 32px; border-radius: 999px; font: inherit; font-weight: 600; font-size: .92rem; text-decoration: none; cursor: pointer; transition: filter .15s, background .15s; }
+    .btn-gold { background: #e0b23a; color: var(--deep); box-shadow: 0 10px 20px rgba(0,0,0,.25); }
+    .btn-gold:hover { filter: brightness(1.08); }
+    .btn-main { background: linear-gradient(90deg, var(--forest), var(--mid)); color: #fff; box-shadow: 0 10px 20px rgba(47,82,48,.35); }
+    .btn-main:hover { filter: brightness(1.12); }
+
+    /* ===== Bagian bawah ===== */
+    section.block { padding: 84px 8vw; }
+    .sec-eyebrow { display: block; margin-bottom: 8px; font-size: .78rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--mid); }
+    h2 { margin: 0 0 14px; font-size: clamp(1.5rem, 2.6vw, 2.1rem); color: var(--forest); }
+    .sec-lead { max-width: 60ch; margin: 0 0 40px; line-height: 1.75; color: #4a6638; }
+
+    .about { display: grid; grid-template-columns: 1.2fr 1fr; gap: 48px; align-items: center; }
+    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .stat { padding: 22px; border-radius: 20px; background: #fff; border: 1px solid #e3ebc6; }
+    .stat b { display: block; font-size: 2rem; color: var(--forest); line-height: 1.1; }
+    .stat span { font-size: .84rem; color: #5d7549; }
+    .stat:nth-child(2) { background: var(--forest); border-color: var(--forest); }
+    .stat:nth-child(2) b { color: #dff0a8; }
+    .stat:nth-child(2) span { color: #cfe3a8; }
+
+    .features { background: #fff; border-radius: 40px 40px 0 0; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
+    .card { padding: 26px; border-radius: 22px; background: var(--cream); border: 1px solid #e3ebc6; transition: transform .2s, box-shadow .2s; }
+    .card:hover { transform: translateY(-4px); box-shadow: 0 16px 30px rgba(47,82,48,.14); }
+    .card .ic { width: 52px; height: 52px; margin-bottom: 16px; border-radius: 16px; background: var(--forest); color: #dff0a8; display: grid; place-items: center; }
+    .card .ic svg { width: 26px; height: 26px; }
+    .card h3 { margin: 0 0 8px; font-size: 1.05rem; color: var(--forest); }
+    .card p { margin: 0; font-size: .88rem; line-height: 1.65; color: #4a6638; }
+
+    .timeline { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; position: relative; }
+    .timeline::before { content: ""; position: absolute; left: 8%; right: 8%; top: 28px; height: 4px; border-radius: 4px; background: linear-gradient(90deg, #8fbf4d, #3f7a35, #2f5230, #e0a526); }
+    .step { position: relative; text-align: center; }
+    .step .dot { position: relative; z-index: 1; width: 60px; height: 60px; margin: 0 auto 16px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 1.1rem; color: #fff; border: 5px solid var(--cream); }
+    .step:nth-child(1) .dot { background: #8fbf4d; } .step:nth-child(2) .dot { background: #3f9d6a; }
+    .step:nth-child(3) .dot { background: #2f6f3e; } .step:nth-child(4) .dot { background: #e0a526; }
+    .step h3 { margin: 0 0 4px; font-size: 1.02rem; color: var(--forest); }
+    .step p { margin: 0; font-size: .84rem; color: #5d7549; }
+
+    .final { margin: 0 8vw 70px; padding: 54px 40px; border-radius: 32px; text-align: center; color: #fff;
+      background: linear-gradient(135deg, var(--deep), var(--mid)); position: relative; overflow: hidden; }
+    .final h2 { color: #fff; }
+    .final p { margin: 0 auto 26px; max-width: 48ch; color: #e1efc2; line-height: 1.7; }
+    .final .btn-main { background: var(--lime); color: var(--deep); box-shadow: 0 10px 20px rgba(0,0,0,.25); }
+    footer { padding: 0 8vw 34px; text-align: center; font-size: .82rem; color: #6b7f55; }
+
+    /* ===== Layar kecil ===== */
+    @media (max-width: 900px) {
+      .links { display: none; }
+      .nav { padding: 16px 22px; }
+      .logo { text-shadow: 0 2px 10px rgba(0,0,0,.55); }
+      .hero { display: flex; flex-direction: column; min-height: 0; }
+      .photo { position: relative; width: 100%; height: 280px; }
+      .panel { position: relative; width: 100%; margin-top: -28px; padding: 36px 24px 40px; background: var(--deep); border-radius: 28px 28px 0 0; }
+      .panel .wave, .panel .leaves { display: none; }
+      .copy { padding: 0; max-width: none; }
+      .about { grid-template-columns: 1fr; }
+      .timeline { grid-template-columns: 1fr 1fr; row-gap: 30px; }
+      .timeline::before { display: none; }
+    }
+    @media (max-width: 760px) {
+      section.block { padding: 60px 22px; }
+      .final { margin: 0 14px 50px; padding: 40px 22px; }
+    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .card { transition: none; } }
+  </style>
+</head>
+<body>
+  <header class="stage" id="beranda">
+    <nav class="nav" aria-label="Menu utama">
+      <a class="logo" href="#beranda" aria-label="SelaSI, halaman utama">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-9"/><path d="M12 13c0-4 3-6 7-6 0 4-3 6-7 6z"/><path d="M12 16c0-3-2-5-6-5 0 3 2 5 6 5z"/></svg>
+        <b>Sela<span>SI</span></b>
+      </a>
+      <div class="links">
+        <a href="#beranda">Beranda</a>
+        <a href="#tentang">Tentang</a>
+        <a href="#fitur">Fitur</a>
+        <a href="#fase">Fase Tanam</a>
+      </div>
+    </nav>
+
+    <div class="hero">
+      <div class="photo" role="img" aria-label="Kebun selada hidroponik"></div>
+      <div class="panel">
+        <svg class="wave" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          <path fill="#1f3a22" d="M0 0 H80 C88 16 72 36 77 56 C81 74 88 88 83 100 H0 Z"/>
+          <path fill="none" stroke="#8fbf4d" stroke-width="2" opacity=".4" vector-effect="non-scaling-stroke" d="M80 0 C88 16 72 36 77 56 C81 74 88 88 83 100"/>
+        </svg>
+        <svg class="leaves" viewBox="0 0 200 200" aria-hidden="true">
+          <path d="M30 195C18 135 50 82 112 60c8 60-24 110-82 135z" fill="#3f7a35"/>
+          <path d="M62 198c8-56 48-88 110-88 0 50-40 80-110 88z" fill="#8fbf4d" opacity=".85"/>
+        </svg>
+        <div class="copy">
+          <span class="eyebrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-9"/><path d="M12 13c0-4 3-6 7-6 0 4-3 6-7 6z"/><path d="M12 16c0-3-2-5-6-5 0 3 2 5 6 5z"/></svg> Budidaya selada hidroponik</span>
+          <h1>Kebun selada, <em>rapi</em> dalam satu layar.</h1>
+          <p class="lead">Catat setiap batch, pantau fase tanam, dan dapatkan pengingat saat waktunya pindah fase atau panen.</p>
+          <a class="btn btn-gold" href="html/login.html">Login &rarr;</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="block" id="tentang">
+      <div class="about">
+        <div>
+          <span class="sec-eyebrow">Tentang SelaSI</span>
+          <h2>Dari semai sampai panen, semuanya tercatat.</h2>
+          <p class="sec-lead" style="margin-bottom:0">SelaSI adalah sistem informasi untuk pembudidaya selada hidroponik. Setiap batch punya catatan sendiri: kapan ditanam, sedang di fase apa, bagaimana kondisinya, hingga berapa hasil panennya. Tidak ada lagi catatan yang tercecer.</p>
+        </div>
+        <div class="stats">
+          <div class="stat"><b>4</b><span>Fase tanam yang dipantau</span></div>
+          <div class="stat"><b>1</b><span>Tempat untuk semua batch</span></div>
+          <div class="stat"><b>Otomatis</b><span>Pengingat pindah fase</span></div>
+          <div class="stat"><b>Harian</b><span>To-do kegiatan kebun</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="block features" id="fitur">
+      <span class="sec-eyebrow">Fitur</span>
+      <h2>Yang bisa kamu lakukan</h2>
+      <p class="sec-lead">Fitur dibuat sederhana, sesuai kebutuhan sehari-hari di kebun.</p>
+      <div class="cards">
+        <article class="card"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-9"/><path d="M12 13c0-4 3-6 7-6 0 4-3 6-7 6z"/><path d="M12 16c0-3-2-5-6-5 0 3 2 5 6 5z"/></svg></div>
+          <h3>Data budidaya</h3><p>Catat batch lengkap dengan tanggal tanam, jumlah, lokasi, pH, serta kondisi tanaman, air, dan instalasi.</p></article>
+        <article class="card"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+          <h3>Fase dan pengingat</h3><p>Lihat riwayat perpindahan fase dan dapatkan pengingat saat batch mendekati waktu pindah fase.</p></article>
+        <article class="card"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20h14"/><path d="M7 20V10M12 20V4M17 20v-7"/></svg></div>
+          <h3>Catatan panen</h3><p>Simpan jumlah, berat, dan kualitas panen. Status batch ikut berubah saat semua tanaman sudah dipanen.</p></article>
+        <article class="card"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg></div>
+          <h3>To-do harian</h3><p>Susun kegiatan kebun per hari, kaitkan dengan batch, lalu centang kalau sudah selesai.</p></article>
+      </div>
+    </section>
+
+    <section class="block" id="fase" style="background:var(--cream)">
+      <span class="sec-eyebrow">Fase tanam</span>
+      <h2>Perjalanan satu batch</h2>
+      <p class="sec-lead">Empat fase yang dilalui setiap batch selada. Lamanya adalah perkiraan yang dipakai sistem untuk pengingat.</p>
+      <div class="timeline">
+        <div class="step"><div class="dot">1</div><h3>Semai</h3><p>sekitar 7 hari</p></div>
+        <div class="step"><div class="dot">2</div><h3>Pembibitan</h3><p>sekitar 14 hari</p></div>
+        <div class="step"><div class="dot">3</div><h3>Pembesaran</h3><p>sekitar 21 hari</p></div>
+        <div class="step"><div class="dot">4</div><h3>Panen</h3><p>sekitar 7 hari</p></div>
+      </div>
+    </section>
+
+    <section class="final" aria-labelledby="h-final">
+      <h2 id="h-final">Siap merapikan kebunmu?</h2>
+      <p>Masuk dengan akun pembudidaya dan mulai catat batch pertamamu.</p>
+      <a class="btn btn-main" href="html/login.html">Login</a>
+    </section>
+  </main>
+
+  <footer>SelaSI &middot; Sistem informasi budidaya selada</footer>
+</body>
+</html>

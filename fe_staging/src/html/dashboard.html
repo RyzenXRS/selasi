@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard | SelaSI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/dashboard.css">
+  <link rel="stylesheet" href="../assets/css/beranda.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <span class="brand">SelaSI</span>
+      <nav class="nav" aria-label="Menu utama">
+        <a aria-current="page" href="dashboard.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Dashboard</span></a>
+        <a href="budidaya.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-9"/><path d="M12 13c0-4 3-6 7-6 0 4-3 6-7 6z"/><path d="M12 16c0-3-2-5-6-5 0 3 2 5 6 5z"/></svg><span>Data Budidaya</span></a>
+        <a href="todo.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg><span>To-Do List</span></a>
+        <a href="profil.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg><span>Akun Saya</span></a>
+      </nav>
+      <div class="sidebar-foot">
+        <span id="user-email" class="user-email"></span>
+        <button type="button" class="btn-logout" id="btn-logout"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg><span>Keluar</span></button>
+      </div>
+    </aside>
+
+    <main class="page home">
+      <div class="page-head">
+        <h1>Dashboard</h1>
+        <p class="sub">Pilih salah satu ringkasan untuk melihat daftar batch-nya.</p>
+      </div>
+
+      <div id="alert" class="alert" role="alert" hidden></div>
+
+      <!-- 1.3.2 Ringkasan budidaya -->
+      <section aria-labelledby="h-aktif">
+        <h2 id="h-aktif" class="sec-title">Ringkasan budidaya</h2>
+        <div class="summary"><button type="button" id="s-aktif" class="sum-card pick"></button></div>
+      </section>
+
+      <!-- 1.3.3 Jalur tanam: batch aktif per fase -->
+      <section aria-labelledby="h-jalur">
+        <h2 id="h-jalur" class="sec-title">Batch aktif per fase</h2>
+        <ol class="jalur" id="jalur"></ol>
+      </section>
+
+      <!-- 1.3.4 Status budidaya -->
+      <section aria-labelledby="h-status">
+        <h2 id="h-status" class="sec-title">Status budidaya</h2>
+        <div class="legend" id="status-chips"></div>
+      </section>
+
+      <!-- Daftar batch -->
+      <section aria-live="polite" aria-labelledby="h-daftar">
+        <h2 id="h-daftar" class="sec-title">Daftar batch</h2>
+        <p class="list-info" id="list-info"></p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Kode budidaya</th><th>Fase</th><th>Status</th><th>Akses</th></tr></thead>
+            <tbody id="tbody"></tbody>
+          </table>
+          <p class="empty" id="empty" hidden>Tidak ada batch pada pilihan ini.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/guard.js"></script>
+  <script src="../assets/js/dashboard.js"></script>
+</body>
+</html>
