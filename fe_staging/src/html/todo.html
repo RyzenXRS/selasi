@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>To-Do List | SelaSI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/dashboard.css">
+  <style>
+    [hidden]{display:none!important}
+    .alert{padding:12px 16px;border-radius:12px;margin:0 0 16px;background:#fde8e3;color:#b3321b;font-size:.92rem;line-height:1.5}
+    .alert.success{background:#e3f3d2;color:#25611f}
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border:0;border-radius:999px;background:#2f5230;color:#fff;font:inherit;font-weight:600;font-size:.92rem;cursor:pointer}
+    .btn:hover{background:#1f3a22}
+    .btn:disabled{background:#8fa58a;cursor:wait}
+    .btn svg{width:18px;height:18px}
+    .btn-ghost{background:transparent;color:#2f5230;box-shadow:inset 0 0 0 2px #2f5230}.btn-ghost:hover{background:#dde8b0}
+    .btn:focus-visible,input:focus-visible{outline:3px solid #8fbf4d;outline-offset:2px}
+
+    .bar-top{display:flex;justify-content:flex-end;margin-bottom:18px}
+
+    .panel{background:#fff;border:1px solid #e3ebc6;border-radius:20px;padding:24px;margin-bottom:22px}
+    .panel-title{margin:0 0 14px;font-size:1.15rem;color:#2f5230}
+    .field{margin-bottom:18px}
+    .field label{display:block;margin:0 0 6px;font-size:.84rem;font-weight:600;color:#2f5230}
+    .field input{width:100%;padding:11px 14px;border:2px solid #d5e2b3;border-radius:12px;background:#fff;font:inherit;font-size:.92rem;color:#1f3a22}
+    .actions{display:flex;gap:10px;flex-wrap:wrap}
+
+    .group{margin-bottom:24px}
+    .group h3{margin:0 0 10px;font-size:1rem;color:#2f5230;display:flex;align-items:center;gap:8px}
+    .group h3 .n{display:inline-block;min-width:24px;padding:1px 8px;border-radius:99px;background:#dde8b0;font-size:.8rem;text-align:center}
+    .todo-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+    .todo-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;border-radius:14px;background:#fff;border:1px solid #e3ebc6}
+    .todo-item label{display:flex;align-items:center;gap:14px;flex:1;cursor:pointer;font-size:.97rem;color:#1f3a22}
+    .todo-item input[type=checkbox]{width:22px;height:22px;accent-color:#2f5230;cursor:pointer;flex-shrink:0}
+    .todo-item input[type=checkbox]:disabled{cursor:default}
+    .todo-item.done{background:#f7f9e4}
+    .todo-item.done .nama{text-decoration:line-through;color:#6b7f55}
+    .date-title{margin:0 0 14px;font-size:1.05rem;font-weight:600;color:#2f5230}
+    .empty{margin:0;padding:18px;text-align:center;color:#5d7549;border:2px dashed #d5e2b3;border-radius:14px}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <span class="brand">SelaSI</span>
+      <nav class="nav" aria-label="Menu utama">
+        <a href="dashboard.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Dashboard</span></a>
+        <a href="budidaya.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-9"/><path d="M12 13c0-4 3-6 7-6 0 4-3 6-7 6z"/><path d="M12 16c0-3-2-5-6-5 0 3 2 5 6 5z"/></svg><span>Data Budidaya</span></a>
+        <a aria-current="page" href="todo.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg><span>To-Do List</span></a>
+        <a href="profil.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg><span>Akun Saya</span></a>
+      </nav>
+      <div class="sidebar-foot">
+        <span id="user-email" class="user-email"></span>
+        <button type="button" class="btn-logout" id="btn-logout"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg><span>Keluar</span></button>
+      </div>
+    </aside>
+
+    <main class="page">
+      <div class="page-head">
+        <h1>To-Do List</h1>
+        <p class="sub">Kegiatan rutin harian. Centang yang sudah selesai; besok daftarnya kembali kosong.</p>
+      </div>
+
+      <div id="alert" class="alert" role="alert" hidden></div>
+      <div id="notice" class="alert success" role="status" tabindex="-1" hidden></div>
+
+      <div class="bar-top">
+        <button type="button" class="btn" id="btn-add" aria-label="Tambah kegiatan">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+          <span>Tambah Kegiatan</span>
+        </button>
+      </div>
+
+      <!-- UC15: Form tambah tugas -->
+      <form id="form" class="panel" novalidate hidden>
+        <h2 class="panel-title">Tambah kegiatan</h2>
+        <div id="form-alert" class="alert" role="alert" hidden></div>
+        <div class="field">
+          <label for="f-nama">Nama kegiatan</label>
+          <input type="text" id="f-nama" maxlength="150" placeholder="Contoh: Cek pH dan nutrisi air" required>
+        </div>
+        <div class="actions">
+          <button type="submit" class="btn" id="btn-save">Simpan</button>
+          <button type="button" class="btn btn-ghost" id="f-cancel">Batal</button>
+        </div>
+      </form>
+
+      <!-- UC14: Daftar tugas (rutinitas harian, status centang kembali kosong tiap hari) -->
+      <h2 class="date-title" id="date-title"></h2>
+      <section class="group" aria-labelledby="h-belum">
+        <h3 id="h-belum">Belum selesai <span class="n" id="n-belum">0</span></h3>
+        <ul class="todo-list" id="list-belum"></ul>
+        <p class="empty" id="empty-belum" hidden></p>
+      </section>
+
+      <section class="group" aria-labelledby="h-selesai">
+        <h3 id="h-selesai">Selesai <span class="n" id="n-selesai">0</span></h3>
+        <ul class="todo-list" id="list-selesai"></ul>
+        <p class="empty" id="empty-selesai" hidden>Belum ada kegiatan yang selesai.</p>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    window.addEventListener("error", function (e) {
+      var a = document.getElementById("alert");
+      if (a) { a.textContent = "Error: " + e.message + " (" + String(e.filename || "").split("/").pop() + " baris " + e.lineno + ")"; a.hidden = false; }
+    });
+  </script>
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/guard.js"></script>
+  <script src="../assets/js/todo.js"></script>
+</body>
+</html>

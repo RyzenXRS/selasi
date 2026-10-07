@@ -1,0 +1,205 @@
+/* Warna: pakai variabel dari dashboard.css kalau ada, kalau tidak pakai nilai cadangan */
+.page {
+  --p-forest: var(--forest, #31572C);
+  --p-grass: var(--grass, #4F772D);
+  --p-moss: var(--moss, #90A955);
+  --p-leaf: var(--leaf, #ECF39E);
+  --p-border: #DDE3D3;
+  --p-soft: #F6F8F1;
+}
+
+.alert.success {
+  background: var(--card, #F6F8F1);
+  color: var(--p-forest);
+  border: 1px solid var(--p-moss);
+}
+
+/* ---------- Avatar ---------- */
+.avatar {
+  width: 72px; height: 72px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--p-grass);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem; font-weight: 600;
+  overflow: hidden;
+}
+.avatar-lg { width: 80px; height: 80px; font-size: 1.7rem; }
+.avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* ---------- Tampilan lihat ---------- */
+.bento {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.bento[hidden] { display: none; }
+
+.b-card {
+  background: #fff;
+  border: 1px solid var(--p-border);
+  border-radius: 10px;
+  padding: 18px 20px;
+}
+
+/* Header: foto, nama, tombol */
+.b-hero {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.b-leaf { display: none; }
+.b-id { flex: 1; min-width: 160px; }
+.profile-name { font-size: 1.35rem; font-weight: 600; margin: 0 0 6px; color: var(--p-forest); }
+.badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 6px;
+  background: var(--p-soft);
+  border: 1px solid var(--p-border);
+  color: var(--p-grass);
+  font-size: .8rem;
+  font-weight: 500;
+}
+
+/* Kelengkapan profil */
+.b-growth { grid-column: 1 / -1; }
+.growth-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.growth-title { font-weight: 600; font-size: .95rem; margin: 0; }
+.growth-count { font-size: .85rem; color: var(--p-grass); }
+.growth-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: #E8ECDF;
+  overflow: hidden;
+}
+.growth-bar span {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 999px;
+  background: var(--p-grass);
+  transition: width .4s ease;
+}
+.growth-hint { font-size: .88rem; color: #555; margin: 10px 0 12px; }
+
+.checks { list-style: none; display: flex; gap: 8px; flex-wrap: wrap; padding: 0; margin: 0; }
+.checks li, .checks button {
+  font: inherit;
+  font-size: .82rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 6px;
+}
+.checks .done {
+  background: var(--p-soft);
+  color: var(--p-forest);
+  border: 1px solid var(--p-border);
+}
+.checks .todo {
+  background: #fff;
+  color: var(--p-grass);
+  border: 1px dashed var(--p-moss);
+  cursor: pointer;
+}
+.checks .todo:hover { background: var(--p-soft); }
+.checks .todo:focus-visible { outline: 3px solid var(--p-moss); outline-offset: 2px; }
+
+/* Kartu data */
+.b-tile { grid-column: auto; }
+.b-nama  { order: 1; }
+.b-email { order: 2; }
+.b-telp  { order: 3; }
+.b-role  { order: 4; }
+
+.tile-ico { display: none; }
+.tile-label { font-size: .8rem; color: var(--p-grass); margin: 0 0 4px; }
+.tile-value { font-size: .95rem; font-weight: 500; margin: 0; word-break: break-word; }
+#d-email { overflow-wrap: anywhere; word-break: normal; }
+
+/* ---------- Form ubah profil ---------- */
+.profile {
+  background: #fff;
+  border: 1px solid var(--p-border);
+  border-radius: 10px;
+}
+.profile[hidden] { display: none; }
+.banner { display: none; }
+.profile-body { padding: 24px 28px 28px; }
+.form-title { font-size: 1.2rem; font-weight: 600; margin: 0 0 20px; }
+
+.photo-row { display: flex; align-items: center; gap: 18px; margin-bottom: 24px; }
+.help { font-size: .8rem; color: #666; margin-top: 6px; }
+
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px; }
+.span-2 { grid-column: span 2; }
+
+.field { margin-bottom: 18px; }
+label { display: block; font-weight: 500; font-size: .9rem; margin-bottom: 6px; }
+
+input[type="text"], input[type="email"], input[type="tel"],
+input[type="date"], input[type="number"], select, textarea {
+  width: 100%;
+  font: inherit;
+  padding: 10px 12px;
+  border: 1px solid #C5CDB8;
+  border-radius: 6px;
+  background: #fff;
+  color: #222;
+}
+textarea { resize: vertical; min-height: 84px; }
+input:disabled { background: #F1F3EC; color: #777; }
+input[type="file"] { font: inherit; font-size: .85rem; max-width: 100%; }
+input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 3px solid var(--p-leaf);
+  border-color: var(--p-grass);
+}
+
+/* ---------- Tombol ---------- */
+.btn {
+  font: inherit;
+  font-weight: 600;
+  padding: 10px 22px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--p-grass);
+  color: #fff;
+  cursor: pointer;
+  transition: background .15s;
+}
+.btn:hover { background: var(--p-forest); }
+.btn:focus-visible { outline: 3px solid var(--p-moss); outline-offset: 2px; }
+.btn:disabled { background: var(--p-moss); cursor: wait; }
+.btn-ghost {
+  background: #fff;
+  color: var(--p-forest);
+  border: 1px solid #C5CDB8;
+}
+.btn-ghost:hover { background: var(--p-soft); }
+
+.actions { display: flex; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+
+/* ---------- Responsif (harus paling bawah) ---------- */
+@media (max-width: 700px) {
+  .bento { grid-template-columns: 1fr; }
+  .b-tile { grid-column: 1 / -1; }
+  .b-hero { padding: 16px; }
+  .b-edit { width: 100%; }
+
+  .profile-body { padding: 20px 16px 24px; }
+  .form-grid { grid-template-columns: 1fr; }
+  .span-2 { grid-column: auto; }
+  .photo-row { flex-direction: column; align-items: flex-start; }
+}

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Data Budidaya | SelaSI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/dashboard.css">
+  <style>
+    [hidden]{display:none!important}
+    .alert{padding:12px 16px;border-radius:12px;margin:0 0 16px;background:#fde8e3;color:#b3321b;font-size:.92rem;line-height:1.5}
+    .alert.success{background:#e3f3d2;color:#25611f}
+    .list-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}
+    .list-info{margin:0;color:#4d6a3a;font-weight:500}
+    .btn{display:inline-block;position:relative;z-index:1;padding:10px 20px;border:0;border-radius:999px;background:#2f5230;color:#fff;font:inherit;font-weight:600;font-size:.92rem;cursor:pointer}
+    .btn:hover{background:#1f3a22}
+    .btn-danger{background:#b3321b}.btn-danger:hover{background:#8f2814}
+    .btn-ghost{background:transparent;color:#2f5230;box-shadow:inset 0 0 0 2px #2f5230}.btn-ghost:hover{background:#dde8b0}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    .btn:focus-visible,.link-kode:focus-visible{outline:3px solid #8fbf4d;outline-offset:2px}
+    .table-wrap{background:#fff;border:1px solid #e3ebc6;border-radius:18px;overflow-x:auto}
+    table{width:100%;border-collapse:collapse;font-size:.92rem}
+    th,td{padding:14px 18px;text-align:left;border-bottom:1px solid #eef3d8}
+    th{background:#f7f9e4;color:#2f5230;font-weight:600}
+    tr:last-child td{border-bottom:0}
+    .link-kode{border:0;background:none;padding:0;font:inherit;font-weight:600;color:#2f5230;text-decoration:underline;cursor:pointer;text-align:left}
+    .link-hapus{color:#b3321b}
+    .empty{margin:0;padding:24px;text-align:center;color:#5d7549}
+    .badge{display:inline-block;padding:4px 12px;border-radius:99px;font-size:.8rem;font-weight:600;background:#dde8b0;color:#2f5230}
+    .badge.perlu{background:#fdeab8;color:#7a5200}.badge.panen{background:#f6d58a;color:#5e3f00}.badge.selesai{background:#e4e4e4;color:#444}
+    .reminder{margin:0 0 18px;padding:16px 20px;border-radius:16px;background:#fff6d6;border:1px solid #f0d98a;color:#5e4500}
+    .reminder h2{margin:0 0 8px;font-size:1rem}.reminder ul{margin:0;padding-left:20px;line-height:1.7}
+    .panel{background:#fff;border:1px solid #e3ebc6;border-radius:20px;padding:26px}
+    .panel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+    .panel-title{margin:0 0 8px;font-size:1.3rem;color:#2f5230}
+    .actions{display:flex;gap:10px;flex-wrap:wrap}
+    .confirm{margin:14px 0 0;padding:16px 20px;border-radius:14px;background:#fde8e3;color:#7a2210}
+    .confirm p{margin:0 0 12px}
+    .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin:0}
+    .facts div{padding:12px 16px;border-radius:12px;background:#f7f9e4}
+    .facts .wide{grid-column:1/-1}
+    .facts dt{font-size:.78rem;color:#5d7549}.facts dd{margin:2px 0 0;font-weight:500;color:#1f3a22;overflow-wrap:anywhere}
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+    .field label{display:block;margin:0 0 6px;font-size:.84rem;font-weight:600;color:#2f5230}
+    .field input,.field select,.field textarea{width:100%;padding:11px 14px;border:2px solid #d5e2b3;border-radius:12px;background:#fff;font:inherit;font-size:.92rem;color:#1f3a22}
+    .field textarea{min-height:76px;resize:vertical}
+    .field input:focus-visible,.field select:focus-visible,.field textarea:focus-visible{outline:none;border-color:#2f5230}
+    .span-2{grid-column:1/-1}
+    .sub-title{margin:26px 0 10px;font-size:1.05rem;color:#2f5230}
+    .dasar{margin:0;padding:14px 20px 14px 36px;border-radius:12px;background:#f7f9e4;line-height:1.8;font-size:.92rem;color:#1f3a22}
+    .move{margin-top:20px;padding:20px;border-radius:16px;background:#f7f9e4}
+    .move .sub-title{margin-top:0}
+    .row-actions{display:flex;gap:14px}
+    @media(max-width:800px){.form-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <span class="brand">SelaSI</span>
+      <nav class="nav" aria-label="Menu utama">
+        <a href="dashboard.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Dashboard</span></a>
+        <a aria-current="page" href="budidaya.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-9"/><path d="M12 13c0-4 3-6 7-6 0 4-3 6-7 6z"/><path d="M12 16c0-3-2-5-6-5 0 3 2 5 6 5z"/></svg><span>Data Budidaya</span></a>
+        <a href="panen.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18l-2 11H5z"/><path d="M8 9l4-6 4 6"/></svg><span>Data Panen</span></a>
+        <a href="todo.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg><span>To-Do List</span></a>
+        <a href="profil.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg><span>Akun Saya</span></a>
+      </nav>
+      <div class="sidebar-foot">
+        <span id="user-email" class="user-email"></span>
+        <button type="button" class="btn-logout" id="btn-logout"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg><span>Keluar</span></button>
+      </div>
+    </aside>
+
+    <main class="page">
+      <div class="page-head">
+        <h1>Pengelolaan Data Budidaya</h1>
+        <p class="sub">Kelola batch selada milik kamu.</p>
+      </div>
+
+      <div id="alert" class="alert" role="alert" hidden></div>
+      <div id="notice" class="alert success" role="status" tabindex="-1" hidden></div>
+
+      <!-- Daftar batch (UC6/UC7/UC8/UC9 langkah 2: hanya kode_pengelolaan) -->
+      <section id="list" hidden>
+        <div id="reminder" class="reminder" hidden>
+          <h2>Pengingat perpindahan fase</h2>
+          <ul id="reminder-list"></ul>
+        </div>
+        <div class="list-head">
+          <p class="list-info" id="list-info"></p>
+          <button type="button" class="btn" id="btn-add">+ Tambah Budidaya</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Kode pengelolaan</th></tr></thead>
+            <tbody id="rows"></tbody>
+          </table>
+          <p class="empty" id="empty" hidden>Belum ada batch. Tekan Tambah Budidaya untuk mulai.</p>
+        </div>
+      </section>
+
+      <!-- Detail batch (UC7) -->
+      <section id="detail" class="panel" hidden>
+        <div class="panel-head">
+          <div>
+            <h2 id="dt-kode" class="panel-title"></h2>
+            <span id="dt-status" class="badge"></span>
+          </div>
+          <div class="actions">
+            <button type="button" class="btn" id="btn-move">Tambah Perpindahan Fase</button>
+            <button type="button" class="btn" id="btn-edit">Ubah Data</button>
+            <button type="button" class="btn btn-danger" id="btn-delete">Hapus</button>
+            <button type="button" class="btn btn-ghost" id="btn-back">Kembali</button>
+          </div>
+        </div>
+
+        <!-- Konfirmasi hapus (UC9) -->
+        <div id="confirm" class="confirm" role="alertdialog" aria-labelledby="confirm-text" hidden>
+          <p id="confirm-text"></p>
+          <div class="actions">
+            <button type="button" class="btn btn-danger" id="btn-yes">Konfirmasi</button>
+            <button type="button" class="btn btn-ghost" id="btn-no">Batal</button>
+          </div>
+        </div>
+
+        <dl class="facts">
+          <div><dt>Tanggal tanam</dt><dd id="dt-tanam"></dd></div>
+          <div><dt>Umur tanaman</dt><dd id="dt-umur"></dd></div>
+          <div><dt>Jumlah tanaman</dt><dd id="dt-jumlah"></dd></div>
+          <div><dt>Lokasi</dt><dd id="dt-lokasi"></dd></div>
+          <div><dt>Nilai pH</dt><dd id="dt-ph"></dd></div>
+          <div class="wide"><dt>Kondisi tanaman</dt><dd id="dt-kondisi"></dd></div>
+          <div class="wide"><dt>Kondisi air dan nutrisi</dt><dd id="dt-air"></dd></div>
+          <div class="wide"><dt>Kondisi instalasi</dt><dd id="dt-instalasi"></dd></div>
+          <div class="wide"><dt>Kondisi lingkungan</dt><dd id="dt-lingkungan"></dd></div>
+          <div class="wide"><dt>Catatan</dt><dd id="dt-catatan"></dd></div>
+          <div><dt>Fase saat ini</dt><dd id="dt-fase"></dd></div>
+          <div><dt>Fase berikutnya</dt><dd id="dt-next"></dd></div>
+          <div><dt>Perkiraan waktu perpindahan</dt><dd id="dt-perkiraan"></dd></div>
+          <div><dt>Sisa waktu menuju perpindahan</dt><dd id="dt-sisa"></dd></div>
+          <div><dt>Lokasi/meja tujuan</dt><dd id="dt-tujuan"></dd></div>
+          <div><dt>Status budidaya</dt><dd id="dt-status-text"></dd></div>
+        </dl>
+
+        <h3 class="sub-title">Dasar status</h3>
+        <ul class="dasar" id="dt-dasar"></ul>
+
+        <h3 class="sub-title">Riwayat perpindahan fase</h3>
+        <div id="h-alert" class="alert" role="alert" hidden></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Urutan</th><th>Fase</th><th>Mulai</th><th>Selesai</th><th>Lama</th><th>Catatan</th><th>Aksi</th></tr></thead>
+            <tbody id="hist-rows"></tbody>
+          </table>
+        </div>
+
+        <div id="h-confirm" class="confirm" role="alertdialog" aria-labelledby="h-confirm-text" hidden>
+          <p id="h-confirm-text"></p>
+          <div class="actions">
+            <button type="button" class="btn btn-danger" id="h-yes">Konfirmasi</button>
+            <button type="button" class="btn btn-ghost" id="h-no">Batal</button>
+          </div>
+        </div>
+
+        <form id="move" class="move" novalidate hidden>
+          <h3 class="sub-title" id="m-title"></h3>
+          <div id="move-alert" class="alert" role="alert" hidden></div>
+          <div class="form-grid">
+            <div class="field"><label for="m-fase">Fase</label><select id="m-fase"></select></div>
+            <div class="field"><label for="m-tgl">Tanggal mulai fase</label><input type="date" id="m-tgl"></div>
+            <div class="field" id="m-selesai-field"><label for="m-selesai">Tanggal selesai fase</label><input type="date" id="m-selesai"></div>
+            <div class="field"><label for="m-lokasi">Lokasi/meja tujuan</label><input type="text" id="m-lokasi" maxlength="100" placeholder="Contoh: Meja Pembesaran 1"></div>
+            <div class="field span-2"><label for="m-cat">Catatan (opsional)</label><textarea id="m-cat"></textarea></div>
+          </div>
+          <div class="actions">
+            <button type="submit" class="btn">Simpan</button>
+            <button type="button" class="btn btn-ghost" id="m-cancel">Batal</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Form tambah (UC6) / ubah (UC8) -->
+      <form id="form" class="panel" novalidate hidden>
+        <h2 id="form-title" class="panel-title"></h2>
+        <div id="form-alert" class="alert" role="alert" hidden></div>
+        <div class="form-grid">
+          <div class="field"><label for="f-kode">Kode pengelolaan</label><input type="text" id="f-kode" maxlength="50" required></div>
+          <div class="field"><label for="f-tanam">Tanggal tanam</label><input type="date" id="f-tanam" required></div>
+          <div class="field"><label for="f-jumlah">Jumlah tanaman</label><input type="number" id="f-jumlah" min="1" step="1" required></div>
+          <div class="field"><label for="f-lokasi">Lokasi</label><input type="text" id="f-lokasi" maxlength="100" placeholder="Contoh: Meja Persemaian 1" required></div>
+          <div class="field"><label for="f-ph">Nilai pH</label><input type="number" id="f-ph" min="0" max="14" step="0.01" placeholder="Contoh: 6.00" required></div>
+          <div class="field span-2"><label for="f-kondisi">Kondisi tanaman</label><textarea id="f-kondisi"></textarea></div>
+          <div class="field span-2"><label for="f-air">Kondisi air dan nutrisi</label><textarea id="f-air"></textarea></div>
+          <div class="field span-2"><label for="f-instalasi">Kondisi instalasi</label><textarea id="f-instalasi"></textarea></div>
+          <div class="field span-2"><label for="f-lingkungan">Kondisi lingkungan</label><textarea id="f-lingkungan"></textarea></div>
+          <div class="field span-2"><label for="f-catatan">Catatan</label><textarea id="f-catatan"></textarea></div>
+        </div>
+        <div class="actions">
+          <button type="submit" class="btn" id="btn-save">Simpan</button>
+          <button type="button" class="btn btn-ghost" id="btn-cancel">Batal</button>
+        </div>
+      </form>
+    </main>
+  </div>
+
+  <script>
+    // Kalau ada error JavaScript, tampilkan di halaman (bukan hanya di Console)
+    window.addEventListener("error", function (e) {
+      var a = document.getElementById("alert");
+      if (a) { a.textContent = "Error: " + e.message + " (" + String(e.filename || "").split("/").pop() + " baris " + e.lineno + ")"; a.hidden = false; }
+    });
+  </script>
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/guard.js"></script>
+  <script src="../assets/js/budidaya.js"></script>
+</body>
+</html>
