@@ -82,9 +82,9 @@ class CultivationService
             'id_pengelolaan' => $pengelolaan->id_pengelolaan,
             'tanggal_panen'  => $data['tanggal_panen'] ?? $data['harvest_date'] ?? Carbon::now()->toDateString(),
             'jumlah_panen'   => $data['jumlah_panen'] ?? $data['quantity'] ?? 0,
-            'berat_total_kg' => $data['berat_total_kg'] ?? $data['total_weight_kg'] ?? 0,
-            'kualitas'       => $data['kualitas'] ?? $data['quality'] ?? 'A',
-            'catatan'        => $data['catatan'] ?? $data['notes'] ?? null,
+            'berat_panen'    => $data['berat_panen'] ?? $data['berat_total_kg'] ?? $data['total_weight_kg'] ?? 0,
+            'kualitas'       => $data['kualitas'] ?? $data['kondisi_hasil_panen'] ?? $data['quality'] ?? 'Baik',
+            'created_at'     => Carbon::now(),
         ]);
     }
 }

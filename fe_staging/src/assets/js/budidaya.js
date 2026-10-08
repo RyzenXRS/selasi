@@ -11,7 +11,7 @@ function el(tag, text, cls) {
 }
 
 const MS_HARI = 86400000;
-const MSG_FORMAT = "Format data tidak sesuai";   // dua pesan error sesuai dokumen use case
+const MSG_FORMAT = "Format data tidak sesuai";
 const MSG_LENGKAP = "Data perlu dilengkapi";
 
 const toDate = (s) => new Date(s + "T00:00:00");
@@ -24,13 +24,10 @@ const daysBetween = (s) => selisih(toDate(s), today());
 const fmtTanggal = (s) => (s ? toDate(s).toLocaleDateString("id-ID", { dateStyle: "long" }) : "-");
 const fmtAngka = (n, d = 2) => Number(n).toLocaleString("id-ID", { minimumFractionDigits: d, maximumFractionDigits: d });
 
-// ---------- Aturan status (TEBAKAN, ubah angkanya di sini) ----------
-// UC6 dan UC8 tidak punya field status di form, jadi status dihitung otomatis.
-const PH_MIN = 5.5, PH_MAX = 6.5;   // di luar rentang ini -> "Perlu Diperhatikan"
-const BATAS_HARI_PINDAH = 2;        // sisa <= 2 hari -> "Mendekati Perpindahan Fase" / "Mendekati Panen"
+// ---------- Aturan status ----------
+const PH_MIN = 5.5, PH_MAX = 6.5;
+const BATAS_HARI_PINDAH = 2;
 
-// ---------- Data (data palsu dulu; sambungkan ke BE nanti) ----------
-// meja = lokasi/meja tujuan default saat batch pindah ke fase tersebut (TEBAKAN)
 const FASE = [
   { id_fase: 1, nama_fase: "Semai", urutan_fase: 1, durasi: 7, meja: "Meja Persemaian" },
   { id_fase: 2, nama_fase: "Pembibitan", urutan_fase: 2, durasi: 14, meja: "Meja Pembibitan" },
@@ -43,32 +40,51 @@ const STATUS_CLASS = {
   "Mendekati Panen": "badge panen", "Sudah Dipanen": "badge selesai",
 };
 
-const MOCK_KEY = "mock_budidaya_v2";   // dibaca juga oleh dashboard.js
-const PANEN_KEY = "mock_panen_v1";     // dikelola panen.js
+// ---------- State ----------
+let data = [];     // batch list dari BE
+let current = null;  // batch yang sedang dibuka (detail)
+let mode = "add";    // "add" atau "edit"
+let moveIdx = -1;    // -1 = tambah perpindahan, >=0 = ubah riwayat
+let hDel = -1;       // indeks riwayat yang akan dihapus
 
-function seed() {
-  return [
-    { id_budidaya: 1, kode_pengelolaan: "SLD-001", tanggal_tanam: isoDaysAgo(9), jumlah_tanaman: 120,
-      lokasi: "Meja Persemaian 1", kondisi_tanaman: "Daun hijau segar, pertumbuhan normal.",
-      kondisi_air_nutrisi: "Nutrisi 900 ppm.", kondisi_instalasi: "Pompa dan selang normal.",
-      kondisi_lingkungan: "Suhu 27 C, cahaya cukup.", nilai_ph: 6.0, catatan: "",
-      fase: [{ id_fase: 1, tanggal_mulai: isoDaysAgo(9) }] },
-    { id_budidaya: 2, kode_pengelolaan: "SLD-002", tanggal_tanam: isoDaysAgo(30), jumlah_tanaman: 80,
-      lokasi: "Meja Pembibitan 2", kondisi_tanaman: "Sebagian daun menguning di tepi.",
-      kondisi_air_nutrisi: "Nutrisi 1000 ppm.", kondisi_instalasi: "Satu nozzle tersumbat.",
-      kondisi_lingkungan: "Lembap, suhu 29 C.", nilai_ph: 6.3, catatan: "Pantau tiap pagi.",
-      fase: [{ id_fase: 1, tanggal_mulai: isoDaysAgo(30), tanggal_selesai: isoDaysAgo(22) },
-             { id_fase: 2, tanggal_mulai: isoDaysAgo(22), lokasi_tujuan: "Meja Pembibitan 2", catatan: "Bibit sehat." }] },
-  ];
+// ---------- Mapping data dari BE ----------
+// BE CultivationBatchResource -> format internal frontend
+function mapBatch(b) {
+  const faseArr = (b.perpindahan_fase || []).map((f) => ({
+    id_perpindahan: f.id_perpindahan || f.id,
+    id_fase: f.id_fase,
+    tanggal_mulai: f.tanggal_mulai,
+    tanggal_selesai: f.tanggal_selesai || "",
+    catatan: f.catatan || "",
+    lokasi_tujuan: "",
+  })).sort((a, c) => (a.tanggal_mulai || "").localeCompare(c.tanggal_mulai || ""));
+
+  const panenArr = (b.panen || []).map((p) => ({
+    id_panen: p.id_panen || p.id,
+    id_budidaya: b.id_pengelolaan || b.id,
+    tanggal_panen: p.tanggal_panen || p.harvest_date,
+    jumlah_panen: p.jumlah_panen || p.quantity,
+    berat_panen: p.berat_total_kg || p.total_weight,
+    kualitas: p.kualitas || p.quality,
+    catatan: p.catatan || "",
+  }));
+
+  return {
+    id_budidaya: b.id_pengelolaan || b.id,
+    kode_pengelolaan: b.kode_pengelolaan || b.batch_code,
+    tanggal_tanam: b.tanggal_tanam || b.seed_date,
+    jumlah_tanaman: b.jumlah_tanaman || b.plant_quantity,
+    lokasi: b.lokasi || b.location || "",
+    kondisi_tanaman: b.kondisi_tanaman || "",
+    kondisi_air_nutrisi: b.kondisi_air_nutrisi || "",
+    kondisi_instalasi: b.kondisi_instalasi || "",
+    kondisi_lingkungan: b.kondisi_lingkungan || "",
+    nilai_ph: b.nilai_ph,
+    catatan: b.catatan || "",
+    fase: faseArr,
+    _panen: panenArr,
+  };
 }
-const load = (key, fallback) => {
-  try { const s = localStorage.getItem(key); if (s) return JSON.parse(s); } catch (_) {}
-  return fallback;
-};
-const save = (key, v) => { try { localStorage.setItem(key, JSON.stringify(v)); } catch (_) {} };
-
-let data = load(MOCK_KEY, null) || seed();
-let panenList = load(PANEN_KEY, []);
 
 // ---------- Turunan data ----------
 const faseAktif = (b) => b.fase[b.fase.length - 1];
@@ -78,32 +94,119 @@ const faseNext = (b) => FASE.find((f) => f.urutan_fase === infoFase(b).urutan_fa
 const perkiraan = (b) => (faseNext(b) ? addDays(faseAktif(b).tanggal_mulai, infoFase(b).durasi) : null);
 const sisaHari = (b) => { const p = perkiraan(b); return p ? Math.max(0, Math.round((toDate(p) - today()) / MS_HARI)) : null; };
 const lokasiTujuan = (b) => { const nx = faseNext(b); return nx ? nx.meja : "-"; };
-const sudahPanen = (b) => panenList.some((p) => p.id_budidaya === b.id_budidaya);
+const sudahPanen = (b) => Array.isArray(b._panen) && b._panen.length > 0;
 const phDiLuar = (b) => Number(b.nilai_ph) < PH_MIN || Number(b.nilai_ph) > PH_MAX;
 
 function hitungStatus(b) {
   if (sudahPanen(b)) return "Sudah Dipanen";
   if (phDiLuar(b)) return "Perlu Diperhatikan";
   const nx = faseNext(b);
-  if (!nx) return "Mendekati Panen";   // sudah di fase Panen, data panen belum dicatat
+  if (!nx) return "Mendekati Panen";
   if (sisaHari(b) <= BATAS_HARI_PINDAH) return nx.urutan_fase === FASE.length ? "Mendekati Panen" : "Mendekati Perpindahan Fase";
   return "Normal";
 }
-function persist() {
+
+function refreshStatus() {
   data.forEach((b) => { b.status = hitungStatus(b); });
-  save(MOCK_KEY, data);
 }
 
 function perluPindah(b) {
+  if (!b.fase || !b.fase.length) return false;
   const f = infoFase(b);
   return !sudahPanen(b) && f.urutan_fase < FASE.length && hariDiFase(b) >= f.durasi - BATAS_HARI_PINDAH;
 }
 const badgeClass = (b) => STATUS_CLASS[b.status] || "badge";
 
-let current = null;  // batch yang sedang dibuka
-let mode = "add";    // "add" atau "edit"
-let moveIdx = -1;    // -1 = tambah perpindahan, >=0 = ubah riwayat
-let hDel = -1;       // indeks riwayat yang akan dihapus
+// ---------- Panggilan API ----------
+async function fetchBatches() {
+  const res = await apiFetch(ENDPOINTS.budidaya + "?per_page=100");
+  if (!res) return [];
+  if (!res.ok) throw new Error("Gagal mengambil data");
+  const json = await res.json();
+  return (json.data || []).map(mapBatch);
+}
+
+async function fetchBatchDetail(id) {
+  const res = await apiFetch(ENDPOINTS.budidaya + "/" + id);
+  if (!res) return null;
+  if (!res.ok) throw new Error("Gagal mengambil detail batch");
+  const json = await res.json();
+  return mapBatch(json.data || json);
+}
+
+async function apiCreateBatch(fields) {
+  const res = await apiFetch(ENDPOINTS.budidaya, {
+    method: "POST",
+    body: JSON.stringify(fields),
+  });
+  if (!res) return null;
+  if (res.status === 422) throw new Error(MSG_FORMAT);
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.message || "Gagal menyimpan data");
+  return mapBatch(json.data || json);
+}
+
+async function apiUpdateBatch(id, fields) {
+  const res = await apiFetch(ENDPOINTS.budidaya + "/" + id, {
+    method: "PUT",
+    body: JSON.stringify(fields),
+  });
+  if (!res) return null;
+  if (res.status === 422) throw new Error(MSG_FORMAT);
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.message || "Gagal memperbarui data");
+  return mapBatch(json.data || json);
+}
+
+async function apiDeleteBatch(id) {
+  const res = await apiFetch(ENDPOINTS.budidaya + "/" + id, { method: "DELETE" });
+  if (!res) return false;
+  if (!res.ok) throw new Error("Gagal menghapus data");
+  return true;
+}
+
+async function apiAddPhase(batchId, fields) {
+  const res = await apiFetch(ENDPOINTS.budidaya + "/" + batchId + "/fase", {
+    method: "POST",
+    body: JSON.stringify(fields),
+  });
+  if (!res) return null;
+  if (res.status === 422) throw new Error(MSG_FORMAT);
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.message || "Gagal menyimpan perpindahan fase");
+  return json.data || json;
+}
+
+async function apiUpdatePhase(phaseId, fields) {
+  // Phase update via shallow resource: PUT /api/v1/fase/{id}
+  const res = await apiFetch("/fase/" + phaseId, {
+    method: "PUT",
+    body: JSON.stringify(fields),
+  });
+  if (!res) return null;
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.message || "Gagal memperbarui fase");
+  return json.data || json;
+}
+
+async function apiDeletePhase(phaseId) {
+  const res = await apiFetch("/fase/" + phaseId, { method: "DELETE" });
+  if (!res) return false;
+  if (!res.ok) throw new Error("Gagal menghapus fase");
+  return true;
+}
+
+// ---------- Helper: reload detail dari BE ----------
+async function reloadDetail(id) {
+  const fresh = await fetchBatchDetail(id);
+  if (!fresh) return;
+  fresh.status = hitungStatus(fresh);
+  // Update in data list
+  const idx = data.findIndex((b) => b.id_budidaya === id);
+  if (idx >= 0) data[idx] = fresh;
+  else data.push(fresh);
+  current = fresh;
+}
 
 function aksi(onEdit, onDel) {
   const td = el("td"), box = el("div", undefined, "row-actions");
@@ -117,7 +220,7 @@ function aksi(onEdit, onDel) {
 // ---------- Tampilan ----------
 function showOnly(name) { ["list", "detail", "form"].forEach((id) => show(id, id === name)); }
 
-// Halaman Daftar Batch Pengelolaan: hanya kode_pengelolaan
+// Halaman Daftar Batch Pengelolaan
 function showList() {
   current = null;
   showOnly("list");
@@ -147,9 +250,19 @@ function showList() {
 }
 
 // Halaman Pengelolaan Data Budidaya (UC7)
-function showDetail(id) {
+async function showDetail(id) {
+  // Ambil detail terbaru dari BE
+  try {
+    await reloadDetail(id);
+  } catch (_) {}
+
   current = data.find((b) => b.id_budidaya === id);
   if (!current) return showList();
+  if (!current.fase || !current.fase.length) {
+    // Batch tanpa fase, tetap tampilkan data dasar
+    current.fase = [{ id_fase: 1, tanggal_mulai: current.tanggal_tanam }];
+  }
+
   const b = current, f = infoFase(b), nx = faseNext(b), sisa = sisaHari(b);
 
   $("dt-kode").textContent = b.kode_pengelolaan;
@@ -161,7 +274,7 @@ function showDetail(id) {
   $("dt-umur").textContent = daysBetween(b.tanggal_tanam) + " hari";
   $("dt-jumlah").textContent = b.jumlah_tanaman + " tanaman";
   $("dt-lokasi").textContent = b.lokasi || "-";
-  $("dt-ph").textContent = b.nilai_ph === undefined || b.nilai_ph === "" ? "-" : fmtAngka(b.nilai_ph);
+  $("dt-ph").textContent = b.nilai_ph === undefined || b.nilai_ph === "" || b.nilai_ph === null ? "-" : fmtAngka(b.nilai_ph);
   $("dt-kondisi").textContent = b.kondisi_tanaman || "-";
   $("dt-air").textContent = b.kondisi_air_nutrisi || "-";
   $("dt-instalasi").textContent = b.kondisi_instalasi || "-";
@@ -191,7 +304,7 @@ function showDetail(id) {
   showOnly("detail");
 }
 
-// ---------- Riwayat perpindahan fase (di luar UC6-UC13 yang kamu kirim) ----------
+// ---------- Riwayat perpindahan fase ----------
 function renderHist() {
   const rows = $("hist-rows");
   rows.replaceChildren();
@@ -245,7 +358,7 @@ function showForm(editing) {
   $("f-tanam").value = b.tanggal_tanam || iso(today());
   $("f-jumlah").value = b.jumlah_tanaman || "";
   $("f-lokasi").value = b.lokasi || "";
-  $("f-ph").value = b.nilai_ph === undefined ? "" : b.nilai_ph;
+  $("f-ph").value = b.nilai_ph === undefined || b.nilai_ph === null ? "" : b.nilai_ph;
   $("f-kondisi").value = b.kondisi_tanaman || "";
   $("f-air").value = b.kondisi_air_nutrisi || "";
   $("f-instalasi").value = b.kondisi_instalasi || "";
@@ -269,20 +382,23 @@ $("btn-back").addEventListener("click", showList);
 $("btn-cancel").addEventListener("click", () => (mode === "edit" && current ? showDetail(current.id_budidaya) : showList()));
 $("btn-logout").addEventListener("click", logout);
 
-// Hapus batch (UC9): Hapus -> konfirmasi -> Konfirmasi (kembali ke daftar) / Batal (kembali ke detail)
+// Hapus batch (UC9)
 $("btn-delete").addEventListener("click", () => {
   $("confirm-text").textContent = `Hapus batch ${current.kode_pengelolaan}? Riwayat fase dan data panennya ikut terhapus.`;
   show("confirm");
 });
 $("btn-no").addEventListener("click", () => show("confirm", false));
-$("btn-yes").addEventListener("click", () => {
+$("btn-yes").addEventListener("click", async () => {
   const id = current.id_budidaya;
-  data = data.filter((b) => b.id_budidaya !== id);
-  panenList = panenList.filter((p) => p.id_budidaya !== id);
-  save(PANEN_KEY, panenList);
-  persist();
-  showList();
-  notify("Data budidaya berhasil dihapus.");
+  try {
+    const ok = await apiDeleteBatch(id);
+    if (!ok) return;
+    data = data.filter((b) => b.id_budidaya !== id);
+    showList();
+    notify("Data budidaya berhasil dihapus.");
+  } catch (err) {
+    showAlert("notice", err.message || "Gagal menghapus data.");
+  }
 });
 
 // Perpindahan fase
@@ -292,22 +408,28 @@ $("m-fase").addEventListener("change", () => {
   if (moveIdx < 0) $("m-lokasi").value = faseById(Number($("m-fase").value)).meja;
 });
 $("h-no").addEventListener("click", () => show("h-confirm", false));
-$("h-yes").addEventListener("click", () => {
-  const prev = current.fase[hDel - 1];
-  if (prev) prev.tanggal_selesai = "";
-  current.fase.splice(hDel, 1);
-  persist();
+$("h-yes").addEventListener("click", async () => {
+  const phaseId = current.fase[hDel].id_perpindahan;
+  if (phaseId) {
+    try {
+      await apiDeletePhase(phaseId);
+    } catch (err) {
+      showAlert("h-alert", err.message || "Gagal menghapus riwayat fase.");
+      return;
+    }
+  }
+  await reloadDetail(current.id_budidaya);
   showDetail(current.id_budidaya);
   notify("Riwayat perpindahan fase berhasil dihapus.");
 });
 
-$("move").addEventListener("submit", (e) => {
+$("move").addEventListener("submit", async (e) => {
   e.preventDefault();
   hideAlert("move-alert");
   const add = moveIdx < 0;
   const idFase = parseInt($("m-fase").value, 10), tgl = $("m-tgl").value, sel = $("m-selesai").value;
-  const lok = $("m-lokasi").value.trim(), cat = $("m-cat").value.trim();
-  if (!tgl || (add && !lok)) return showAlert("move-alert", MSG_LENGKAP);
+  const cat = $("m-cat").value.trim();
+  if (!tgl) return showAlert("move-alert", MSG_LENGKAP);
 
   const prev = add ? faseAktif(current) : current.fase[moveIdx - 1];
   const nxt = add ? null : current.fase[moveIdx + 1];
@@ -315,20 +437,35 @@ $("move").addEventListener("submit", (e) => {
     (add && idFase === prev.id_fase) || (!add && sel && sel < tgl);
   if (salah) return showAlert("move-alert", MSG_FORMAT);
 
-  if (add) {
-    prev.tanggal_selesai = tgl;
-    current.fase.push({ id_fase: idFase, tanggal_mulai: tgl, lokasi_tujuan: lok, catatan: cat });
-    current.lokasi = lok;
-  } else {
-    Object.assign(current.fase[moveIdx], { id_fase: idFase, tanggal_mulai: tgl, tanggal_selesai: sel, lokasi_tujuan: lok, catatan: cat });
+  try {
+    if (add) {
+      // POST /api/v1/pengelolaan/{batchId}/fase
+      await apiAddPhase(current.id_budidaya, {
+        id_fase: idFase,
+        tanggal_mulai: tgl,
+        tanggal_selesai: sel || null,
+        catatan: cat,
+      });
+    } else {
+      // PUT /api/v1/fase/{phaseId}
+      const phaseId = current.fase[moveIdx].id_perpindahan;
+      await apiUpdatePhase(phaseId, {
+        id_fase: idFase,
+        tanggal_mulai: tgl,
+        tanggal_selesai: sel || null,
+        catatan: cat,
+      });
+    }
+    await reloadDetail(current.id_budidaya);
+    showDetail(current.id_budidaya);
+    notify(add ? "Data perpindahan fase berhasil ditambahkan." : "Data perpindahan fase berhasil diubah.");
+  } catch (err) {
+    showAlert("move-alert", err.message || "Gagal menyimpan perpindahan fase.");
   }
-  persist();
-  showDetail(current.id_budidaya);
-  notify(add ? "Data perpindahan fase berhasil ditambahkan." : "Data perpindahan fase berhasil diubah.");
 });
 
 // Simpan form tambah (UC6) / ubah (UC8)
-$("form").addEventListener("submit", (e) => {
+$("form").addEventListener("submit", async (e) => {
   e.preventDefault();
   hideAlert("form-alert");
 
@@ -338,7 +475,7 @@ $("form").addEventListener("submit", (e) => {
     kondisi: $("f-kondisi").value.trim(), air: $("f-air").value.trim(),
     instalasi: $("f-instalasi").value.trim(), lingkungan: $("f-lingkungan").value.trim(),
   };
-  // Semua field wajib kecuali catatan (TEBAKAN; tambahkan raw.catatan kalau catatan juga wajib)
+  // Semua field wajib kecuali catatan
   const wajib = [raw.jumlah, raw.lokasi, raw.ph, raw.kondisi, raw.air, raw.instalasi, raw.lingkungan];
   if (mode === "add") wajib.push(raw.kode, raw.tanam);
   if (wajib.some((x) => !x)) return showAlert("form-alert", MSG_LENGKAP);
@@ -346,8 +483,7 @@ $("form").addEventListener("submit", (e) => {
   const jumlah = Number(raw.jumlah), ph = Number(raw.ph);
   let salah = !Number.isInteger(jumlah) || jumlah < 1 || !/^\d{1,2}(\.\d{1,2})?$/.test(raw.ph) || ph > 14;
   if (mode === "add") {
-    salah = salah || toDate(raw.tanam) > today() ||
-      data.some((b) => b.kode_pengelolaan.toLowerCase() === raw.kode.toLowerCase());
+    salah = salah || toDate(raw.tanam) > today();
   }
   if (salah) return showAlert("form-alert", MSG_FORMAT);
 
@@ -358,29 +494,45 @@ $("form").addEventListener("submit", (e) => {
     catatan: $("f-catatan").value.trim(),
   };
 
-  if (mode === "add") {
-    const id = data.reduce((m, b) => Math.max(m, b.id_budidaya), 0) + 1;
-    // Fase awal otomatis Semai (form UC6 tidak punya field fase)
-    data.push({ id_budidaya: id, kode_pengelolaan: raw.kode, tanggal_tanam: raw.tanam, ...fields,
-      fase: [{ id_fase: FASE[0].id_fase, tanggal_mulai: raw.tanam }] });
-    persist();
-    showDetail(id);   // UC6: tampilkan halaman data budidaya yang baru dibuat
-    notify("Data budidaya berhasil ditambahkan.");
-  } else {
-    Object.assign(current, fields);
-    persist();
-    showDetail(current.id_budidaya);
-    notify("Data budidaya berhasil diubah.");
+  try {
+    if (mode === "add") {
+      fields.kode_pengelolaan = raw.kode;
+      fields.tanggal_tanam = raw.tanam;
+      const newBatch = await apiCreateBatch(fields);
+      if (!newBatch) return;
+      newBatch.status = hitungStatus(newBatch);
+      data.push(newBatch);
+      showDetail(newBatch.id_budidaya);
+      notify("Data budidaya berhasil ditambahkan.");
+    } else {
+      const updated = await apiUpdateBatch(current.id_budidaya, fields);
+      if (!updated) return;
+      updated.status = hitungStatus(updated);
+      const idx = data.findIndex((b) => b.id_budidaya === current.id_budidaya);
+      if (idx >= 0) data[idx] = updated;
+      current = updated;
+      showDetail(current.id_budidaya);
+      notify("Data budidaya berhasil diubah.");
+    }
+  } catch (err) {
+    showAlert("form-alert", err.message || "Gagal menyimpan data.");
   }
 });
 
 // ---------- Mulai ----------
-(function init() {
+(async function init() {
   try {
     const u = JSON.parse(localStorage.getItem("user") || "{}");
     $("user-email").textContent = u.email || "";
   } catch (_) {}
-  persist();   // segarkan status (bergantung tanggal hari ini dan data panen)
+
+  try {
+    data = await fetchBatches();
+    refreshStatus();
+  } catch (err) {
+    showAlert("notice", "Data budidaya belum bisa dimuat. Coba muat ulang halaman.");
+  }
+
   const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
   if (id) showDetail(id); else showList();
 })();

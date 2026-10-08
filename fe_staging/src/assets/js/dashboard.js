@@ -8,7 +8,6 @@ const STATUS_CLASS = {
   "Mendekati Panen": "panen",
   "Sudah Dipanen": "selesai",
 };
-const LEGACY = { Aktif: "Normal", Panen: "Sudah Dipanen", Selesai: "Sudah Dipanen" }; // status versi lama
 
 // Harus sama dengan budidaya.js
 const FASE = {
@@ -17,6 +16,17 @@ const FASE = {
   3: { nama: "Pembesaran", urutan: 3, warna: "#2f6f3e" },
   4: { nama: "Panen", urutan: 4, warna: "#e0a526" },
 };
+
+// Aturan status (sama dengan budidaya.js)
+const PH_MIN = 5.5, PH_MAX = 6.5;
+const BATAS_HARI_PINDAH = 2;
+const MS_HARI = 86400000;
+const toDate = (s) => new Date(s + "T00:00:00");
+const today = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
+const daysBetween = (s) => Math.max(0, Math.round((today() - toDate(s)) / MS_HARI));
+const addDays = (s, n) => { const d = toDate(s); d.setDate(d.getDate() + n); return d; };
+
+const FASE_DURASI = { 1: 7, 2: 14, 3: 21, 4: 7 };
 
 // ---------- Helper ----------
 const $ = (id) => document.getElementById(id);
@@ -28,43 +38,55 @@ function el(tag, className, text) {
   return node;
 }
 
-// ---------- Ambil data ----------
-// Mode uji coba: batch dibaca dari halaman Data Budidaya, jadi angkanya selalu sama.
-function fromBudidaya() {
-  for (const key of ["mock_budidaya", "mock_budidaya_v2"]) {
-    try {
-      const arr = JSON.parse(localStorage.getItem(key) || "null");
-      if (Array.isArray(arr) && arr.length) {
-        return arr.map((b) => {
-          const f = b.fase && b.fase[b.fase.length - 1];
-          const info = FASE[f ? f.id_fase : 1] || FASE[1];
-          return {
-            id_budidaya: b.id_budidaya,
-            kode_budidaya: b.kode_budidaya || b.kode_pengelolaan,
-            status: LEGACY[b.status] || b.status,
-            id_fase: f ? f.id_fase : 1,
-            nama_fase: info.nama,
-            urutan_fase: info.urutan,
-          };
-        });
-      }
-    } catch (_) {}
-  }
-  return [];
+// ---------- Mapping data batch dari BE ----------
+// BE mengirim CultivationBatchResource dengan perpindahan_fase (PhaseHistoryResource[])
+function mapBatch(b) {
+  const faseArr = b.perpindahan_fase || [];
+  // Urutkan fase berdasarkan tanggal_mulai, ambil fase terakhir
+  const sorted = [...faseArr].sort((a, c) => (a.tanggal_mulai || "").localeCompare(c.tanggal_mulai || ""));
+  const terakhir = sorted[sorted.length - 1];
+  const idFase = terakhir ? terakhir.id_fase : 1;
+  const info = FASE[idFase] || FASE[1];
+
+  // Hitung status berdasarkan data
+  const hasPanen = Array.isArray(b.panen) && b.panen.length > 0;
+  const ph = b.nilai_ph;
+  const phDiLuar = ph !== null && ph !== undefined && ph !== "" && (Number(ph) < PH_MIN || Number(ph) > PH_MAX);
+  const durasi = FASE_DURASI[idFase] || 7;
+  const hariDiFase = terakhir ? daysBetween(terakhir.tanggal_mulai) : 0;
+  const bukanTerakhir = info.urutan < 4;
+  const sisaHari = Math.max(0, durasi - hariDiFase);
+  const faseNext = bukanTerakhir ? FASE[idFase + 1] : null;
+
+  let status = "Normal";
+  if (hasPanen) status = "Sudah Dipanen";
+  else if (phDiLuar) status = "Perlu Diperhatikan";
+  else if (!faseNext) status = "Mendekati Panen";
+  else if (sisaHari <= BATAS_HARI_PINDAH) status = faseNext.urutan === 4 ? "Mendekati Panen" : "Mendekati Perpindahan Fase";
+
+  return {
+    id_budidaya: b.id_pengelolaan || b.id,
+    kode_budidaya: b.kode_pengelolaan || b.batch_code,
+    status,
+    id_fase: idFase,
+    nama_fase: info.nama,
+    urutan_fase: info.urutan,
+  };
 }
 
+// ---------- Ambil data ----------
 async function fetchBatches() {
   if (USE_MOCK) {
     await new Promise((r) => setTimeout(r, 300));
-    return fromBudidaya();
+    return [];
   }
-  const res = await fetch(API_BASE_URL + ENDPOINTS.budidaya, {
-    headers: { Accept: "application/json", Authorization: "Bearer " + localStorage.getItem("token") },
-  });
-  if (res.status === 401) { logout(); return []; }
+  // Ambil semua batch dengan per_page besar agar tidak terpagination
+  const res = await apiFetch(ENDPOINTS.budidaya + "?per_page=100");
+  if (!res) return [];
   if (!res.ok) throw new Error("Gagal mengambil data");
   const json = await res.json();
-  return Array.isArray(json) ? json : json.data ?? [];
+  const raw = Array.isArray(json.data) ? json.data : (json.data?.data || []);
+  return raw.map(mapBatch);
 }
 
 // ---------- State ----------

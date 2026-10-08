@@ -67,6 +67,10 @@ class AuthService
             $payload['nama'] = $data['nama'] ?? $data['name'];
         }
 
+        if (isset($data['email'])) {
+            $payload['email'] = $data['email'];
+        }
+
         if (isset($data['no_telepon']) || isset($data['phone'])) {
             $payload['no_telepon'] = $data['no_telepon'] ?? $data['phone'];
         }

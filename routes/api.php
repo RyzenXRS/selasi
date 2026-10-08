@@ -71,6 +71,8 @@ Route::prefix('v1')->middleware(['auth:sanctum'])->group(function () {
         // Perpindahan Fase
         Route::apiResource('batches.phases', \App\Http\Controllers\API\PhaseHistoryController::class)->shallow();
         Route::apiResource('pengelolaan.fase', \App\Http\Controllers\API\PhaseHistoryController::class)->shallow();
+        Route::put('/fase/{id}',    [\App\Http\Controllers\API\PhaseHistoryController::class, 'update']);
+        Route::delete('/fase/{id}', [\App\Http\Controllers\API\PhaseHistoryController::class, 'destroy']);
 
         // Panen
         Route::apiResource('batches.harvests', \App\Http\Controllers\API\HarvestController::class)->shallow();
