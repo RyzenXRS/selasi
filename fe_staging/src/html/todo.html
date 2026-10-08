@@ -38,7 +38,7 @@
     .todo-item input[type=checkbox]:disabled{cursor:default}
     .todo-item.done{background:#f7f9e4}
     .todo-item.done .nama{text-decoration:line-through;color:#6b7f55}
-    .date-title{margin:0 0 14px;font-size:1.05rem;font-weight:600;color:#2f5230}
+    .tgl{display:inline-block;padding:3px 12px;border-radius:99px;background:#dde8b0;color:#2f5230;font-size:.8rem;font-weight:600;white-space:nowrap}
     .empty{margin:0;padding:18px;text-align:center;color:#5d7549;border:2px dashed #d5e2b3;border-radius:14px}
   </style>
 </head>
@@ -62,7 +62,7 @@
     <main class="page">
       <div class="page-head">
         <h1>To-Do List</h1>
-        <p class="sub">Kegiatan rutin harian. Centang yang sudah selesai; besok daftarnya kembali kosong.</p>
+        <p class="sub" id="date-title"></p>
       </div>
 
       <div id="alert" class="alert" role="alert" hidden></div>
@@ -75,7 +75,7 @@
         </button>
       </div>
 
-      <!-- UC15: Form tambah tugas -->
+      <!-- UC15: Form tambah kegiatan -->
       <form id="form" class="panel" novalidate hidden>
         <h2 class="panel-title">Tambah kegiatan</h2>
         <div id="form-alert" class="alert" role="alert" hidden></div>
@@ -89,8 +89,7 @@
         </div>
       </form>
 
-      <!-- UC14: Daftar tugas (rutinitas harian, status centang kembali kosong tiap hari) -->
-      <h2 class="date-title" id="date-title"></h2>
+      <!-- UC14: Daftar kegiatan -->
       <section class="group" aria-labelledby="h-belum">
         <h3 id="h-belum">Belum selesai <span class="n" id="n-belum">0</span></h3>
         <ul class="todo-list" id="list-belum"></ul>
