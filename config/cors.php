@@ -7,12 +7,13 @@ return [
     | Cross-Origin Resource Sharing (CORS) Configuration
     |--------------------------------------------------------------------------
     |
+    /*
     | Konfigurasi CORS untuk development. Mengizinkan request dari FE staging
     | yang dibuka langsung sebagai file:// atau via server lokal.
     |
     */
 
-    'paths' => ['api/*'],
+    'paths' => ['api/*', 'sanctum/csrf-cookie'],
 
     'allowed_methods' => ['*'],
 

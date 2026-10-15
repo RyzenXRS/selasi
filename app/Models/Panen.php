@@ -16,6 +16,7 @@ class Panen extends Model
         'tanggal_panen',
         'jumlah_panen',
         'berat_panen',
+        'berat_total_kg',
         'kualitas',
         'created_at',
     ];
@@ -26,6 +27,16 @@ class Panen extends Model
         'berat_panen'   => 'float',
         'created_at'    => 'datetime',
     ];
+
+    public function setBeratTotalKgAttribute($value)
+    {
+        $this->attributes['berat_panen'] = $value;
+    }
+
+    public function getBeratTotalKgAttribute()
+    {
+        return $this->attributes['berat_panen'] ?? null;
+    }
 
     public function pengelolaan(): BelongsTo
     {

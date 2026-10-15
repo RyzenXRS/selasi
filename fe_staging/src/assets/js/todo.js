@@ -11,7 +11,7 @@ function el(tag, text, cls) {
 }
 function notify(msg) { showAlert("notice", msg); $("notice").focus(); }
 
-const MSG_FORMAT = "Format data tidak sesuai";   // dua pesan error sesuai dokumen use case
+const MSG_FORMAT = "Format data tidak sesuai";
 const MSG_LENGKAP = "Data perlu dilengkapi";
 
 const pad = (n) => String(n).padStart(2, "0");
@@ -20,11 +20,9 @@ const fmtHariIni = () => new Date().toLocaleDateString("id-ID", { weekday: "long
 
 let todos = []; // kegiatan hari ini: { id_todo, nama_tugas, status }
 
-// ---------- Data palsu untuk uji coba (USE_MOCK = true) ----------
-// Daftar kegiatan disimpan sekali (rutin). Status centang dicatat per tanggal,
-// jadi besok otomatis kosong lagi, sedangkan kegiatan lama tetap ada.
+// ---------- Data palsu untuk fallback (USE_MOCK = true) ----------
 const MOCK_TASKS = "mock_todo_tugas_v2";
-const MOCK_DONE = "mock_todo_selesai_v2"; // { "2026-10-06": [id, id] }
+const MOCK_DONE = "mock_todo_selesai_v2";
 
 const readJSON = (key, fallback) => {
   try { const s = localStorage.getItem(key); if (s) return JSON.parse(s); } catch (_) {}
@@ -48,9 +46,7 @@ function mockTasks() {
 const mockDoneToday = () => (readJSON(MOCK_DONE, {})[isoToday()] || []);
 
 // ---------- Panggilan ke BE ----------
-// Endpoint README: GET /to-do, POST /to-do, POST /to-do/{id}/complete
 const TODO_PATH = (typeof ENDPOINTS !== "undefined" && ENDPOINTS.todo) || "/to-do";
-const authHeaders = () => ({ Accept: "application/json", Authorization: "Bearer " + localStorage.getItem("token") });
 
 async function fetchTodos() {
   if (USE_MOCK) {
@@ -58,17 +54,24 @@ async function fetchTodos() {
     const done = mockDoneToday();
     return mockTasks().map((t) => ({ ...t, status: done.includes(t.id_todo) }));
   }
-  const res = await fetch(API_BASE_URL + TODO_PATH, { headers: authHeaders() });
-  if (res.status === 401) { logout(); return null; }
-  if (!res.ok) throw new Error("Gagal mengambil daftar tugas");
+
+  const res = await apiFetch(TODO_PATH + "?per_page=100");
+  if (!res || !res.ok) throw new Error("Gagal mengambil daftar tugas");
   const json = await res.json();
   const d = json.data ?? json;
   const rows = Array.isArray(d) ? d : (d.data || []);
-  // Kalau BE mengirim baris per hari, tampilkan hanya yang untuk hari ini
-  return rows.filter((t) => !t.tanggal_tugas || String(t.tanggal_tugas).slice(0, 10) === isoToday());
+
+  return rows
+    .filter((t) => !t.tanggal_tugas || String(t.tanggal_tugas).slice(0, 10) === isoToday())
+    .map((t) => ({
+      id_todo: t.id_todo || t.id,
+      nama_tugas: t.nama_tugas || t.title,
+      tanggal_tugas: t.tanggal_tugas || t.task_date,
+      status: !!t.status,
+    }));
 }
 
-// Tambah kegiatan: hanya nama_tugas. Tanggal dan batch tidak dikirim.
+// Tambah kegiatan: kirim nama_tugas dan tanggal_tugas hari ini
 async function createTodo(nama) {
   if (USE_MOCK) {
     await delay(400);
@@ -78,20 +81,30 @@ async function createTodo(nama) {
     writeJSON(MOCK_TASKS, arr);
     return { ...item, status: false };
   }
-  const res = await fetch(API_BASE_URL + TODO_PATH, {
+
+  const res = await apiFetch(TODO_PATH, {
     method: "POST",
-    headers: { ...authHeaders(), "Content-Type": "application/json" },
-    body: JSON.stringify({ nama_tugas: nama }),
+    body: JSON.stringify({
+      nama_tugas: nama,
+      tanggal_tugas: isoToday(),
+      status: false,
+    }),
   });
-  if (res.status === 401) { logout(); return null; }
-  if (res.status === 422) throw new Error(MSG_FORMAT); // validasi BE gagal
+  if (!res) return null;
+  if (res.status === 422) throw new Error(MSG_FORMAT);
   let json = {};
   try { json = await res.json(); } catch (_) {}
   if (!res.ok) throw new Error(json.message || "Kegiatan gagal disimpan.");
-  return json.data ?? json;
+  const item = json.data ?? json;
+  return {
+    id_todo: item.id_todo || item.id,
+    nama_tugas: item.nama_tugas || item.title,
+    tanggal_tugas: item.tanggal_tugas || item.task_date,
+    status: !!item.status,
+  };
 }
 
-// Centang kegiatan. BE hanya punya endpoint "complete" (tidak ada untuk membatalkan centang).
+// Centang atau batal centang kegiatan
 async function setStatus(id, checked) {
   if (USE_MOCK) {
     await delay(150);
@@ -102,9 +115,19 @@ async function setStatus(id, checked) {
     writeJSON(MOCK_DONE, all);
     return;
   }
-  const res = await fetch(API_BASE_URL + TODO_PATH + "/" + id + "/complete", { method: "POST", headers: authHeaders() });
-  if (res.status === 401) { logout(); return; }
-  if (!res.ok) throw new Error("Status kegiatan gagal diperbarui.");
+
+  // Gunakan endpoint complete jika checked, atau update status jika uncheck
+  let res;
+  if (checked) {
+    res = await apiFetch(TODO_PATH + "/" + id + "/complete", { method: "POST" });
+  } else {
+    res = await apiFetch(TODO_PATH + "/" + id, {
+      method: "PUT",
+      body: JSON.stringify({ status: false }),
+    });
+  }
+
+  if (!res || !res.ok) throw new Error("Status kegiatan gagal diperbarui.");
 }
 
 // ---------- Tampilan: daftar kegiatan (UC14) ----------
@@ -116,7 +139,6 @@ function makeItem(t) {
   cb.type = "checkbox";
   cb.checked = done;
   cb.dataset.id = t.id_todo;
-  if (done && !USE_MOCK) cb.disabled = true; // BE tidak menyediakan pembatalan centang
   cb.addEventListener("change", () => toggle(t.id_todo, cb.checked));
   label.append(cb, el("span", t.nama_tugas, "nama"));
   li.appendChild(label);
@@ -188,7 +210,7 @@ $("form").addEventListener("submit", async (e) => {
   try {
     const item = await createTodo(nama);
     if (!item) return;
-    if (item.status === undefined) item.status = false; // kegiatan baru belum dicentang
+    if (item.status === undefined) item.status = false;
     todos.push(item);
 
     show("form", false);

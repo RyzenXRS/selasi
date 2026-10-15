@@ -17,6 +17,17 @@ const FASE = {
   4: { nama: "Panen",      urutan: 4, warna: "#e0a526" },
 };
 
+// Aturan status (sama dengan budidaya.js)
+const PH_MIN = 5.5, PH_MAX = 6.5;
+const BATAS_HARI_PINDAH = 2;
+const MS_HARI = 86400000;
+const toDate = (s) => new Date(s + "T00:00:00");
+const today = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
+const daysBetween = (s) => Math.max(0, Math.round((today() - toDate(s)) / MS_HARI));
+const addDays = (s, n) => { const d = toDate(s); d.setDate(d.getDate() + n); return d; };
+
+const FASE_DURASI = { 1: 7, 2: 14, 3: 21, 4: 7 };
+
 // ---------- Helper ----------
 const $ = (id) => document.getElementById(id);
 function showAlert(message) { const e = $("alert"); e.textContent = message; e.hidden = false; }
@@ -27,54 +38,55 @@ function el(tag, className, text) {
   return node;
 }
 
-// ---------- Auth headers ----------
-const authHeaders = () => ({
-  Accept: "application/json",
-  Authorization: "Bearer " + localStorage.getItem("token"),
-});
+// ---------- Mapping data batch dari BE ----------
+// BE mengirim CultivationBatchResource dengan perpindahan_fase (PhaseHistoryResource[])
+function mapBatch(b) {
+  const faseArr = b.perpindahan_fase || [];
+  // Urutkan fase berdasarkan tanggal_mulai, ambil fase terakhir
+  const sorted = [...faseArr].sort((a, c) => (a.tanggal_mulai || "").localeCompare(c.tanggal_mulai || ""));
+  const terakhir = sorted[sorted.length - 1];
+  const idFase = terakhir ? terakhir.id_fase : (b.fase_saat_ini?.id_fase || 1);
+  const info = FASE[idFase] || FASE[1];
 
-// ---------- Normalisasi batch dari BE ----------
-// BE: { id_pengelolaan, kode_pengelolaan, fase_saat_ini: { id_fase, nama_fase }, kondisi_tanaman, nilai_ph, ... }
-function normalizeBatch(b) {
-  // Cari id_fase aktif
-  let id_fase = 1;
-  if (b.fase_saat_ini) {
-    id_fase = b.fase_saat_ini.id_fase ?? b.fase_saat_ini.id ?? 1;
-  } else if (Array.isArray(b.perpindahan_fase) && b.perpindahan_fase.length) {
-    id_fase = b.perpindahan_fase[b.perpindahan_fase.length - 1].id_fase;
-  } else if (Array.isArray(b.fase) && b.fase.length) {
-    id_fase = b.fase[b.fase.length - 1].id_fase;
-  }
+  // Hitung status berdasarkan data
+  const hasPanen = Array.isArray(b.panen) && b.panen.length > 0;
+  const ph = b.nilai_ph;
+  const phDiLuar = ph !== null && ph !== undefined && ph !== "" && (Number(ph) < PH_MIN || Number(ph) > PH_MAX);
+  const durasi = FASE_DURASI[idFase] || 7;
+  const hariDiFase = terakhir ? daysBetween(terakhir.tanggal_mulai) : 0;
+  const bukanTerakhir = info.urutan < 4;
+  const sisaHari = Math.max(0, durasi - hariDiFase);
+  const faseNext = bukanTerakhir ? FASE[idFase + 1] : null;
 
-  const faseInfo = FASE[id_fase] ?? FASE[1];
-
-  // Status dari BE atau kalkulasi sederhana
-  let status = b.status ?? "Normal";
-  // Normalisasi status dari BE kalau tidak dalam format yang dikenal
-  const legacyMap = { "Aktif": "Normal", "Panen": "Sudah Dipanen", "Selesai": "Sudah Dipanen" };
-  if (legacyMap[status]) status = legacyMap[status];
-  if (!STATUS_LIST.includes(status)) status = "Normal";
+  let status = "Normal";
+  if (hasPanen) status = "Sudah Dipanen";
+  else if (phDiLuar) status = "Perlu Diperhatikan";
+  else if (!faseNext) status = "Mendekati Panen";
+  else if (sisaHari <= BATAS_HARI_PINDAH) status = faseNext.urutan === 4 ? "Mendekati Panen" : "Mendekati Perpindahan Fase";
 
   return {
-    id_budidaya: b.id_pengelolaan ?? b.id_budidaya ?? b.id,
-    kode_budidaya: b.kode_pengelolaan ?? b.kode_budidaya ?? "-",
+    id_budidaya: b.id_pengelolaan || b.id,
+    kode_budidaya: b.kode_pengelolaan || b.batch_code || "-",
     status,
-    id_fase,
-    nama_fase: faseInfo.nama,
-    urutan_fase: faseInfo.urutan,
+    id_fase: idFase,
+    nama_fase: info.nama,
+    urutan_fase: info.urutan,
   };
 }
 
-// ---------- Fetch batches dari API ----------
+// ---------- Ambil data ----------
 async function fetchBatches() {
-  const res = await fetch(API_BASE_URL + ENDPOINTS.budidaya, {
-    headers: authHeaders(),
-  });
-  if (res.status === 401) { logout(); return []; }
+  if (USE_MOCK) {
+    await new Promise((r) => setTimeout(r, 300));
+    return [];
+  }
+  // Ambil semua batch dengan per_page besar agar tidak terpagination
+  const res = await apiFetch(ENDPOINTS.budidaya + "?per_page=100");
+  if (!res) return [];
   if (!res.ok) throw new Error("Gagal mengambil data");
   const json = await res.json();
-  const arr = Array.isArray(json) ? json : (json.data ?? []);
-  return arr.map(normalizeBatch);
+  const raw = Array.isArray(json.data) ? json.data : (json.data?.data || []);
+  return raw.map(mapBatch);
 }
 
 // ---------- State ----------

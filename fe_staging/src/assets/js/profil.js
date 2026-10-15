@@ -82,11 +82,8 @@ async function fetchProfile() {
     await new Promise((r) => setTimeout(r, 300));
     return mockLoad();
   }
-  const res = await fetch(API_BASE_URL + ENDPOINTS.profil, {
-    headers: { Accept: "application/json", Authorization: "Bearer " + localStorage.getItem("token") },
-  });
-  if (res.status === 401) { logout(); return null; }
-  if (!res.ok) throw new Error("Gagal mengambil data akun");
+  const res = await apiFetch(ENDPOINTS.profil);
+  if (!res || !res.ok) throw new Error("Gagal mengambil data akun");
   const json = await res.json();
   return json.data ?? json.user ?? json;
 }
@@ -108,13 +105,19 @@ async function saveProfile(values, file) {
   body.append("no_telepon", values.no_telepon);
   if (file) body.append("foto_profil", file);
 
-  const res = await fetch(API_BASE_URL + ENDPOINTS.profilUbah, {
+  const res = await apiFetch(ENDPOINTS.profilUbah, {
     method: "POST",
-    headers: { Accept: "application/json", Authorization: "Bearer " + localStorage.getItem("token") },
+    headers: {
+      Accept: "application/json",
+      Authorization: "Bearer " + localStorage.getItem("token"),
+    },
     body,
   });
-  if (res.status === 401) { logout(); return null; }
-  if (res.status === 422) throw new Error(MSG_FORMAT); // validasi BE gagal
+  if (!res) return null;
+  if (res.status === 422) {
+    const errJson = await res.json().catch(() => ({}));
+    throw new Error(errJson.message || MSG_FORMAT);
+  }
 
   let json = {};
   try { json = await res.json(); } catch (_) {}
