@@ -26,46 +26,30 @@ const EP = {
   forgot: ENDPOINTS.forgot,
 };
 
-// ---------- Data palsu untuk uji coba (USE_MOCK = true di config.js) ----------
-let mockKode = "";
-const acakKode = () => {
-  const huruf = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  return Array.from({ length: 6 }, () => huruf[Math.floor(Math.random() * huruf.length)]).join("");
-};
-
-function mockPost(path, body) {
-  if (path === EP.login) {
-    if (body.password !== "12345678") return { ok: false, data: {} };
-    if (body.email === "pembudidaya@selasi.com") {
-      return { ok: true, data: { token: "token-palsu", user: { id_pengguna: 1, email: body.email, role: "pembudidaya" } } };
-    }
-    if (body.email === "admin@selasi.com") {
-      return { ok: true, data: { token: "token-palsu", user: { id_pengguna: 2, email: body.email, role: "admin" } } };
-    }
-    return { ok: false, data: {} };
-  }
-  if (path === EP.forgot) {
-    if (body.email !== "pembudidaya@selasi.com") return { ok: false, data: {} };
-    mockKode = acakKode();
-    return { ok: true, data: { kode_uji: mockKode } };
-  }
-  return { ok: true, data: {} };
-}
-
 async function post(path, body) {
-  if (USE_MOCK) {
-    await new Promise((r) => setTimeout(r, 600));
-    return mockPost(path, body);
-  }
-  const res = await fetch(API_BASE_URL + path, {
+  const url = API_BASE_URL + path;
+  console.log("%c[API REQUEST] POST " + url, "color: #2f5230; font-weight: bold;", body);
+
+  const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify(body),
   });
+
   let data = {};
-  try { data = await res.json(); } catch (_) {}
-  // Backend mengirim format: { success: true/false, message: "...", data: { user: {...}, token: "..." } }
-  return { ok: res.ok, data };
+  try {
+    data = await res.json();
+  } catch (err) {
+    console.error("[API ERROR] Gagal parse JSON:", err);
+  }
+
+  console.log(
+    `%c[API RESPONSE] Status: ${res.status}`,
+    res.ok ? "color: green; font-weight: bold;" : "color: red; font-weight: bold;",
+    data
+  );
+
+  return { ok: res.ok, status: res.status, data };
 }
 
 const isEmail = (v) => /^\S+@\S+\.\S+$/.test(v);
@@ -106,30 +90,42 @@ views.login.addEventListener("submit", async (e) => {
 
   await withButton($("btn-login"), "Memproses...", async () => {
     try {
-      const { ok, data } = await post(EP.login, { email, password });
+      const { ok, status, data } = await post(EP.login, { email, password });
+
       if (!ok) {
+        console.warn("[LOGIN GAGAL]", data);
         const errorMsg = data.message ||
           (data.errors ? Object.values(data.errors).flat()[0] : null) ||
           "Email atau Password salah";
         return showAlert("alert-login", errorMsg);
       }
 
-      // Backend response format: { success, message, data: { user: {...}, token: "..." } }
-      // Mode mock: { ok, data: { user: {...}, token: "..." } }
-      const payload = data.data || data; // data.data untuk BE sungguhan, data untuk mock
+      // Backend response format: { success: true, message: "...", data: { user: {...}, token: "..." } }
+      const payload = data.data || data;
       const user = payload.user;
       const token = payload.token;
       const role = String(user?.role ?? "").toLowerCase();
 
+      console.log("%c[LOGIN BERHASIL] Akun:", "color: green; font-weight: bold;", user);
+      console.log("[LOGIN BERHASIL] Sanctum Token:", token);
+
       if (role !== ROLE_PEMBUDIDAYA) {
+        console.warn("[ROLE BUKAN PEMBUDIDAYA]:", role);
         return showAlert("alert-login", "Akun ini bukan akun Pembudidaya.");
       }
 
       localStorage.setItem("token", token);
       localStorage.setItem("role", ROLE_PEMBUDIDAYA);
       localStorage.setItem("user", JSON.stringify(user ?? {}));
-      window.location.href = DASHBOARD_URL;
+
+      showAlert("alert-login", "Login berhasil! Mengalihkan ke dashboard...", "success");
+
+      // Beri jeda 800ms agar user dan developer sempat melihat log response di console
+      setTimeout(() => {
+        window.location.href = DASHBOARD_URL;
+      }, 800);
     } catch (err) {
+      console.error("[KONEKSI ERROR]", err);
       showAlert("alert-login", "Tidak bisa terhubung ke backend. Pastikan server backend (php artisan serve) sudah berjalan di http://127.0.0.1:8000.");
     }
   });

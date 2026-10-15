@@ -49,12 +49,19 @@ function authHeaders(contentType) {
 // ---- Helper: request ke API dengan autentikasi ----
 // Kalau status 401 (token mati), otomatis logout.
 async function apiFetch(path, options = {}) {
+  const url = API_BASE_URL + path;
   if (!options.headers) {
     options.headers = authHeaders(
       options.body && !(options.body instanceof FormData) ? "application/json" : undefined
     );
   }
-  const res = await fetch(API_BASE_URL + path, options);
-  if (res.status === 401) { logout(); return null; }
+  console.log("%c[API CALL] " + (options.method || "GET") + " " + url, "color: #3f9d6a;");
+  const res = await fetch(url, options);
+  console.log(`[API CALL RESULT] ${res.status} ${url}`);
+  if (res.status === 401) {
+    console.warn("[AUTH] Token expired / tidak valid (401). Logout otomatis.");
+    logout();
+    return null;
+  }
   return res;
 }
