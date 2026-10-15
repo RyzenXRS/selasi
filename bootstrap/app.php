@@ -22,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Force JSON for all API routes
         $middleware->api(prepend: [
             ForceJsonResponse::class,
+            \Illuminate\Http\Middleware\HandleCors::class,
         ]);
 
         // Register aliases

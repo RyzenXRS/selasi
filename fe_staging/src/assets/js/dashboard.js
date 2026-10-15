@@ -1,6 +1,6 @@
 // ---------- Konstanta ----------
 const STATUS_LIST = ["Normal", "Perlu Diperhatikan", "Mendekati Perpindahan Fase", "Mendekati Panen", "Sudah Dipanen"];
-const STATUS_AKHIR = "Sudah Dipanen"; // batch dengan status ini dianggap tidak aktif
+const STATUS_AKHIR = "Sudah Dipanen";
 const STATUS_CLASS = {
   "Normal": "",
   "Perlu Diperhatikan": "perlu",
@@ -8,14 +8,13 @@ const STATUS_CLASS = {
   "Mendekati Panen": "panen",
   "Sudah Dipanen": "selesai",
 };
-const LEGACY = { Aktif: "Normal", Panen: "Sudah Dipanen", Selesai: "Sudah Dipanen" }; // status versi lama
 
-// Harus sama dengan budidaya.js
+// Fase master (akan diperbarui dari API kalau tersedia)
 const FASE = {
-  1: { nama: "Semai", urutan: 1, warna: "#8fbf4d" },
+  1: { nama: "Semai",      urutan: 1, warna: "#8fbf4d" },
   2: { nama: "Pembibitan", urutan: 2, warna: "#3f9d6a" },
   3: { nama: "Pembesaran", urutan: 3, warna: "#2f6f3e" },
-  4: { nama: "Panen", urutan: 4, warna: "#e0a526" },
+  4: { nama: "Panen",      urutan: 4, warna: "#e0a526" },
 };
 
 // ---------- Helper ----------
@@ -28,43 +27,54 @@ function el(tag, className, text) {
   return node;
 }
 
-// ---------- Ambil data ----------
-// Mode uji coba: batch dibaca dari halaman Data Budidaya, jadi angkanya selalu sama.
-function fromBudidaya() {
-  for (const key of ["mock_budidaya", "mock_budidaya_v2"]) {
-    try {
-      const arr = JSON.parse(localStorage.getItem(key) || "null");
-      if (Array.isArray(arr) && arr.length) {
-        return arr.map((b) => {
-          const f = b.fase && b.fase[b.fase.length - 1];
-          const info = FASE[f ? f.id_fase : 1] || FASE[1];
-          return {
-            id_budidaya: b.id_budidaya,
-            kode_budidaya: b.kode_budidaya || b.kode_pengelolaan,
-            status: LEGACY[b.status] || b.status,
-            id_fase: f ? f.id_fase : 1,
-            nama_fase: info.nama,
-            urutan_fase: info.urutan,
-          };
-        });
-      }
-    } catch (_) {}
+// ---------- Auth headers ----------
+const authHeaders = () => ({
+  Accept: "application/json",
+  Authorization: "Bearer " + localStorage.getItem("token"),
+});
+
+// ---------- Normalisasi batch dari BE ----------
+// BE: { id_pengelolaan, kode_pengelolaan, fase_saat_ini: { id_fase, nama_fase }, kondisi_tanaman, nilai_ph, ... }
+function normalizeBatch(b) {
+  // Cari id_fase aktif
+  let id_fase = 1;
+  if (b.fase_saat_ini) {
+    id_fase = b.fase_saat_ini.id_fase ?? b.fase_saat_ini.id ?? 1;
+  } else if (Array.isArray(b.perpindahan_fase) && b.perpindahan_fase.length) {
+    id_fase = b.perpindahan_fase[b.perpindahan_fase.length - 1].id_fase;
+  } else if (Array.isArray(b.fase) && b.fase.length) {
+    id_fase = b.fase[b.fase.length - 1].id_fase;
   }
-  return [];
+
+  const faseInfo = FASE[id_fase] ?? FASE[1];
+
+  // Status dari BE atau kalkulasi sederhana
+  let status = b.status ?? "Normal";
+  // Normalisasi status dari BE kalau tidak dalam format yang dikenal
+  const legacyMap = { "Aktif": "Normal", "Panen": "Sudah Dipanen", "Selesai": "Sudah Dipanen" };
+  if (legacyMap[status]) status = legacyMap[status];
+  if (!STATUS_LIST.includes(status)) status = "Normal";
+
+  return {
+    id_budidaya: b.id_pengelolaan ?? b.id_budidaya ?? b.id,
+    kode_budidaya: b.kode_pengelolaan ?? b.kode_budidaya ?? "-",
+    status,
+    id_fase,
+    nama_fase: faseInfo.nama,
+    urutan_fase: faseInfo.urutan,
+  };
 }
 
+// ---------- Fetch batches dari API ----------
 async function fetchBatches() {
-  if (USE_MOCK) {
-    await new Promise((r) => setTimeout(r, 300));
-    return fromBudidaya();
-  }
   const res = await fetch(API_BASE_URL + ENDPOINTS.budidaya, {
-    headers: { Accept: "application/json", Authorization: "Bearer " + localStorage.getItem("token") },
+    headers: authHeaders(),
   });
   if (res.status === 401) { logout(); return []; }
   if (!res.ok) throw new Error("Gagal mengambil data");
   const json = await res.json();
-  return Array.isArray(json) ? json : json.data ?? [];
+  const arr = Array.isArray(json) ? json : (json.data ?? []);
+  return arr.map(normalizeBatch);
 }
 
 // ---------- State ----------
@@ -72,7 +82,6 @@ let batches = [];
 let filter = { type: "aktif" };
 
 const aktif = () => batches.filter((b) => b.status !== STATUS_AKHIR);
-
 const jumlahFase = (id) => aktif().filter((b) => b.id_fase === id).length;
 const countStatus = (st) => batches.filter((b) => b.status === st).length;
 
@@ -84,13 +93,13 @@ function pick(btn, type, value) {
 }
 
 function renderCards() {
-  // 1.3.2 jumlah batch aktif
+  // Jumlah batch aktif
   const a = $("s-aktif");
   a.replaceChildren(el("span", "sum-label", "Jumlah batch aktif"), el("span", "sum-num", String(aktif().length)));
   a.removeAttribute("aria-pressed");
   pick(a, "aktif");
 
-  // 1.3.3 batch aktif per fase (jalur tanam)
+  // Batch aktif per fase
   const jalur = $("jalur");
   jalur.replaceChildren();
   Object.entries(FASE).sort((x, y) => x[1].urutan - y[1].urutan).forEach(([id, f]) => {
@@ -103,7 +112,7 @@ function renderCards() {
     jalur.appendChild(li);
   });
 
-  // 1.3.4 status budidaya
+  // Status budidaya
   const chips = $("status-chips");
   chips.replaceChildren();
   STATUS_LIST.forEach((st) => {
@@ -121,9 +130,7 @@ function currentList() {
   return aktif();
 }
 function currentTitle() {
-  if (filter.type === "fase") {
-    return "Batch aktif pada fase " + FASE[filter.value].nama;
-  }
+  if (filter.type === "fase") return "Batch aktif pada fase " + (FASE[filter.value]?.nama ?? "-");
   if (filter.type === "status") return "Batch dengan status " + filter.value;
   return "Semua batch aktif";
 }

@@ -9,7 +9,18 @@
   }
 })();
 
-function logout() {
+async function logout() {
+  const token = localStorage.getItem("token");
+  if (token) {
+    try {
+      await fetch(API_BASE_URL + ENDPOINTS.logout, {
+        method: "POST",
+        headers: { Accept: "application/json", Authorization: "Bearer " + token },
+      });
+    } catch (_) {
+      // Abaikan error jaringan saat logout; tetap hapus sesi lokal
+    }
+  }
   localStorage.removeItem("token");
   localStorage.removeItem("role");
   localStorage.removeItem("user");
