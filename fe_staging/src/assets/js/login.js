@@ -2,10 +2,10 @@
 const $ = (id) => document.getElementById(id);
 
 const views = {
-  login:  $("form-login"),
+  login: $("form-login"),
   forgot: $("form-forgot"),
-  code:   $("form-code"),
-  reset:  $("form-reset"),
+  code: $("form-code"),
+  reset: $("form-reset"),
 };
 
 function showView(name) {
@@ -22,7 +22,7 @@ function showAlert(id, message, type = "error") {
 
 // Path endpoint
 const EP = {
-  login:  ENDPOINTS.login,
+  login: ENDPOINTS.login,
   forgot: ENDPOINTS.forgot,
 };
 
@@ -85,7 +85,7 @@ views.login.addEventListener("submit", async (e) => {
   const password = $("login-password").value;
 
   if (!email || !password) {
-    return showAlert("alert-login", "Email dan Password wajib diisi.");
+    return showAlert("alert-login", "Lengkapi Data");
   }
 
   await withButton($("btn-login"), "Memproses...", async () => {
@@ -94,10 +94,7 @@ views.login.addEventListener("submit", async (e) => {
 
       if (!ok) {
         console.warn("[LOGIN GAGAL]", data);
-        const errorMsg = data.message ||
-          (data.errors ? Object.values(data.errors).flat()[0] : null) ||
-          "Email atau Password salah";
-        return showAlert("alert-login", errorMsg);
+        return showAlert("alert-login", "Email atau Password salah");
       }
 
       // Backend response format: { success: true, message: "...", data: { user: {...}, token: "..." } }

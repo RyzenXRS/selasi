@@ -98,6 +98,59 @@ function persist() {
   save(MOCK_KEY, data);
 }
 
+// ---------- Integrasi API Backend ----------
+async function loadDataFromBackend() {
+  if (USE_MOCK) return;
+  try {
+    const res = await apiFetch(ENDPOINTS.budidaya + "?per_page=100");
+    if (!res || !res.ok) return;
+    const json = await res.json();
+    const rawBatches = Array.isArray(json.data) ? json.data : (json.data?.data || []);
+
+    data = rawBatches.map((b) => {
+      const rawFase = b.perpindahan_fase || [];
+      const sortedFase = [...rawFase].sort((x, y) => (x.tanggal_mulai || "").localeCompare(y.tanggal_mulai || ""));
+      const mappedFase = sortedFase.map((p) => ({
+        id_perpindahan: p.id_perpindahan || p.id,
+        id_fase: p.id_fase || p.fase?.id_fase || 1,
+        tanggal_mulai: p.tanggal_mulai,
+        tanggal_selesai: p.tanggal_selesai || "",
+        lokasi_tujuan: p.lokasi_tujuan || "",
+        catatan: p.catatan || "",
+      }));
+
+      if (mappedFase.length === 0) {
+        mappedFase.push({
+          id_fase: 1,
+          tanggal_mulai: b.tanggal_tanam || b.seed_date || iso(today()),
+          tanggal_selesai: "",
+          lokasi_tujuan: b.lokasi || "",
+          catatan: "Fase awal"
+        });
+      }
+
+      return {
+        id_budidaya: b.id_pengelolaan || b.id,
+        kode_pengelolaan: b.kode_pengelolaan || b.batch_code || "-",
+        tanggal_tanam: b.tanggal_tanam || b.seed_date,
+        jumlah_tanaman: b.jumlah_tanaman || b.plant_quantity || 0,
+        lokasi: b.lokasi || b.location || "",
+        nilai_ph: b.nilai_ph,
+        kondisi_tanaman: b.kondisi_tanaman || "",
+        kondisi_air_nutrisi: b.kondisi_air_nutrisi || "",
+        kondisi_instalasi: b.kondisi_instalasi || "",
+        kondisi_lingkungan: b.kondisi_lingkungan || "",
+        catatan: b.catatan || "",
+        fase: mappedFase,
+        panen: b.panen || [],
+      };
+    });
+    persist();
+  } catch (err) {
+    console.error("[BUDIDAYA] Gagal memuat data dari API:", err);
+  }
+}
+
 function perluPindah(b) {
   if (!b.fase || !b.fase.length) return false;
   const f = infoFase(b);
@@ -289,12 +342,26 @@ $("btn-delete").addEventListener("click", () => {
   show("confirm");
 });
 $("btn-no").addEventListener("click", () => show("confirm", false));
-$("btn-yes").addEventListener("click", () => {
+$("btn-yes").addEventListener("click", async () => {
   const id = current.id_budidaya;
-  data = data.filter((b) => b.id_budidaya !== id);
-  panenList = panenList.filter((p) => p.id_budidaya !== id);
-  save(PANEN_KEY, panenList);
-  persist();
+  if (!USE_MOCK) {
+    try {
+      const res = await apiFetch(`${ENDPOINTS.budidaya}/${id}`, { method: "DELETE" });
+      if (!res || !res.ok) {
+        const err = await res?.json().catch(() => ({}));
+        return showAlert("notice", err?.message || "Gagal menghapus data budidaya dari server.");
+      }
+      await loadDataFromBackend();
+    } catch (e) {
+      return showAlert("notice", "Error koneksi: " + e.message);
+    }
+  } else {
+    data = data.filter((b) => b.id_budidaya !== id);
+    panenList = panenList.filter((p) => p.id_budidaya !== id);
+    save(PANEN_KEY, panenList);
+    persist();
+  }
+  show("confirm", false);
   showList();
   notify("Data budidaya berhasil dihapus.");
 });
@@ -311,6 +378,7 @@ $("h-yes").addEventListener("click", () => {
   if (prev) prev.tanggal_selesai = "";
   current.fase.splice(hDel, 1);
   persist();
+  show("h-confirm", false);
   showDetail(current.id_budidaya);
   notify("Riwayat perpindahan fase berhasil dihapus.");
 });
@@ -320,6 +388,7 @@ $("move").addEventListener("submit", async (e) => {
   hideAlert("move-alert");
   const add = moveIdx < 0;
   const idFase = parseInt($("m-fase").value, 10), tgl = $("m-tgl").value, sel = $("m-selesai").value;
+  const lok = $("m-lokasi").value.trim();
   const cat = $("m-cat").value.trim();
   if (!tgl) return showAlert("move-alert", MSG_LENGKAP);
 
@@ -329,6 +398,33 @@ $("move").addEventListener("submit", async (e) => {
     (add && idFase === prev?.id_fase) || (!add && sel && sel < tgl);
   if (salah) return showAlert("move-alert", MSG_FORMAT);
 
+  if (!USE_MOCK) {
+    try {
+      if (add) {
+        const res = await apiFetch(`/pengelolaan/${current.id_budidaya}/fase`, {
+          method: "POST",
+          body: JSON.stringify({
+            id_fase: idFase,
+            tanggal_mulai: tgl,
+            catatan: cat || undefined,
+          }),
+        });
+        if (!res || !res.ok) {
+          const err = await res?.json().catch(() => ({}));
+          return showAlert("move-alert", err?.message || "Gagal mencatat perpindahan fase di backend.");
+        }
+      }
+      await loadDataFromBackend();
+      show("move", false);
+      showDetail(current.id_budidaya);
+      notify(add ? "Data perpindahan fase berhasil ditambahkan." : "Data perpindahan fase berhasil diubah.");
+      return;
+    } catch (err) {
+      return showAlert("move-alert", "Error: " + err.message);
+    }
+  }
+
+  // Mock fallback
   if (add) {
     prev.tanggal_selesai = tgl;
     current.fase.push({ id_fase: idFase, tanggal_mulai: tgl, lokasi_tujuan: lok, catatan: cat });
@@ -337,6 +433,7 @@ $("move").addEventListener("submit", async (e) => {
     Object.assign(current.fase[moveIdx], { id_fase: idFase, tanggal_mulai: tgl, tanggal_selesai: sel, lokasi_tujuan: lok, catatan: cat });
   }
   persist();
+  show("move", false);
   showDetail(current.id_budidaya);
   notify(add ? "Data perpindahan fase berhasil ditambahkan." : "Data perpindahan fase berhasil diubah.");
 });
@@ -352,7 +449,6 @@ $("form").addEventListener("submit", async (e) => {
     kondisi: $("f-kondisi").value.trim(), air: $("f-air").value.trim(),
     instalasi: $("f-instalasi").value.trim(), lingkungan: $("f-lingkungan").value.trim(),
   };
-  // Semua field wajib kecuali catatan (TEBAKAN; tambahkan raw.catatan kalau catatan juga wajib)
   const wajib = [raw.jumlah, raw.lokasi, raw.ph, raw.kondisi, raw.air, raw.instalasi, raw.lingkungan];
   if (mode === "add") wajib.push(raw.kode, raw.tanam);
   if (wajib.some((x) => !x)) return showAlert("form-alert", MSG_LENGKAP);
@@ -376,18 +472,78 @@ $("form").addEventListener("submit", async (e) => {
     catatan: $("f-catatan").value.trim(),
   };
 
+  if (!USE_MOCK) {
+    const btn = $("btn-save");
+    if (btn) { btn.disabled = true; btn.textContent = "Menyimpan..."; }
+    try {
+      if (mode === "add") {
+        const payload = {
+          kode_pengelolaan: raw.kode,
+          tanggal_tanam: raw.tanam,
+          ...body,
+        };
+        const res = await apiFetch(ENDPOINTS.budidaya, {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+        if (!res || !res.ok) {
+          const err = await res?.json().catch(() => ({}));
+          const errMsg = err?.message || (err?.errors ? Object.values(err.errors).flat()[0] : null) || "Gagal menyimpan data budidaya ke backend.";
+          return showAlert("form-alert", errMsg);
+        }
+        const json = await res.json();
+        const createdId = json.data?.id_pengelolaan || json.data?.id;
+
+        // Otomatis buat fase awal Semai di backend
+        try {
+          await apiFetch(`/pengelolaan/${createdId}/fase`, {
+            method: "POST",
+            body: JSON.stringify({
+              id_fase: 1,
+              tanggal_mulai: raw.tanam,
+              catatan: "Fase awal semai"
+            })
+          });
+        } catch (_) {}
+
+        await loadDataFromBackend();
+        showDetail(createdId);
+        notify("Data budidaya berhasil ditambahkan ke database.");
+      } else {
+        const res = await apiFetch(`${ENDPOINTS.budidaya}/${current.id_budidaya}`, {
+          method: "PUT",
+          body: JSON.stringify(body),
+        });
+        if (!res || !res.ok) {
+          const err = await res?.json().catch(() => ({}));
+          const errMsg = err?.message || (err?.errors ? Object.values(err.errors).flat()[0] : null) || "Gagal mengubah data budidaya di backend.";
+          return showAlert("form-alert", errMsg);
+        }
+        await loadDataFromBackend();
+        showDetail(current.id_budidaya);
+        notify("Data budidaya berhasil diubah.");
+      }
+      return;
+    } catch (err) {
+      console.error("[FORM ERROR]", err);
+      return showAlert("form-alert", "Error: " + err.message);
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = "Simpan"; }
+    }
+  }
+
+  // Mock fallback
   if (mode === "add") {
     const id = data.reduce((m, b) => Math.max(m, b.id_budidaya), 0) + 1;
-    // Fase awal otomatis Semai (form UC6 tidak punya field fase)
     data.push({
-      id_budidaya: id, kode_pengelolaan: raw.kode, tanggal_tanam: raw.tanam, ...fields,
+      id_budidaya: id, kode_pengelolaan: raw.kode, tanggal_tanam: raw.tanam, ...body,
       fase: [{ id_fase: FASE[0].id_fase, tanggal_mulai: raw.tanam }]
     });
     persist();
-    showDetail(id);   // UC6: tampilkan halaman data budidaya yang baru dibuat
+    showDetail(id);
     notify("Data budidaya berhasil ditambahkan.");
   } else {
-    Object.assign(current, fields);
+    Object.assign(current, body);
     persist();
     showDetail(current.id_budidaya);
     notify("Data budidaya berhasil diubah.");
@@ -400,7 +556,13 @@ $("form").addEventListener("submit", async (e) => {
     const u = JSON.parse(localStorage.getItem("user") || "{}");
     $("user-email").textContent = u.email || "";
   } catch (_) { }
-  persist();   // segarkan status (bergantung tanggal hari ini dan data panen)
+
+  if (!USE_MOCK) {
+    await loadDataFromBackend();
+  } else {
+    persist();
+  }
+
   const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
   if (id) showDetail(id); else showList();
 })();

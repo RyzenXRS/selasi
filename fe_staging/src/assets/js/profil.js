@@ -218,6 +218,10 @@ $("edit").addEventListener("submit", async (e) => {
       const u = JSON.parse(localStorage.getItem("user") || "{}");
       u.email = profile.email;
       u.nama = profile.nama;
+      // Save profile picture if available
+      if (profile.foto_profil) {
+        u.foto_profil = profile.foto_profil;
+      }
       localStorage.setItem("user", JSON.stringify(u));
     } catch (_) {}
 
