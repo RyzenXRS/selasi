@@ -19,9 +19,19 @@ class TaskRequest extends FormRequest
             'batch_id'       => ['nullable', 'exists:pengelolaan,id_pengelolaan'],
             'nama_tugas'     => [$isUpdate ? 'nullable' : 'required_without:title', 'string', 'max:150'],
             'title'          => [$isUpdate ? 'nullable' : 'required_without:nama_tugas', 'string', 'max:150'],
-            'tanggal_tugas'  => [$isUpdate ? 'nullable' : 'required_without:task_date', 'date'],
-            'task_date'      => [$isUpdate ? 'nullable' : 'required_without:tanggal_tugas', 'date'],
+            'tanggal_tugas'  => ['nullable', 'date'],
+            'task_date'      => ['nullable', 'date'],
             'status'         => ['nullable'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'nama_tugas.required_without' => 'Nama kegiatan wajib diisi.',
+            'title.required_without'      => 'Nama kegiatan wajib diisi.',
+            'nama_tugas.max'              => 'Nama kegiatan maksimal 150 karakter.',
+            'id_pengelolaan.exists'       => 'Batch pengelolaan yang dipilih tidak ditemukan.',
         ];
     }
 }

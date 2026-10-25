@@ -31,11 +31,14 @@ const BATAS_HARI_PINDAH = 2;        // sisa <= 2 hari -> "Mendekati Perpindahan 
 
 // ---------- Data (data palsu dulu; sambungkan ke BE nanti) ----------
 // meja = lokasi/meja tujuan default saat batch pindah ke fase tersebut (TEBAKAN)
+// Semai: sampai 14 hari
+// Peremajaan: hari ke-15 sampai 21 hari (durasi 7 hari)
+// Pendewasaan: hari ke-22 sampai panen (panen sekitaran 45-55 hari)
 const FASE = [
-  { id_fase: 1, nama_fase: "Semai", urutan_fase: 1, durasi: 7, meja: "Meja Persemaian" },
-  { id_fase: 2, nama_fase: "Pembibitan", urutan_fase: 2, durasi: 14, meja: "Meja Pembibitan" },
-  { id_fase: 3, nama_fase: "Pembesaran", urutan_fase: 3, durasi: 21, meja: "Meja Pembesaran" },
-  { id_fase: 4, nama_fase: "Panen", urutan_fase: 4, durasi: 7, meja: "Meja Panen" },
+  { id_fase: 1, nama_fase: "Semai", urutan_fase: 1, durasi: 14, meja: "Meja Persemaian" },
+  { id_fase: 2, nama_fase: "Peremajaan", urutan_fase: 2, durasi: 7, meja: "Meja Peremajaan" },
+  { id_fase: 3, nama_fase: "Pendewasaan", urutan_fase: 3, durasi: 29, meja: "Meja Pendewasaan" },
+  { id_fase: 4, nama_fase: "Panen", urutan_fase: 4, durasi: 5, meja: "Meja Panen" },
 ];
 const faseById = (id) => FASE.find((f) => f.id_fase === Number(id));
 const STATUS_CLASS = {
@@ -136,6 +139,7 @@ async function loadDataFromBackend() {
         jumlah_tanaman: b.jumlah_tanaman || b.plant_quantity || 0,
         lokasi: b.lokasi || b.location || "",
         nilai_ph: b.nilai_ph,
+        suhu: b.suhu ?? b.temperature ?? null,
         kondisi_tanaman: b.kondisi_tanaman || "",
         kondisi_air_nutrisi: b.kondisi_air_nutrisi || "",
         kondisi_instalasi: b.kondisi_instalasi || "",
@@ -231,6 +235,7 @@ function showDetail(id) {
   $("dt-jumlah").textContent = b.jumlah_tanaman + " tanaman";
   $("dt-lokasi").textContent = b.lokasi || "-";
   $("dt-ph").textContent = b.nilai_ph === undefined || b.nilai_ph === "" || b.nilai_ph === null ? "-" : fmtAngka(b.nilai_ph);
+  $("dt-suhu").textContent = (b.suhu !== undefined && b.suhu !== null && b.suhu !== "") ? fmtAngka(b.suhu, 1) + " °C" : "-";
   $("dt-kondisi").textContent = b.kondisi_tanaman || "-";
   $("dt-air").textContent = b.kondisi_air_nutrisi || "-";
   $("dt-instalasi").textContent = b.kondisi_instalasi || "-";
@@ -302,6 +307,63 @@ function askDelHist(i) {
   show("h-confirm");
 }
 
+// Buat kode batch otomatis
+function generateAutoBatchCode() {
+  const existingNums = (data || [])
+    .map((b) => {
+      const m = String(b.kode_pengelolaan || "").match(/SLD-(\d+)/i);
+      return m ? parseInt(m[1], 10) : 0;
+    })
+    .filter(Boolean);
+  const nextNum = existingNums.length ? Math.max(...existingNums) + 1 : (data?.length || 0) + 1;
+  return "SLD-" + String(nextNum).padStart(3, "0");
+}
+
+// Ambil suhu otomatis via Open-Meteo Weather API (Real-time & Akurat)
+async function fetchCurrentTemperature(setField = true) {
+  const suhuStatus = $("suhu-status");
+  if (suhuStatus) suhuStatus.textContent = "🌡️ Mengambil suhu cuaca real-time...";
+
+  let lat = -6.9175;
+  let lon = 107.6191;
+
+  if (navigator.geolocation) {
+    try {
+      const pos = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 2500 });
+      });
+      lat = pos.coords.latitude;
+      lon = pos.coords.longitude;
+    } catch (_) {}
+  }
+
+  try {
+    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m`);
+    if (res.ok) {
+      const json = await res.json();
+      const temp = json.current?.temperature_2m;
+      if (temp !== undefined && temp !== null) {
+        if (setField) {
+          $("f-suhu").value = temp;
+          if (!$("f-lingkungan").value || $("f-lingkungan").value.startsWith("Suhu")) {
+            $("f-lingkungan").value = `Suhu lingkungan ${temp}°C, kondisi pencahayaan dan sirkulasi udara baik.`;
+          }
+        }
+        if (suhuStatus) suhuStatus.textContent = `✅ Suhu terdeteksi: ${temp} °C (Open-Meteo API)`;
+        return temp;
+      }
+    }
+  } catch (err) {
+    console.warn("[WEATHER API] Gagal memuat suhu:", err);
+  }
+
+  if (setField && !$("f-suhu").value) {
+    $("f-suhu").value = 26.5;
+  }
+  if (suhuStatus) suhuStatus.textContent = "Suhu default hidroponik (26.5 °C)";
+  return 26.5;
+}
+
 // ---------- Form tambah (UC6) / ubah (UC8) ----------
 const fld = (id) => $(id).closest(".field");
 
@@ -316,6 +378,7 @@ function showForm(editing) {
   $("f-jumlah").value = b.jumlah_tanaman || "";
   $("f-lokasi").value = b.lokasi || "";
   $("f-ph").value = b.nilai_ph === undefined || b.nilai_ph === null ? "" : b.nilai_ph;
+  $("f-suhu").value = b.suhu === undefined || b.suhu === null ? "" : b.suhu;
   $("f-kondisi").value = b.kondisi_tanaman || "";
   $("f-air").value = b.kondisi_air_nutrisi || "";
   $("f-instalasi").value = b.kondisi_instalasi || "";
@@ -324,6 +387,14 @@ function showForm(editing) {
 
   fld("f-kode").hidden = editing;
   fld("f-tanam").hidden = editing;
+
+  if (!editing) {
+    if (!$("f-kode").value) $("f-kode").value = generateAutoBatchCode();
+    fetchCurrentTemperature(true);
+  } else {
+    const suhuStatus = $("suhu-status");
+    if (suhuStatus) suhuStatus.textContent = b.suhu ? `Suhu tersimpan: ${b.suhu} °C` : "Klik 'Ambil Suhu' untuk deteksi otomatis";
+  }
 
   showOnly("form");
   (editing ? $("f-jumlah") : $("f-kode")).focus();
@@ -336,6 +407,12 @@ $("btn-back").addEventListener("click", showList);
 $("btn-cancel").addEventListener("click", () => (mode === "edit" && current ? showDetail(current.id_budidaya) : showList()));
 $("btn-logout").addEventListener("click", logout);
 
+const btnAutoKode = $("btn-auto-kode");
+if (btnAutoKode) btnAutoKode.addEventListener("click", () => { $("f-kode").value = generateAutoBatchCode(); });
+
+const btnFetchSuhu = $("btn-fetch-suhu");
+if (btnFetchSuhu) btnFetchSuhu.addEventListener("click", () => { fetchCurrentTemperature(true); });
+
 // Hapus batch (UC9)
 $("btn-delete").addEventListener("click", () => {
   $("confirm-text").textContent = `Hapus batch ${current.kode_pengelolaan}? Riwayat fase dan data panennya ikut terhapus.`;
@@ -347,13 +424,15 @@ $("btn-yes").addEventListener("click", async () => {
   if (!USE_MOCK) {
     try {
       const res = await apiFetch(`${ENDPOINTS.budidaya}/${id}`, { method: "DELETE" });
-      if (!res || !res.ok) {
+      if (!res || (!res.ok && res.status !== 204)) {
         const err = await res?.json().catch(() => ({}));
-        return showAlert("notice", err?.message || "Gagal menghapus data budidaya dari server.");
+        show("confirm", false);
+        return showAlert("alert", err?.message || "Gagal menghapus data budidaya dari server.");
       }
       await loadDataFromBackend();
     } catch (e) {
-      return showAlert("notice", "Error koneksi: " + e.message);
+      show("confirm", false);
+      return showAlert("alert", "Error koneksi: " + e.message);
     }
   } else {
     data = data.filter((b) => b.id_budidaya !== id);
@@ -455,16 +534,24 @@ $("form").addEventListener("submit", async (e) => {
 
   const jumlah = Number(raw.jumlah), ph = Number(raw.ph);
   let salah = !Number.isInteger(jumlah) || jumlah < 1 || !/^\d{1,2}(\.\d{1,2})?$/.test(raw.ph) || ph > 14;
+
+  const kodeRegex = /^[A-Za-z0-9_-]{3,30}$/;
   if (mode === "add") {
+    if (!kodeRegex.test(raw.kode)) {
+      return showAlert("form-alert", "Format kode batch tidak sesuai (contoh: SLD-001 atau BATCH-001). Gunakan huruf, angka, dan tanda hubung.");
+    }
     salah = salah || toDate(raw.tanam) > today() ||
       data.some((b) => b.kode_pengelolaan.toLowerCase() === raw.kode.toLowerCase());
   }
   if (salah) return showAlert("form-alert", MSG_FORMAT);
 
+  const suhuVal = $("f-suhu").value ? Number($("f-suhu").value) : null;
+
   const body = {
     jumlah_tanaman: jumlah,
     lokasi: raw.lokasi,
     nilai_ph: ph,
+    suhu: suhuVal,
     kondisi_tanaman: raw.kondisi,
     kondisi_air_nutrisi: raw.air,
     kondisi_instalasi: raw.instalasi,
@@ -480,6 +567,7 @@ $("form").addEventListener("submit", async (e) => {
         const payload = {
           kode_pengelolaan: raw.kode,
           tanggal_tanam: raw.tanam,
+          suhu: suhuVal,
           ...body,
         };
         const res = await apiFetch(ENDPOINTS.budidaya, {

@@ -28,6 +28,7 @@ class Pengelolaan extends Model
         'kondisi_instalasi',
         'kondisi_lingkungan',
         'nilai_ph',
+        'suhu',
         'catatan',
         'status',
         'created_at',
@@ -38,6 +39,7 @@ class Pengelolaan extends Model
         'tanggal_tanam' => 'date',
         'jumlah_tanaman' => 'integer',
         'nilai_ph' => 'float',
+        'suhu' => 'float',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];

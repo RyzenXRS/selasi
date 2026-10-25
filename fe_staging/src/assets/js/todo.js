@@ -47,6 +47,34 @@ const mockDoneToday = () => (readJSON(MOCK_DONE, {})[isoToday()] || []);
 
 // ---------- Panggilan ke BE ----------
 const TODO_PATH = (typeof ENDPOINTS !== "undefined" && ENDPOINTS.todo) || "/to-do";
+let batchesMap = {};
+
+async function fetchBatches() {
+  if (USE_MOCK) return;
+  try {
+    const res = await apiFetch((typeof ENDPOINTS !== "undefined" && ENDPOINTS.budidaya) || "/pengelolaan");
+    if (res && res.ok) {
+      const json = await res.json();
+      const rows = Array.isArray(json.data) ? json.data : (json.data?.data || []);
+      const sel = $("f-batch");
+      if (sel) {
+        sel.replaceChildren();
+        const optDefault = document.createElement("option");
+        optDefault.value = "";
+        optDefault.textContent = "-- Umum / Tanpa Batch --";
+        sel.appendChild(optDefault);
+
+        rows.forEach((b) => {
+          const opt = document.createElement("option");
+          opt.value = b.id_pengelolaan || b.id;
+          opt.textContent = `${b.kode_pengelolaan || b.batch_code} (${b.lokasi || "Batch"})`;
+          sel.appendChild(opt);
+          batchesMap[opt.value] = b.kode_pengelolaan || b.batch_code;
+        });
+      }
+    }
+  } catch (_) {}
+}
 
 async function fetchTodos() {
   if (USE_MOCK) {
@@ -61,47 +89,72 @@ async function fetchTodos() {
   const d = json.data ?? json;
   const rows = Array.isArray(d) ? d : (d.data || []);
 
-  return rows
-    .filter((t) => !t.tanggal_tugas || String(t.tanggal_tugas).slice(0, 10) === isoToday())
-    .map((t) => ({
-      id_todo: t.id_todo || t.id,
-      nama_tugas: t.nama_tugas || t.title,
-      tanggal_tugas: t.tanggal_tugas || t.task_date,
-      status: !!t.status,
-    }));
+  return rows.map((t) => ({
+    id_todo: t.id_todo || t.id,
+    id_pengelolaan: t.id_pengelolaan || t.batch_id,
+    nama_tugas: t.nama_tugas || t.title,
+    tanggal_tugas: t.tanggal_tugas || t.task_date,
+    status: !!t.status,
+  }));
 }
 
-// Tambah kegiatan: kirim nama_tugas dan tanggal_tugas hari ini
-async function createTodo(nama) {
+// Tambah kegiatan: kirim nama_tugas, tanggal_tugas, dan batch id jika ada
+async function createTodo(nama, tanggal, batchId) {
   if (USE_MOCK) {
     await delay(400);
     const arr = mockTasks();
-    const item = { id_todo: arr.reduce((m, t) => Math.max(m, t.id_todo), 0) + 1, nama_tugas: nama };
+    const item = { id_todo: arr.reduce((m, t) => Math.max(m, t.id_todo), 0) + 1, nama_tugas: nama, tanggal_tugas: tanggal || isoToday() };
     arr.push(item);
     writeJSON(MOCK_TASKS, arr);
     return { ...item, status: false };
   }
 
+  const payload = {
+    nama_tugas: nama,
+    tanggal_tugas: tanggal || isoToday(),
+    status: false,
+  };
+  if (batchId) {
+    payload.id_pengelolaan = Number(batchId);
+  }
+
   const res = await apiFetch(TODO_PATH, {
     method: "POST",
-    body: JSON.stringify({
-      nama_tugas: nama,
-      tanggal_tugas: isoToday(),
-      status: false,
-    }),
+    body: JSON.stringify(payload),
   });
   if (!res) return null;
-  if (res.status === 422) throw new Error(MSG_FORMAT);
+  if (res.status === 422) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || (err.errors ? Object.values(err.errors).flat()[0] : null) || MSG_FORMAT);
+  }
   let json = {};
   try { json = await res.json(); } catch (_) {}
   if (!res.ok) throw new Error(json.message || "Kegiatan gagal disimpan.");
   const item = json.data ?? json;
   return {
     id_todo: item.id_todo || item.id,
+    id_pengelolaan: item.id_pengelolaan || item.batch_id,
     nama_tugas: item.nama_tugas || item.title,
     tanggal_tugas: item.tanggal_tugas || item.task_date,
     status: !!item.status,
   };
+}
+
+async function deleteTodo(id) {
+  if (!confirm("Hapus kegiatan ini?")) return;
+  if (!USE_MOCK) {
+    try {
+      const res = await apiFetch(TODO_PATH + "/" + id, { method: "DELETE" });
+      if (!res || (!res.ok && res.status !== 204)) {
+        throw new Error("Gagal menghapus kegiatan dari server.");
+      }
+    } catch (err) {
+      return showAlert("alert", err.message || "Tidak bisa menghapus kegiatan.");
+    }
+  }
+  todos = todos.filter((t) => t.id_todo !== id);
+  render();
+  notify("Kegiatan berhasil dihapus.");
 }
 
 // Centang atau batal centang kegiatan
@@ -140,8 +193,55 @@ function makeItem(t) {
   cb.checked = done;
   cb.dataset.id = t.id_todo;
   cb.addEventListener("change", () => toggle(t.id_todo, cb.checked));
-  label.append(cb, el("span", t.nama_tugas, "nama"));
-  li.appendChild(label);
+
+  const contentBox = el("div", undefined, "todo-content");
+  contentBox.style.display = "flex";
+  contentBox.style.flexDirection = "column";
+  contentBox.style.gap = "2px";
+
+  const namaSpan = el("span", t.nama_tugas, "nama");
+  contentBox.appendChild(namaSpan);
+
+  const subInfo = el("div", undefined, "todo-sub");
+  subInfo.style.fontSize = "0.78rem";
+  subInfo.style.color = "#6b7f55";
+  subInfo.style.display = "flex";
+  subInfo.style.gap = "8px";
+
+  if (t.tanggal_tugas) {
+    const tglBadge = el("span", "📅 " + String(t.tanggal_tugas).slice(0, 10));
+    subInfo.appendChild(tglBadge);
+  }
+  if (t.id_pengelolaan) {
+    const bCode = batchesMap[t.id_pengelolaan] || ("Batch #" + t.id_pengelolaan);
+    const batchBadge = el("span", "🌱 " + bCode);
+    batchBadge.style.fontWeight = "600";
+    subInfo.appendChild(batchBadge);
+  }
+  if (t.tanggal_tugas || t.id_pengelolaan) {
+    contentBox.appendChild(subInfo);
+  }
+
+  label.append(cb, contentBox);
+
+  // Tombol Hapus
+  const delBtn = document.createElement("button");
+  delBtn.type = "button";
+  delBtn.className = "btn-del-todo";
+  delBtn.title = "Hapus kegiatan";
+  delBtn.innerHTML = "✕";
+  delBtn.style.background = "transparent";
+  delBtn.style.border = "none";
+  delBtn.style.color = "#b3321b";
+  delBtn.style.fontSize = "1.1rem";
+  delBtn.style.cursor = "pointer";
+  delBtn.style.padding = "4px 8px";
+  delBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    deleteTodo(t.id_todo);
+  });
+
+  li.append(label, delBtn);
   return li;
 }
 
@@ -186,6 +286,8 @@ $("btn-add").addEventListener("click", () => {
   hideAlert("notice");
   hideAlert("form-alert");
   $("f-nama").value = "";
+  const tglInput = $("f-tanggal");
+  if (tglInput) tglInput.value = isoToday();
   show("form");
   $("f-nama").focus();
 });
@@ -197,10 +299,11 @@ $("form").addEventListener("submit", async (e) => {
   e.preventDefault();
   hideAlert("form-alert");
   const nama = $("f-nama").value.trim();
+  const tanggal = $("f-tanggal") ? $("f-tanggal").value : isoToday();
+  const batchId = $("f-batch") ? $("f-batch").value : "";
 
   // Alternative flow: data tidak lengkap
   if (!nama) return showAlert("form-alert", MSG_LENGKAP);
-  // Alternative flow: format data tidak sesuai (maksimal 150 karakter)
   if (nama.length > 150) return showAlert("form-alert", MSG_FORMAT);
 
   const btn = $("btn-save");
@@ -208,10 +311,10 @@ $("form").addEventListener("submit", async (e) => {
   btn.textContent = "Menyimpan...";
 
   try {
-    const item = await createTodo(nama);
+    const item = await createTodo(nama, tanggal, batchId);
     if (!item) return;
     if (item.status === undefined) item.status = false;
-    todos.push(item);
+    todos.unshift(item);
 
     show("form", false);
     render();
@@ -235,6 +338,7 @@ $("btn-logout").addEventListener("click", logout);
 
   render();
   try {
+    await fetchBatches();
     const data = await fetchTodos();
     if (data) { todos = data; render(); }
   } catch (err) {

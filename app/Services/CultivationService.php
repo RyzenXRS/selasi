@@ -13,7 +13,11 @@ class CultivationService
 {
     public function createBatch(Pengguna $pembudidaya, array $data): Pengelolaan
     {
-        $batchCode = $data['kode_pengelolaan'] ?? $data['batch_code'] ?? ('BATCH-' . date('Ymd') . '-' . strtoupper(Str::random(4)));
+        $batchCode = $data['kode_pengelolaan'] ?? $data['batch_code'] ?? null;
+        if (empty($batchCode)) {
+            $nextNum = (Pengelolaan::max('id_pengelolaan') ?? 0) + 1;
+            $batchCode = 'SLD-' . str_pad((string) $nextNum, 3, '0', STR_PAD_LEFT);
+        }
 
         $pengelolaan = Pengelolaan::create([
             'id_pembudidaya'      => $pembudidaya->id_pengguna,
@@ -26,12 +30,22 @@ class CultivationService
             'kondisi_instalasi'   => $data['kondisi_instalasi'] ?? $data['installation_condition'] ?? 'Baik',
             'kondisi_lingkungan'  => $data['kondisi_lingkungan'] ?? $data['environment_condition'] ?? 'Baik',
             'nilai_ph'            => $data['nilai_ph'] ?? $data['water_ph'] ?? null,
+            'suhu'                => $data['suhu'] ?? $data['temperature'] ?? null,
             'catatan'             => $data['catatan'] ?? $data['notes'] ?? null,
             'created_at'          => Carbon::now(),
             'updated_at'          => Carbon::now(),
         ]);
 
-        return $pengelolaan;
+        // Otomatis buat riwayat fase pertama: Semai (id_fase: 1)
+        if ($pengelolaan->perpindahanFase()->count() === 0) {
+            $this->recordPhaseTransition($pengelolaan, [
+                'id_fase'       => 1, // Semai
+                'tanggal_mulai' => $pengelolaan->tanggal_tanam->toDateString(),
+                'catatan'       => 'Fase awal semai otomatis dibuat saat batch didaftarkan.',
+            ]);
+        }
+
+        return $pengelolaan->fresh(['perpindahanFase.fase']);
     }
 
     public function updateBatch(Pengelolaan $pengelolaan, array $data): Pengelolaan
@@ -47,6 +61,7 @@ class CultivationService
             'kondisi_instalasi'   => ['kondisi_instalasi', 'installation_condition'],
             'kondisi_lingkungan'  => ['kondisi_lingkungan', 'environment_condition'],
             'nilai_ph'            => ['nilai_ph', 'water_ph'],
+            'suhu'                => ['suhu', 'temperature'],
             'catatan'             => ['catatan', 'notes'],
         ];
 

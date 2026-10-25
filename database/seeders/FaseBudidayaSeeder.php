@@ -15,7 +15,7 @@ class FaseBudidayaSeeder extends Seeder
     {
         $fases = [
             ['nama_fase' => 'Semai',       'urutan_fase' => 1],
-            ['nama_fase' => 'Vegetatif',   'urutan_fase' => 2],
+            ['nama_fase' => 'Peremajaan',   'urutan_fase' => 2],
             ['nama_fase' => 'Pendewasaan', 'urutan_fase' => 3],
             ['nama_fase' => 'Panen',       'urutan_fase' => 4],
         ];

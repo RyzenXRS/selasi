@@ -11,10 +11,10 @@ const STATUS_CLASS = {
 
 // Fase master (akan diperbarui dari API kalau tersedia)
 const FASE = {
-  1: { nama: "Semai",      urutan: 1, warna: "#8fbf4d" },
-  2: { nama: "Pembibitan", urutan: 2, warna: "#3f9d6a" },
-  3: { nama: "Pembesaran", urutan: 3, warna: "#2f6f3e" },
-  4: { nama: "Panen",      urutan: 4, warna: "#e0a526" },
+  1: { nama: "Semai",       urutan: 1, warna: "#8fbf4d" },
+  2: { nama: "Peremajaan",  urutan: 2, warna: "#3f9d6a" },
+  3: { nama: "Pendewasaan", urutan: 3, warna: "#2f6f3e" },
+  4: { nama: "Panen",       urutan: 4, warna: "#e0a526" },
 };
 
 // Aturan status (sama dengan budidaya.js)
@@ -26,7 +26,8 @@ const today = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
 const daysBetween = (s) => Math.max(0, Math.round((today() - toDate(s)) / MS_HARI));
 const addDays = (s, n) => { const d = toDate(s); d.setDate(d.getDate() + n); return d; };
 
-const FASE_DURASI = { 1: 7, 2: 14, 3: 21, 4: 7 };
+// Semai: 14 hari, Peremajaan: hari ke-15 s.d 21 (7 hari), Pendewasaan: hari ke-22 s.d panen (29 hari, panen 45-55 hari)
+const FASE_DURASI = { 1: 14, 2: 7, 3: 29, 4: 5 };
 
 // ---------- Helper ----------
 const $ = (id) => document.getElementById(id);

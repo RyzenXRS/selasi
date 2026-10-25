@@ -27,6 +27,8 @@ class CultivationBatchResource extends JsonResource
             'kondisi_instalasi'   => $this->kondisi_instalasi,
             'kondisi_lingkungan'  => $this->kondisi_lingkungan,
             'nilai_ph'            => $this->nilai_ph,
+            'suhu'                => $this->suhu,
+            'temperature'         => $this->suhu,
             'catatan'             => $this->catatan,
             'notes'               => $this->catatan,
             'created_at'          => $this->created_at?->toIso8601String(),

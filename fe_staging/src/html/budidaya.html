@@ -132,6 +132,7 @@
           <div><dt>Jumlah tanaman</dt><dd id="dt-jumlah"></dd></div>
           <div><dt>Lokasi</dt><dd id="dt-lokasi"></dd></div>
           <div><dt>Nilai pH</dt><dd id="dt-ph"></dd></div>
+          <div><dt>Suhu Lingkungan</dt><dd id="dt-suhu">-</dd></div>
           <div class="wide"><dt>Kondisi tanaman</dt><dd id="dt-kondisi"></dd></div>
           <div class="wide"><dt>Kondisi air dan nutrisi</dt><dd id="dt-air"></dd></div>
           <div class="wide"><dt>Kondisi instalasi</dt><dd id="dt-instalasi"></dd></div>
@@ -187,11 +188,26 @@
         <h2 id="form-title" class="panel-title"></h2>
         <div id="form-alert" class="alert" role="alert" hidden></div>
         <div class="form-grid">
-          <div class="field"><label for="f-kode">Kode pengelolaan</label><input type="text" id="f-kode" maxlength="50" required></div>
+          <div class="field">
+            <label for="f-kode">Kode pengelolaan</label>
+            <div style="display:flex;gap:8px">
+              <input type="text" id="f-kode" maxlength="50" placeholder="Contoh: SLD-001" required>
+              <button type="button" class="btn btn-ghost" id="btn-auto-kode" style="white-space:nowrap;padding:8px 12px;font-size:0.82rem" title="Buat kode otomatis">🔄 Otomatis</button>
+            </div>
+            <small style="color:#5d7549;font-size:.76rem;margin-top:3px;display:block">Format: SLD-001 atau BATCH-001 (bisa otomatis)</small>
+          </div>
           <div class="field"><label for="f-tanam">Tanggal tanam</label><input type="date" id="f-tanam" required></div>
           <div class="field"><label for="f-jumlah">Jumlah tanaman</label><input type="number" id="f-jumlah" min="1" step="1" required></div>
           <div class="field"><label for="f-lokasi">Lokasi</label><input type="text" id="f-lokasi" maxlength="100" placeholder="Contoh: Meja Persemaian 1" required></div>
           <div class="field"><label for="f-ph">Nilai pH</label><input type="number" id="f-ph" min="0" max="14" step="0.01" placeholder="Contoh: 6.00" required></div>
+          <div class="field">
+            <label for="f-suhu">Suhu Lingkungan (°C)</label>
+            <div style="display:flex;gap:8px">
+              <input type="number" id="f-suhu" step="0.1" placeholder="Memuat suhu otomatis..." required>
+              <button type="button" class="btn btn-ghost" id="btn-fetch-suhu" style="white-space:nowrap;padding:8px 12px;font-size:0.82rem" title="Ambil suhu cuaca terkini">🌡️ Ambil Suhu</button>
+            </div>
+            <small id="suhu-status" style="color:#5d7549;font-size:.76rem;margin-top:3px;display:block">Suhu real-time via API cuaca</small>
+          </div>
           <div class="field span-2"><label for="f-kondisi">Kondisi tanaman</label><textarea id="f-kondisi"></textarea></div>
           <div class="field span-2"><label for="f-air">Kondisi air dan nutrisi</label><textarea id="f-air"></textarea></div>
           <div class="field span-2"><label for="f-instalasi">Kondisi instalasi</label><textarea id="f-instalasi"></textarea></div>

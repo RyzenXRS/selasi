@@ -22,8 +22,10 @@ function showAlert(id, message, type = "error") {
 
 // Path endpoint
 const EP = {
-  login: ENDPOINTS.login,
+  login:  ENDPOINTS.login,
   forgot: ENDPOINTS.forgot,
+  verify: ENDPOINTS.verify || "/auth/verify-code",
+  reset:  ENDPOINTS.reset  || "/auth/reset-password",
 };
 
 async function post(path, body) {
@@ -128,9 +130,10 @@ views.login.addEventListener("submit", async (e) => {
   });
 });
 
-// ---------- UC2 Lupa password ----------
-const pulih = { email: "" };
+// ---------- UC2 Lupa password (Flow Kode OTP) ----------
+const pulih = { email: "", kode: "", token: "" };
 
+// Langkah 1: Input email -> Kirim kode OTP
 views.forgot.addEventListener("submit", async (e) => {
   e.preventDefault();
   const email = $("forgot-email").value.trim();
@@ -138,15 +141,93 @@ views.forgot.addEventListener("submit", async (e) => {
 
   await withButton($("btn-forgot"), "Mengirim...", async () => {
     try {
-      const { ok, data } = await post(EP.forgot, { email });
-      if (!ok) return showAlert("alert-forgot", data.message || "Email Pemulihan tidak sesuai");
+      const { ok, status, data } = await post(EP.forgot, { email });
+
+      if (!ok) {
+        if (status === 422) {
+          const errMsg =
+            (data.errors && (data.errors.email?.[0] || Object.values(data.errors)[0]?.[0])) ||
+            data.message ||
+            "Email tidak terdaftar di sistem.";
+          return showAlert("alert-forgot", errMsg);
+        }
+        return showAlert("alert-forgot", data.message || "Email Pemulihan tidak sesuai");
+      }
 
       pulih.email = email;
-      // Backend berhasil mengirim link reset
-      showView("login");
-      showAlert("alert-login", data.message || data.data?.message || "Link reset password telah dikirim ke email Anda.", "success");
+      $("code-input").value = "";
+      $("code-hint").textContent = "Kami telah mengirim 6 digit kode verifikasi (OTP) ke " + email + ". Masukkan kode tersebut di bawah:";
+      showView("code");
+      $("code-input").focus();
     } catch (err) {
+      console.error("[FORGOT PASSWORD ERROR]", err);
       showAlert("alert-forgot", "Tidak bisa terhubung ke server. Coba lagi nanti.");
+    }
+  });
+});
+
+// Langkah 2: Input kode OTP 6 digit
+views.code.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const kode = $("code-input").value.trim();
+  if (kode.length !== 6) return showAlert("alert-code", "Kode Verifikasi harus 6 digit");
+
+  await withButton($("btn-code"), "Memeriksa...", async () => {
+    try {
+      const { ok, data } = await post(EP.verify, { email: pulih.email, kode });
+      if (!ok) {
+        const errMsg = (data.errors && Object.values(data.errors)[0]?.[0]) || data.message || "Kode Verifikasi tidak sesuai";
+        return showAlert("alert-code", errMsg);
+      }
+
+      pulih.kode = kode;
+      pulih.token = data.data?.token ?? data.token ?? "";
+      $("reset-password").value = "";
+      $("reset-confirm").value = "";
+      showView("reset");
+      $("reset-password").focus();
+    } catch (err) {
+      console.error("[VERIFY CODE ERROR]", err);
+      showAlert("alert-code", "Tidak bisa terhubung ke server. Coba lagi nanti.");
+    }
+  });
+});
+
+// Langkah 3: Password baru dan konfirmasi
+views.reset.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const password = $("reset-password").value;
+  const confirm = $("reset-confirm").value;
+
+  if (!password || password !== confirm) {
+    return showAlert("alert-reset", "Password Baru atau Konfirmasi Password tidak sesuai");
+  }
+  if (password.length < 8) {
+    return showAlert("alert-reset", "Password minimal 8 karakter.");
+  }
+
+  await withButton($("btn-reset"), "Menyimpan...", async () => {
+    try {
+      const { ok, data } = await post(EP.reset, {
+        email: pulih.email,
+        kode: pulih.kode,
+        token: pulih.token,
+        password,
+        password_confirmation: confirm,
+      });
+      if (!ok) {
+        const errMsg = (data.errors && Object.values(data.errors)[0]?.[0]) || data.message || "Gagal mengubah password";
+        return showAlert("alert-reset", errMsg);
+      }
+
+      showView("login");
+      $("login-email").value = pulih.email;
+      $("login-password").value = "";
+      showAlert("alert-login", "Password berhasil diperbarui. Silakan masuk dengan password barumu.", "success");
+      $("login-password").focus();
+    } catch (err) {
+      console.error("[RESET PASSWORD ERROR]", err);
+      showAlert("alert-reset", "Tidak bisa terhubung ke server. Coba lagi nanti.");
     }
   });
 });

@@ -14,7 +14,8 @@ const ENDPOINTS = {
   register:     "/auth/register",
   logout:       "/auth/logout",
   forgot:       "/auth/forgot-password",
-  reset:        "/auth/reset-password",   // placeholder
+  verify:       "/auth/verify-code",
+  reset:        "/auth/reset-password",
   profil:       "/profile",        // GET: data akun
   profilUbah:   "/profile",        // PUT: ubah profil (dikirim POST + _method=PUT kalau ada foto)
   dashboard:    "/dashboard",

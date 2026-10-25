@@ -37,7 +37,7 @@ class TaskController extends Controller
             'id_pembudidaya' => $request->user()->id_pengguna,
             'id_pengelolaan' => $request->id_pengelolaan ?? $request->batch_id,
             'nama_tugas'     => $request->nama_tugas ?? $request->title,
-            'tanggal_tugas'  => $request->tanggal_tugas ?? $request->task_date,
+            'tanggal_tugas'  => $request->tanggal_tugas ?? $request->task_date ?? Carbon::now()->toDateString(),
             'status'         => (bool) ($request->status ?? false),
             'created_at'     => Carbon::now(),
         ]);

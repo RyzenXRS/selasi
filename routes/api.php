@@ -28,6 +28,8 @@ Route::prefix('v1')->group(function () {
         Route::post('/register',        [\App\Http\Controllers\API\AuthController::class, 'register']);
         Route::post('/login',           [\App\Http\Controllers\API\AuthController::class, 'login']);
         Route::post('/forgot-password', [\App\Http\Controllers\API\AuthController::class, 'forgotPassword']);
+        Route::post('/verify-code',     [\App\Http\Controllers\API\AuthController::class, 'verifyCode']);
+        Route::post('/reset-password',  [\App\Http\Controllers\API\AuthController::class, 'resetPassword']);
     });
 
     // ── Public Catalog & Master Data ──────────────────────────────

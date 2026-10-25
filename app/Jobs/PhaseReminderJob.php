@@ -26,14 +26,18 @@ class PhaseReminderJob implements ShouldQueue
             $daysInCurrentPhase = Carbon::parse($batch->updated_at)->diffInDays(now());
 
             // Phase transition heuristic:
-            // Semai -> Vegetatif (~10-14 days)
-            // Vegetatif -> Pendewasaan (~14-21 days)
-            if ($batch->current_phase === 'Semai' && $daysInCurrentPhase >= 10) {
+            // Semai -> Peremajaan (sampai 14 hari)
+            // Peremajaan -> Pendewasaan (hari ke-15 sampai 21 hari)
+            // Pendewasaan -> Panen (hari ke-22 sampai 45-55 hari)
+            if ($batch->current_phase === 'Semai' && $daysInCurrentPhase >= 14) {
                 $batch->update(['status' => 'near_phase_change']);
-                Log::info("Batch {$batch->batch_code} is ready for Vegetatif phase.");
-            } elseif ($batch->current_phase === 'Vegetatif' && $daysInCurrentPhase >= 14) {
+                Log::info("Batch {$batch->batch_code} is ready for Peremajaan phase.");
+            } elseif (($batch->current_phase === 'Peremajaan' || $batch->current_phase === 'Vegetatif') && $daysInCurrentPhase >= 7) {
                 $batch->update(['status' => 'near_phase_change']);
                 Log::info("Batch {$batch->batch_code} is ready for Pendewasaan phase.");
+            } elseif ($batch->current_phase === 'Pendewasaan' && $daysInCurrentPhase >= 23) {
+                $batch->update(['status' => 'near_harvest']);
+                Log::info("Batch {$batch->batch_code} is approaching harvest (45-55 days).");
             }
         }
     }

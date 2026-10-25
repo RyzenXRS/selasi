@@ -83,6 +83,18 @@
           <label for="f-nama">Nama kegiatan</label>
           <input type="text" id="f-nama" maxlength="150" placeholder="Contoh: Cek pH dan nutrisi air" required>
         </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
+          <div class="field">
+            <label for="f-tanggal">Tanggal kegiatan</label>
+            <input type="date" id="f-tanggal" required>
+          </div>
+          <div class="field">
+            <label for="f-batch">Batch budidaya (opsional)</label>
+            <select id="f-batch" style="width:100%;padding:11px 14px;border:2px solid #d5e2b3;border-radius:12px;background:#fff;font:inherit;font-size:.92rem;color:#1f3a22">
+              <option value="">-- Umum / Tanpa Batch --</option>
+            </select>
+          </div>
+        </div>
         <div class="actions">
           <button type="submit" class="btn" id="btn-save">Simpan</button>
           <button type="button" class="btn btn-ghost" id="f-cancel">Batal</button>

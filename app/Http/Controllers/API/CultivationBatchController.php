@@ -76,7 +76,14 @@ class CultivationBatchController extends Controller
     public function destroy(Request $request, int $id): JsonResponse
     {
         $batch = Pengelolaan::where('id_pembudidaya', $request->user()->id_pengguna)->findOrFail($id);
-        $batch->delete();
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($batch) {
+            $batch->perpindahanFase()->delete();
+            $batch->panen()->delete();
+            $batch->prediksiPanen()->delete();
+            $batch->todoList()->delete();
+            $batch->delete();
+        });
 
         return $this->noContentResponse('Pengelolaan budidaya berhasil dihapus.');
     }

@@ -31,6 +31,9 @@ class UpdateBatchRequest extends FormRequest
             'kondisi_lingkungan'  => ['nullable', 'string'],
             'environment_condition' => ['nullable', 'string'],
             'nilai_ph'            => ['nullable', 'numeric', 'between:0,14'],
+            'water_ph'            => ['nullable', 'numeric', 'between:0,14'],
+            'suhu'                => ['nullable', 'numeric', 'between:-10,60'],
+            'temperature'         => ['nullable', 'numeric', 'between:-10,60'],
             'catatan'             => ['nullable', 'string'],
             'notes'               => ['nullable', 'string'],
         ];
