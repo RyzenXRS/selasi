@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Prediksi Panen | SelaSI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/dashboard.css">
+  <style>
+    [hidden]{display:none!important}
+    .pr-line{border:1.5px solid color-mix(in srgb,var(--moss) 45%,white)}
+
+    .pr-label{margin:0 0 10px;font-size:.84rem;font-weight:600;color:var(--grass)}
+    .pr-batches{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;margin-bottom:24px}
+    .pr-batch{text-align:left;font:inherit;color:var(--forest);background:#fff;border-radius:18px;padding:15px 18px;cursor:pointer;border:2px solid color-mix(in srgb,var(--moss) 40%,white);transition:transform .15s,box-shadow .15s}
+    .pr-batch:hover{transform:translateY(-2px);box-shadow:0 10px 20px rgba(49,87,44,.14)}
+    .pr-batch:focus-visible{outline:3px solid var(--moss);outline-offset:2px}
+    .pr-batch[aria-pressed="true"]{background:var(--forest);border-color:var(--forest);color:var(--white)}
+    .pr-batch b{display:block;font-size:1.05rem}
+    .pr-batch span{display:block;font-size:.8rem;opacity:.85}
+    .pr-bar{height:6px;margin-top:12px;border-radius:4px;background:rgba(49,87,44,.12);overflow:hidden}
+    .pr-bar i{display:block;height:100%;border-radius:4px;background:var(--moss)}
+    .pr-batch[aria-pressed="true"] .pr-bar{background:rgba(255,255,255,.22)}
+    .pr-batch[aria-pressed="true"] .pr-bar i{background:var(--leaf)}
+
+    .pr-card{background:#fff;border-radius:26px;padding:28px;box-shadow:0 12px 30px rgba(49,87,44,.1);position:relative;overflow:hidden}
+    .pr-card::before{content:"";position:absolute;right:-70px;top:-70px;width:240px;height:240px;border-radius:50%;background:color-mix(in srgb,var(--leaf) 55%,white);opacity:.6}
+    .pr-top{position:relative;display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin-bottom:26px}
+    .pr-sprout{width:92px;height:92px;border-radius:50%;background:var(--card);display:grid;place-items:center;flex-shrink:0}
+    .pr-sprout svg{width:62px;height:62px}
+    .pr-kode{margin:0;font-size:.8rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--grass)}
+    .pr-kode b{display:block;margin-top:2px;font-size:1.5rem;letter-spacing:0;text-transform:none;color:var(--forest)}
+    .pr-status{display:inline-block;margin-top:8px;padding:6px 18px;border-radius:99px;font-size:1.05rem;font-weight:700}
+    .pr-status.siap{background:var(--forest);color:var(--leaf)}
+    .pr-status.dekat{background:var(--warn-bg);color:var(--warn)}
+    .pr-status.belum{background:var(--card);color:var(--forest)}
+    .pr-tag{position:relative;margin-left:auto;align-self:flex-start;padding:4px 14px;border-radius:99px;background:var(--forest);color:var(--leaf);font-size:.74rem;font-weight:600}
+
+    .pr-h{position:relative;margin:0 0 10px;font-size:.84rem;font-weight:600;color:var(--grass)}
+    .pr-track-wrap{position:relative;padding-top:34px;margin-bottom:8px}
+    .pr-track{position:relative;height:30px;border-radius:15px;background:#eef3d8;overflow:hidden}
+    .pr-band{position:absolute;top:0;bottom:0}
+    .pr-band.b1{background:var(--moss)}.pr-band.b2{background:var(--grass)}.pr-band.b3{background:var(--forest)}
+    .pr-band.b4{background:repeating-linear-gradient(135deg,#e0b23a 0 8px,#f0cc66 8px 16px)}
+    .pr-pin{position:absolute;top:30px;width:2px;margin-left:-1px;background:var(--forest);height:38px}
+    .pr-pin span{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);white-space:nowrap;padding:3px 10px;border-radius:99px;background:var(--forest);color:var(--white);font-size:.74rem;font-weight:600}
+    .pr-pin::after{content:"";position:absolute;top:13px;left:-5px;width:12px;height:12px;border-radius:50%;background:#fff;border:3px solid var(--forest)}
+    .pr-ticks{position:relative;height:18px;margin-top:4px;font-size:.7rem;color:var(--grass)}
+    .pr-ticks span{position:absolute;transform:translateX(-50%)}
+    .pr-legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin:10px 0 26px;font-size:.76rem;color:var(--grass)}
+    .pr-legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+
+    .pr-dates{display:flex;align-items:stretch;gap:14px;flex-wrap:wrap;margin-bottom:22px}
+    .pr-date{flex:1;min-width:170px;border-radius:18px;background:var(--white);border:2px dashed color-mix(in srgb,var(--moss) 60%,white);padding:14px 18px;text-align:center}
+    .pr-date p{margin:0;font-size:.76rem;font-weight:600;color:var(--grass)}
+    .pr-date strong{display:block;margin:2px 0;font-size:2.4rem;line-height:1.1;color:var(--forest)}
+    .pr-date small{font-size:.84rem;color:var(--forest)}
+    .pr-arrow{align-self:center;font-size:1.4rem;color:var(--moss)}
+
+    .pr-note{margin:0;padding:16px 20px;border-radius:16px;background:#fbf6dc;border-left:6px solid #e0b23a;font-size:.88rem;line-height:1.7;color:#4d4220}
+    .pr-note b{display:block;margin-bottom:4px;font-size:.76rem;letter-spacing:.05em;text-transform:uppercase;color:#8a6d1c}
+    .pr-foot{margin:14px 2px 0;font-size:.76rem;color:var(--grass)}
+
+    .pr-kosong{display:flex;gap:16px;align-items:flex-start;padding:30px;border-radius:22px;border:2px dashed color-mix(in srgb,var(--moss) 60%,white);background:#fff}
+    .pr-kosong svg{width:54px;height:54px;flex-shrink:0;color:var(--moss)}
+    .pr-kosong b{display:block;margin-bottom:4px;font-size:1.05rem}
+    .pr-kosong p{margin:0;font-size:.88rem;color:var(--grass)}
+    @media(max-width:600px){.pr-card{padding:20px}.pr-tag{margin-left:0}.pr-arrow{display:none}}
+    @media(prefers-reduced-motion:reduce){.pr-batch{transition:none}.pr-batch:hover{transform:none}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <span class="brand">SelaSI</span>
+      <nav class="nav" aria-label="Menu utama">
+        <a href="dashboard.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Dashboard</span></a>
+        <a href="budidaya.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-9"/><path d="M12 13c0-4 3-6 7-6 0 4-3 6-7 6z"/><path d="M12 16c0-3-2-5-6-5 0 3 2 5 6 5z"/></svg><span>Data Budidaya</span></a>
+        <a href="produk.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l1 13H5z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg><span>Manajemen Produk</span></a>
+        <a href="panen.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18l-2 11H5z"/><path d="M8 9l4-6 4 6"/></svg><span>Data Panen</span></a>
+        <a href="pesanan.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.5L21 8H6"/><circle cx="10" cy="20" r="1.2"/><circle cx="17" cy="20" r="1.2"/></svg><span>Penjualan dan Transaksi</span></a>
+        <a aria-current="page" href="prediksi.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg><span>AI Prediksi Panen</span></a>
+        <a href="riwayat.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 8v4l3 2"/></svg><span>Riwayat</span></a>
+        <a href="todo.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg><span>To-Do List</span></a>
+        <a href="profil.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg><span>Akun Saya</span></a>
+      </nav>
+      <div class="sidebar-foot">
+        <span id="user-email" class="user-email"></span>
+        <button type="button" class="btn-logout" id="btn-logout"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg><span>Keluar</span></button>
+      </div>
+    </aside>
+
+    <main class="page">
+      <div class="page-head">
+        <h1>AI Prediksi Panen</h1>
+        <p class="sub">Pantau kapan batch fase pendewasaan siap dipanen.</p>
+      </div>
+
+      <!-- Alternatif flow: tidak ada batch pada fase pendewasaan -->
+      <div class="pr-kosong" id="kosong" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-9"/><path d="M12 13c0-4 3-6 7-6 0 4-3 6-7 6z"/><path d="M12 16c0-3-2-5-6-5 0 3 2 5 6 5z"/></svg>
+        <div><b id="kosong-msg"></b><p>Prediksi akan tersedia setelah batch memasuki fase pendewasaan. Kelola batch melalui Data Budidaya.</p></div>
+      </div>
+
+      <div id="isi" hidden>
+        <p class="pr-label">Pilih batch pendewasaan</p>
+        <div class="pr-batches" id="batches"></div>
+
+        <section class="pr-card pr-line" aria-live="polite">
+          <p id="tunggu" style="position:relative;margin:0;color:var(--grass)" hidden>Memproses prediksi...</p>
+          <div id="hasil" hidden>
+            <div class="pr-top">
+              <div class="pr-sprout" id="r-ikon" aria-hidden="true"></div>
+              <div>
+                <p class="pr-kode">Kode batch<b id="r-kode"></b></p>
+                <span class="pr-status" id="r-status"></span>
+              </div>
+              <span class="pr-tag">Estimasi AI</span>
+            </div>
+
+            <p class="pr-h">Lintasan umur tanaman</p>
+            <div class="pr-track-wrap">
+              <div class="pr-track" id="track"></div>
+              <div class="pr-pin" id="pin"><span id="pin-label"></span></div>
+              <div class="pr-ticks" id="ticks"></div>
+            </div>
+            <div class="pr-legend">
+              <span><i style="background:var(--moss)"></i>Semai</span>
+              <span><i style="background:var(--grass)"></i>Peremajaan</span>
+              <span><i style="background:var(--forest)"></i>Pendewasaan</span>
+              <span><i style="background:#e0b23a"></i>Rentang panen</span>
+            </div>
+
+            <div class="pr-dates">
+              <div class="pr-date"><p>Perkiraan tanggal mulai panen</p><strong id="r-mulai-d"></strong><small id="r-mulai-m"></small></div>
+              <span class="pr-arrow" aria-hidden="true">&rarr;</span>
+              <div class="pr-date"><p>Perkiraan tanggal selesai panen</p><strong id="r-selesai-d"></strong><small id="r-selesai-m"></small></div>
+            </div>
+
+            <p class="pr-note"><b>Informasi pendukung prediksi</b><span id="r-info"></span></p>
+          </div>
+        </section>
+        <p class="pr-foot" id="catat"></p>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    window.addEventListener("error", function (e) {
+      var m = document.querySelector(".sub");
+      if (m) m.textContent = "Error: " + e.message + " (" + String(e.filename || "").split("/").pop() + " baris " + e.lineno + ")";
+    });
+  </script>
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/lonceng.js"></script>
+  <script src="../assets/js/guard.js"></script>
+  <script src="../assets/js/prediksi.js"></script>
+</body>
+</html>

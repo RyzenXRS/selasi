@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Manajemen Produk | SelaSI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/dashboard.css">
+  <style>
+    [hidden]{display:none!important}
+    .alert{padding:12px 16px;border-radius:12px;margin:0 0 16px;background:#fde8e3;color:#b3321b;font-size:.92rem;line-height:1.5}
+    .alert.success{background:#e3f3d2;color:#25611f}
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border:0;border-radius:999px;background:#2f5230;color:#fff;font:inherit;font-weight:600;font-size:.92rem;cursor:pointer}
+    .btn:hover{background:#1f3a22}
+    .btn:disabled{background:#8fa58a;cursor:wait}
+    .btn svg{width:18px;height:18px}
+    .btn-ghost{background:transparent;color:#2f5230;box-shadow:inset 0 0 0 2px #2f5230}.btn-ghost:hover{background:#dde8b0}
+    .btn:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid #8fbf4d;outline-offset:2px}
+    .bar-top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}
+    .info{margin:0;color:#4d6a3a;font-weight:500}
+
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:18px}
+    .produk{background:#fff;border:1px solid #e3ebc6;border-radius:20px;overflow:hidden}
+    .foto{aspect-ratio:4/3;background:#eef3d8;display:grid;place-items:center;color:#8fa58a}
+    .foto img{width:100%;height:100%;object-fit:cover;display:block}
+    .foto svg{width:44px;height:44px}
+    .isi{padding:16px 18px 18px}
+    .isi h3{margin:0 0 6px;font-size:1.02rem;color:#2f5230;overflow-wrap:anywhere}
+    .isi p{margin:0 0 12px;font-size:.86rem;line-height:1.55;color:#4a6638;overflow-wrap:anywhere}
+    .meta{display:flex;justify-content:space-between;align-items:center;gap:8px}
+    .harga{font-weight:700;color:#1f3a22}
+    .stok{padding:3px 12px;border-radius:99px;background:#dde8b0;color:#2f5230;font-size:.8rem;font-weight:600;white-space:nowrap}
+    .empty{margin:0;padding:24px;text-align:center;color:#5d7549;border:2px dashed #d5e2b3;border-radius:14px}
+
+    .panel{background:#fff;border:1px solid #e3ebc6;border-radius:20px;padding:26px}
+    .panel-title{margin:0 0 16px;font-size:1.25rem;color:#2f5230}
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+    .span-2{grid-column:1/-1}
+    .field label{display:block;margin:0 0 6px;font-size:.84rem;font-weight:600;color:#2f5230}
+    .field input,.field textarea{width:100%;padding:11px 14px;border:2px solid #d5e2b3;border-radius:12px;background:#fff;font:inherit;font-size:.92rem;color:#1f3a22}
+    .field textarea{min-height:92px;resize:vertical}
+    .help{margin:6px 0 0;font-size:.78rem;color:#5d7549}
+    .preview{display:block;width:160px;max-width:100%;aspect-ratio:4/3;margin-top:10px;border-radius:12px;object-fit:cover;border:1px solid #d5e2b3}
+    .actions{display:flex;gap:10px;flex-wrap:wrap}
+    .aksi{display:flex;gap:8px;margin-top:14px}
+    .btn-sm{padding:7px 16px;font-size:.82rem}
+    .btn-danger{background:#b3321b}.btn-danger:hover{background:#8f2814}
+    .modal{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:20px;background:rgba(31,58,34,.45)}
+    .dialog{width:100%;max-width:400px;background:#fff;border-radius:20px;padding:26px;box-shadow:0 20px 40px rgba(0,0,0,.25)}
+    .dialog h2{margin:0 0 8px;font-size:1.15rem;color:#2f5230}
+    .dialog p{margin:0 0 18px;font-size:.92rem;line-height:1.6;color:#4a6638}
+    @media(max-width:700px){.form-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <span class="brand">SelaSI</span>
+      <nav class="nav" aria-label="Menu utama">
+        <a href="dashboard.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Dashboard</span></a>
+        <a href="budidaya.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-9"/><path d="M12 13c0-4 3-6 7-6 0 4-3 6-7 6z"/><path d="M12 16c0-3-2-5-6-5 0 3 2 5 6 5z"/></svg><span>Data Budidaya</span></a>
+        <a aria-current="page" href="produk.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l1 13H5z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg><span>Manajemen Produk</span></a>
+        <a href="panen.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18l-2 11H5z"/><path d="M8 9l4-6 4 6"/></svg><span>Data Panen</span></a>
+        <a href="pesanan.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.5L21 8H6"/><circle cx="10" cy="20" r="1.2"/><circle cx="17" cy="20" r="1.2"/></svg><span>Penjualan dan Transaksi</span></a>
+        <a href="prediksi.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg><span>AI Prediksi Panen</span></a>
+        <a href="riwayat.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 8v4l3 2"/></svg><span>Riwayat</span></a>
+        <a href="todo.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg><span>To-Do List</span></a>
+        <a href="profil.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg><span>Akun Saya</span></a>
+      </nav>
+      <div class="sidebar-foot">
+        <span id="user-email" class="user-email"></span>
+        <button type="button" class="btn-logout" id="btn-logout"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg><span>Keluar</span></button>
+      </div>
+    </aside>
+
+    <main class="page">
+      <div class="page-head">
+        <h1>Manajemen Produk</h1>
+        <p class="sub">Kelola produk selada yang akan dijual.</p>
+      </div>
+
+      <div id="alert" class="alert" role="alert" hidden></div>
+      <div id="notice" class="alert success" role="status" tabindex="-1" hidden></div>
+
+      <!-- Halaman Manajemen Produk -->
+      <section id="list-view">
+        <div class="bar-top">
+          <p class="info" id="list-info"></p>
+          <button type="button" class="btn" id="btn-add" aria-label="Tambah produk">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+            <span>Tambah Produk</span>
+          </button>
+        </div>
+        <div class="grid" id="grid"></div>
+        <p class="empty" id="empty" hidden>Belum ada produk. Tekan Tambah Produk untuk mulai.</p>
+      </section>
+
+      <!-- Form Input Produk (UC22) -->
+      <form id="form" class="panel" novalidate hidden>
+        <h2 class="panel-title" id="form-title">Tambah produk</h2>
+        <div id="form-alert" class="alert" role="alert" hidden></div>
+        <div class="form-grid">
+          <div class="field span-2"><label for="f-nama">Nama produk</label><input type="text" id="f-nama" maxlength="50" placeholder="Contoh: Selada Hijau Segar"></div>
+          <div class="field span-2"><label for="f-deskripsi">Deskripsi</label><textarea id="f-deskripsi" placeholder="Ceritakan kualitas dan keunggulan produk"></textarea></div>
+          <div class="field"><label for="f-stok">Stok (kg)</label><input type="number" id="f-stok" min="0" step="0.01" placeholder="Contoh: 12.50"></div>
+          <div class="field"><label for="f-harga">Harga (Rp)</label><input type="number" id="f-harga" min="0" step="0.01" placeholder="Contoh: 15000"></div>
+          <div class="field span-2">
+            <label for="f-foto">Foto produk</label>
+            <input type="file" id="f-foto" accept="image/*">
+            <p class="help" id="f-foto-help">Pilih file gambar.</p>
+            <img id="f-preview" class="preview" alt="Pratinjau foto produk" hidden>
+          </div>
+        </div>
+        <div class="actions">
+          <button type="submit" class="btn" id="btn-save">Simpan</button>
+          <button type="button" class="btn btn-ghost" id="btn-cancel">Batal</button>
+        </div>
+      </form>
+    </main>
+  </div>
+
+  <!-- Pop up konfirmasi penghapusan (UC24) -->
+  <div class="modal" id="modal" hidden>
+    <div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="m-judul" aria-describedby="m-teks">
+      <h2 id="m-judul">Hapus produk?</h2>
+      <p id="m-teks"></p>
+      <div class="actions">
+        <button type="button" class="btn btn-danger" id="m-ya">Konfirmasi</button>
+        <button type="button" class="btn btn-ghost" id="m-batal">Batal</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    window.addEventListener("error", function (e) {
+      var a = document.getElementById("alert");
+      if (a) { a.textContent = "Error: " + e.message + " (" + String(e.filename || "").split("/").pop() + " baris " + e.lineno + ")"; a.hidden = false; }
+    });
+  </script>
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/lonceng.js"></script>
+  <script src="../assets/js/guard.js"></script>
+  <script src="../assets/js/produk.js"></script>
+</body>
+</html>

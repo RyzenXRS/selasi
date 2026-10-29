@@ -35,10 +35,17 @@ const BATAS_HARI_PINDAH = 2;        // sisa <= 2 hari -> "Mendekati Perpindahan 
 // Peremajaan: hari ke-15 sampai 21 hari (durasi 7 hari)
 // Pendewasaan: hari ke-22 sampai panen (panen sekitaran 45-55 hari)
 const FASE = [
+<<<<<<< HEAD
   { id_fase: 1, nama_fase: "Semai", urutan_fase: 1, durasi: 14, meja: "Meja Persemaian" },
   { id_fase: 2, nama_fase: "Peremajaan", urutan_fase: 2, durasi: 7, meja: "Meja Peremajaan" },
   { id_fase: 3, nama_fase: "Pendewasaan", urutan_fase: 3, durasi: 29, meja: "Meja Pendewasaan" },
   { id_fase: 4, nama_fase: "Panen", urutan_fase: 4, durasi: 5, meja: "Meja Panen" },
+=======
+  { id_fase: 1, nama_fase: "Semai", urutan_fase: 1, durasi: 14, meja: "Meja Semai" },              // sampai umur 14 hari
+  { id_fase: 2, nama_fase: "Peremajaan", urutan_fase: 2, durasi: 7, meja: "Meja Peremajaan" },      // pindah hari ke-15, sampai umur 21 hari
+  { id_fase: 3, nama_fase: "Pendewasaan", urutan_fase: 3, durasi: 29, meja: "Meja Pendewasaan" },   // sampai panen, sekitar umur 50 hari (45-55, nanti dari AI)
+  { id_fase: 4, nama_fase: "Panen", urutan_fase: 4, durasi: 7, meja: "Meja Panen" },
+>>>>>>> 3619d1409b2ad972994775ad859e5e79023047dd
 ];
 const faseById = (id) => FASE.find((f) => f.id_fase === Number(id));
 const STATUS_CLASS = {
@@ -53,7 +60,11 @@ function seed() {
   return [
     {
       id_budidaya: 1, kode_pengelolaan: "SLD-001", tanggal_tanam: isoDaysAgo(9), jumlah_tanaman: 120,
+<<<<<<< HEAD
       lokasi: "Meja Persemaian 1", kondisi_tanaman: "Daun hijau segar, pertumbuhan normal.",
+=======
+      lokasi: "Meja Semai 1", kondisi_tanaman: "Daun hijau segar, pertumbuhan normal.",
+>>>>>>> 3619d1409b2ad972994775ad859e5e79023047dd
       kondisi_air_nutrisi: "Nutrisi 900 ppm.", kondisi_instalasi: "Pompa dan selang normal.",
       kondisi_lingkungan: "Suhu 27 C, cahaya cukup.", nilai_ph: 6.0, catatan: "",
       fase: [{ id_fase: 1, tanggal_mulai: isoDaysAgo(9) }]
@@ -139,7 +150,10 @@ async function loadDataFromBackend() {
         jumlah_tanaman: b.jumlah_tanaman || b.plant_quantity || 0,
         lokasi: b.lokasi || b.location || "",
         nilai_ph: b.nilai_ph,
+<<<<<<< HEAD
         suhu: b.suhu ?? b.temperature ?? null,
+=======
+>>>>>>> 3619d1409b2ad972994775ad859e5e79023047dd
         kondisi_tanaman: b.kondisi_tanaman || "",
         kondisi_air_nutrisi: b.kondisi_air_nutrisi || "",
         kondisi_instalasi: b.kondisi_instalasi || "",
@@ -235,7 +249,10 @@ function showDetail(id) {
   $("dt-jumlah").textContent = b.jumlah_tanaman + " tanaman";
   $("dt-lokasi").textContent = b.lokasi || "-";
   $("dt-ph").textContent = b.nilai_ph === undefined || b.nilai_ph === "" || b.nilai_ph === null ? "-" : fmtAngka(b.nilai_ph);
+<<<<<<< HEAD
   $("dt-suhu").textContent = (b.suhu !== undefined && b.suhu !== null && b.suhu !== "") ? fmtAngka(b.suhu, 1) + " °C" : "-";
+=======
+>>>>>>> 3619d1409b2ad972994775ad859e5e79023047dd
   $("dt-kondisi").textContent = b.kondisi_tanaman || "-";
   $("dt-air").textContent = b.kondisi_air_nutrisi || "-";
   $("dt-instalasi").textContent = b.kondisi_instalasi || "-";
@@ -378,7 +395,10 @@ function showForm(editing) {
   $("f-jumlah").value = b.jumlah_tanaman || "";
   $("f-lokasi").value = b.lokasi || "";
   $("f-ph").value = b.nilai_ph === undefined || b.nilai_ph === null ? "" : b.nilai_ph;
+<<<<<<< HEAD
   $("f-suhu").value = b.suhu === undefined || b.suhu === null ? "" : b.suhu;
+=======
+>>>>>>> 3619d1409b2ad972994775ad859e5e79023047dd
   $("f-kondisi").value = b.kondisi_tanaman || "";
   $("f-air").value = b.kondisi_air_nutrisi || "";
   $("f-instalasi").value = b.kondisi_instalasi || "";
@@ -407,12 +427,15 @@ $("btn-back").addEventListener("click", showList);
 $("btn-cancel").addEventListener("click", () => (mode === "edit" && current ? showDetail(current.id_budidaya) : showList()));
 $("btn-logout").addEventListener("click", logout);
 
+<<<<<<< HEAD
 const btnAutoKode = $("btn-auto-kode");
 if (btnAutoKode) btnAutoKode.addEventListener("click", () => { $("f-kode").value = generateAutoBatchCode(); });
 
 const btnFetchSuhu = $("btn-fetch-suhu");
 if (btnFetchSuhu) btnFetchSuhu.addEventListener("click", () => { fetchCurrentTemperature(true); });
 
+=======
+>>>>>>> 3619d1409b2ad972994775ad859e5e79023047dd
 // Hapus batch (UC9)
 $("btn-delete").addEventListener("click", () => {
   $("confirm-text").textContent = `Hapus batch ${current.kode_pengelolaan}? Riwayat fase dan data panennya ikut terhapus.`;
@@ -424,6 +447,7 @@ $("btn-yes").addEventListener("click", async () => {
   if (!USE_MOCK) {
     try {
       const res = await apiFetch(`${ENDPOINTS.budidaya}/${id}`, { method: "DELETE" });
+<<<<<<< HEAD
       if (!res || (!res.ok && res.status !== 204)) {
         const err = await res?.json().catch(() => ({}));
         show("confirm", false);
@@ -433,6 +457,15 @@ $("btn-yes").addEventListener("click", async () => {
     } catch (e) {
       show("confirm", false);
       return showAlert("alert", "Error koneksi: " + e.message);
+=======
+      if (!res || !res.ok) {
+        const err = await res?.json().catch(() => ({}));
+        return showAlert("notice", err?.message || "Gagal menghapus data budidaya dari server.");
+      }
+      await loadDataFromBackend();
+    } catch (e) {
+      return showAlert("notice", "Error koneksi: " + e.message);
+>>>>>>> 3619d1409b2ad972994775ad859e5e79023047dd
     }
   } else {
     data = data.filter((b) => b.id_budidaya !== id);
@@ -545,13 +578,19 @@ $("form").addEventListener("submit", async (e) => {
   }
   if (salah) return showAlert("form-alert", MSG_FORMAT);
 
+<<<<<<< HEAD
   const suhuVal = $("f-suhu").value ? Number($("f-suhu").value) : null;
 
+=======
+>>>>>>> 3619d1409b2ad972994775ad859e5e79023047dd
   const body = {
     jumlah_tanaman: jumlah,
     lokasi: raw.lokasi,
     nilai_ph: ph,
+<<<<<<< HEAD
     suhu: suhuVal,
+=======
+>>>>>>> 3619d1409b2ad972994775ad859e5e79023047dd
     kondisi_tanaman: raw.kondisi,
     kondisi_air_nutrisi: raw.air,
     kondisi_instalasi: raw.instalasi,
@@ -567,7 +606,10 @@ $("form").addEventListener("submit", async (e) => {
         const payload = {
           kode_pengelolaan: raw.kode,
           tanggal_tanam: raw.tanam,
+<<<<<<< HEAD
           suhu: suhuVal,
+=======
+>>>>>>> 3619d1409b2ad972994775ad859e5e79023047dd
           ...body,
         };
         const res = await apiFetch(ENDPOINTS.budidaya, {

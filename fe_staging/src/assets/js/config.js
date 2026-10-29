@@ -14,8 +14,12 @@ const ENDPOINTS = {
   register:     "/auth/register",
   logout:       "/auth/logout",
   forgot:       "/auth/forgot-password",
+<<<<<<< HEAD
   verify:       "/auth/verify-code",
   reset:        "/auth/reset-password",
+=======
+  reset:        "/auth/reset-password",   // placeholder
+>>>>>>> 3619d1409b2ad972994775ad859e5e79023047dd
   profil:       "/profile",        // GET: data akun
   profilUbah:   "/profile",        // PUT: ubah profil (dikirim POST + _method=PUT kalau ada foto)
   dashboard:    "/dashboard",
@@ -30,6 +34,10 @@ const ENDPOINTS = {
   prediksiPanen:     "/pengelolaan",  // /{id}/prediksi-panen
   prediksiPermintaan: "/prediksi-permintaan",
   produk:       "/produk",         // GET katalog produk
+<<<<<<< HEAD
+=======
+  pesanan:      "/pesanan",        // GET daftar pesanan masuk (UC26), sesuaikan dengan routes/api.php
+>>>>>>> 3619d1409b2ad972994775ad859e5e79023047dd
 };
 
 const ROLE_PEMBUDIDAYA = "pembudidaya"; // BE mengirim "PEMBUDIDAYA", simpan versi huruf kecil saat login

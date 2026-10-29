@@ -47,6 +47,7 @@ const mockDoneToday = () => (readJSON(MOCK_DONE, {})[isoToday()] || []);
 
 // ---------- Panggilan ke BE ----------
 const TODO_PATH = (typeof ENDPOINTS !== "undefined" && ENDPOINTS.todo) || "/to-do";
+<<<<<<< HEAD
 let batchesMap = {};
 
 async function fetchBatches() {
@@ -75,6 +76,8 @@ async function fetchBatches() {
     }
   } catch (_) {}
 }
+=======
+>>>>>>> 3619d1409b2ad972994775ad859e5e79023047dd
 
 async function fetchTodos() {
   if (USE_MOCK) {
@@ -89,6 +92,7 @@ async function fetchTodos() {
   const d = json.data ?? json;
   const rows = Array.isArray(d) ? d : (d.data || []);
 
+<<<<<<< HEAD
   return rows.map((t) => ({
     id_todo: t.id_todo || t.id,
     id_pengelolaan: t.id_pengelolaan || t.batch_id,
@@ -100,6 +104,20 @@ async function fetchTodos() {
 
 // Tambah kegiatan: kirim nama_tugas, tanggal_tugas, dan batch id jika ada
 async function createTodo(nama, tanggal, batchId) {
+=======
+  return rows
+    .filter((t) => !t.tanggal_tugas || String(t.tanggal_tugas).slice(0, 10) === isoToday())
+    .map((t) => ({
+      id_todo: t.id_todo || t.id,
+      nama_tugas: t.nama_tugas || t.title,
+      tanggal_tugas: t.tanggal_tugas || t.task_date,
+      status: !!t.status,
+    }));
+}
+
+// Tambah kegiatan: kirim nama_tugas dan tanggal_tugas hari ini
+async function createTodo(nama) {
+>>>>>>> 3619d1409b2ad972994775ad859e5e79023047dd
   if (USE_MOCK) {
     await delay(400);
     const arr = mockTasks();
@@ -109,6 +127,7 @@ async function createTodo(nama, tanggal, batchId) {
     return { ...item, status: false };
   }
 
+<<<<<<< HEAD
   const payload = {
     nama_tugas: nama,
     tanggal_tugas: tanggal || isoToday(),
@@ -127,19 +146,35 @@ async function createTodo(nama, tanggal, batchId) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message || (err.errors ? Object.values(err.errors).flat()[0] : null) || MSG_FORMAT);
   }
+=======
+  const res = await apiFetch(TODO_PATH, {
+    method: "POST",
+    body: JSON.stringify({
+      nama_tugas: nama,
+      tanggal_tugas: isoToday(),
+      status: false,
+    }),
+  });
+  if (!res) return null;
+  if (res.status === 422) throw new Error(MSG_FORMAT);
+>>>>>>> 3619d1409b2ad972994775ad859e5e79023047dd
   let json = {};
   try { json = await res.json(); } catch (_) {}
   if (!res.ok) throw new Error(json.message || "Kegiatan gagal disimpan.");
   const item = json.data ?? json;
   return {
     id_todo: item.id_todo || item.id,
+<<<<<<< HEAD
     id_pengelolaan: item.id_pengelolaan || item.batch_id,
+=======
+>>>>>>> 3619d1409b2ad972994775ad859e5e79023047dd
     nama_tugas: item.nama_tugas || item.title,
     tanggal_tugas: item.tanggal_tugas || item.task_date,
     status: !!item.status,
   };
 }
 
+<<<<<<< HEAD
 async function deleteTodo(id) {
   if (!confirm("Hapus kegiatan ini?")) return;
   if (!USE_MOCK) {
@@ -157,6 +192,8 @@ async function deleteTodo(id) {
   notify("Kegiatan berhasil dihapus.");
 }
 
+=======
+>>>>>>> 3619d1409b2ad972994775ad859e5e79023047dd
 // Centang atau batal centang kegiatan
 async function setStatus(id, checked) {
   if (USE_MOCK) {
@@ -314,7 +351,11 @@ $("form").addEventListener("submit", async (e) => {
     const item = await createTodo(nama, tanggal, batchId);
     if (!item) return;
     if (item.status === undefined) item.status = false;
+<<<<<<< HEAD
     todos.unshift(item);
+=======
+    todos.push(item);
+>>>>>>> 3619d1409b2ad972994775ad859e5e79023047dd
 
     show("form", false);
     render();
