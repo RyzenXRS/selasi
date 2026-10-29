@@ -22,10 +22,13 @@ function showAlert(id, message, type = "error") {
 
 // Path endpoint
 const EP = {
-  login:  ENDPOINTS.login,
+  login: ENDPOINTS.login,
   forgot: ENDPOINTS.forgot,
+<<<<<<< HEAD
   verify: ENDPOINTS.verify || "/auth/verify-code",
   reset:  ENDPOINTS.reset  || "/auth/reset-password",
+=======
+>>>>>>> 3619d1409b2ad972994775ad859e5e79023047dd
 };
 
 async function post(path, body) {
@@ -130,10 +133,16 @@ views.login.addEventListener("submit", async (e) => {
   });
 });
 
+<<<<<<< HEAD
 // ---------- UC2 Lupa password (Flow Kode OTP) ----------
 const pulih = { email: "", kode: "", token: "" };
 
 // Langkah 1: Input email -> Kirim kode OTP
+=======
+// ---------- UC2 Lupa password ----------
+const pulih = { email: "" };
+
+>>>>>>> 3619d1409b2ad972994775ad859e5e79023047dd
 views.forgot.addEventListener("submit", async (e) => {
   e.preventDefault();
   const email = $("forgot-email").value.trim();
@@ -141,6 +150,7 @@ views.forgot.addEventListener("submit", async (e) => {
 
   await withButton($("btn-forgot"), "Mengirim...", async () => {
     try {
+<<<<<<< HEAD
       const { ok, status, data } = await post(EP.forgot, { email });
 
       if (!ok) {
@@ -159,11 +169,21 @@ views.forgot.addEventListener("submit", async (e) => {
       $("code-hint").textContent = "Kami telah mengirim 6 digit kode verifikasi (OTP) ke " + email + ". Masukkan kode tersebut di bawah:";
       showView("code");
       $("code-input").focus();
+=======
+      const { ok, data } = await post(EP.forgot, { email });
+      if (!ok) return showAlert("alert-forgot", data.message || "Email Pemulihan tidak sesuai");
+
+      pulih.email = email;
+      // Backend berhasil mengirim link reset
+      showView("login");
+      showAlert("alert-login", data.message || data.data?.message || "Link reset password telah dikirim ke email Anda.", "success");
+>>>>>>> 3619d1409b2ad972994775ad859e5e79023047dd
     } catch (err) {
       console.error("[FORGOT PASSWORD ERROR]", err);
       showAlert("alert-forgot", "Tidak bisa terhubung ke server. Coba lagi nanti.");
     }
   });
+<<<<<<< HEAD
 });
 
 // Langkah 2: Input kode OTP 6 digit
@@ -230,4 +250,6 @@ views.reset.addEventListener("submit", async (e) => {
       showAlert("alert-reset", "Tidak bisa terhubung ke server. Coba lagi nanti.");
     }
   });
+=======
+>>>>>>> 3619d1409b2ad972994775ad859e5e79023047dd
 });
