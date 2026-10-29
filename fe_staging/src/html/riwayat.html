@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Riwayat | SelaSI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/dashboard.css">
+  <style>
+    [hidden]{display:none!important}
+    .btn{display:inline-block;padding:10px 20px;border:0;border-radius:999px;background:#2f5230;color:#fff;font:inherit;font-weight:600;font-size:.92rem;cursor:pointer}
+    .btn:hover{background:#1f3a22}
+    .btn-ghost{background:transparent;color:#2f5230;box-shadow:inset 0 0 0 2px #2f5230}.btn-ghost:hover{background:#dde8b0}
+    .btn:focus-visible,.r-tab:focus-visible,.r-chip:focus-visible,.r-detail:focus-visible,.link-nomor:focus-visible{outline:3px solid #8fbf4d;outline-offset:2px}
+
+    /* Tab */
+    .r-tabs{display:flex;gap:8px;border-bottom:1.5px solid #e3ebc6;margin-bottom:22px}
+    .r-tab{font:inherit;font-weight:500;padding:12px 24px;border:0;background:none;color:#4d6a3a;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1.5px}
+    .r-tab:hover{color:#1f3a22}
+    .r-tab[aria-selected="true"]{color:#1f3a22;font-weight:600;border-bottom-color:#4F772D}
+
+    /* Pencarian + filter */
+    .r-tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:20px}
+    .r-search{flex:1;min-width:220px;position:relative}
+    .r-search svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:#5d7549}
+    .r-search input{width:100%;font:inherit;font-size:.92rem;padding:12px 14px 12px 42px;border:1.5px solid #d5e2b3;border-radius:999px;background:#fff;color:#1f3a22}
+    .r-search input:focus-visible{outline:3px solid #ECF39E;border-color:#4F772D}
+    .r-chip{font:inherit;font-weight:500;font-size:.9rem;padding:11px 22px;border-radius:999px;border:1.5px solid #d5e2b3;background:#fff;color:#1f3a22;cursor:pointer}
+    .r-chip[aria-pressed="true"]{background:#4F772D;border-color:#4F772D;color:#fff;font-weight:600}
+
+    /* Kartu batch */
+    .r-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px}
+    .r-card{background:#fff;border:1.5px solid #e3ebc6;border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:14px}
+    .r-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+    .r-title{margin:0;font-size:1.15rem;font-weight:700;color:#1f3a22}
+    .r-meta{margin:2px 0 0;font-size:.85rem;color:#5d7549}
+    .r-badge{font-size:.8rem;font-weight:600;padding:4px 14px;border-radius:999px;white-space:nowrap}
+    .r-badge.run{background:#ECF39E;color:#31572C}
+    .r-badge.done{background:#DCE8B0;color:#31572C}
+    .r-badge.warn{background:#F6E7C1;color:#8A5A00}
+
+    .r-line{list-style:none;margin:0;padding:0}
+    .r-line li{position:relative;padding:0 0 12px 22px;font-size:.92rem;color:#1f3a22}
+    .r-line li:last-child{padding-bottom:0}
+    .r-line li::before{content:"";position:absolute;left:0;top:6px;width:10px;height:10px;border-radius:50%;background:#4F772D}
+    .r-line li:not(:last-child)::after{content:"";position:absolute;left:4px;top:18px;bottom:-4px;width:2px;background:#d5e2b3}
+    .r-line .tgl{color:#5d7549;margin-right:8px}
+
+    .r-foot{margin-top:auto;display:flex;justify-content:space-between;align-items:center;gap:10px}
+    .r-hasil{font-size:.88rem;color:#5d7549}
+    .r-detail{font:inherit;font-weight:600;font-size:.9rem;padding:10px 20px;border-radius:12px;border:1.5px solid #2f5230;background:#fff;color:#2f5230;cursor:pointer}
+    .r-detail:hover{background:#dde8b0}
+    .r-empty{padding:28px;text-align:center;color:#4d6a3a;border:2px dashed #d5e2b3;border-radius:16px;background:#fff}
+    .r-loading{padding:24px;text-align:center;color:#5d7549;font-weight:500}
+
+    /* Riwayat transaksi */
+    .tx-info{margin:0 0 12px;color:#4d6a3a;font-weight:500}
+    #tx-wrap th,#tx-wrap td{padding:12px 10px;font-size:.86rem;white-space:normal;vertical-align:middle}
+    #tx-wrap td.num,#tx-wrap .link-nomor,#tx-wrap .badge{white-space:nowrap}
+    td.num,th.num{text-align:right}
+    .link-nomor{border:0;background:none;padding:0;font:inherit;font-weight:600;color:#2f5230;text-decoration:underline;cursor:pointer;text-align:left}
+    .link-nomor:hover{color:#1f3a22}
+    .badge.batal{background:#fde8e3;color:#b3321b}
+    .facts .total{background:#dde8b0}
+    .facts .total dd{font-size:1.15rem;font-weight:700;color:#2f5230}
+
+    /* Detail */
+    .back-row{margin-bottom:14px}
+    .panel{background:#fff;border:1px solid #e3ebc6;border-radius:20px;padding:26px}
+    .panel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+    .panel-title{margin:0 0 8px;font-size:1.3rem;color:#2f5230}
+    .panel-title:focus{outline:none}
+    .sub-title{margin:26px 0 10px;font-size:1.05rem;color:#2f5230}
+    .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin:0}
+    .facts div{padding:12px 16px;border-radius:12px;background:#f7f9e4}
+    .facts .wide{grid-column:1/-1}
+    .facts dt{font-size:.78rem;color:#5d7549}
+    .facts dd{margin:2px 0 0;font-weight:500;color:#1f3a22;overflow-wrap:anywhere}
+    .note-empty{margin:0;padding:18px;text-align:center;color:#5d7549;border:2px dashed #d5e2b3;border-radius:14px}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <span class="brand">SelaSI</span>
+      <nav class="nav" aria-label="Menu utama">
+        <a href="dashboard.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Dashboard</span></a>
+        <a href="budidaya.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-9"/><path d="M12 13c0-4 3-6 7-6 0 4-3 6-7 6z"/><path d="M12 16c0-3-2-5-6-5 0 3 2 5 6 5z"/></svg><span>Data Budidaya</span></a>
+        <a href="produk.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l1 13H5z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg><span>Manajemen Produk</span></a>
+        <a href="panen.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18l-2 11H5z"/><path d="M8 9l4-6 4 6"/></svg><span>Data Panen</span></a>
+        <a href="pesanan.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.5L21 8H6"/><circle cx="10" cy="20" r="1.2"/><circle cx="17" cy="20" r="1.2"/></svg><span>Penjualan dan Transaksi</span></a>
+        <a href="prediksi.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg><span>AI Prediksi Panen</span></a>
+        <a aria-current="page" href="riwayat.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 8v4l3 2"/></svg><span>Riwayat</span></a>
+        <a href="todo.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg><span>To-Do List</span></a>
+        <a href="profil.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg><span>Akun Saya</span></a>
+      </nav>
+      <div class="sidebar-foot">
+        <span id="user-email" class="user-email"></span>
+        <button type="button" class="btn-logout" id="btn-logout"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg><span>Keluar</span></button>
+      </div>
+    </aside>
+
+    <main class="page">
+      <div class="page-head">
+        <h1>Riwayat</h1>
+        <p class="sub" id="page-sub">Lihat riwayat budidaya dan transaksi penjualan kamu.</p>
+      </div>
+
+      <div id="alert" class="alert" role="alert" hidden></div>
+
+      <!-- Pilihan jenis riwayat -->
+      <div class="r-tabs" id="tabs" role="tablist" aria-label="Jenis riwayat">
+        <button type="button" class="r-tab" id="tab-transaksi" role="tab" aria-selected="false" aria-controls="t-list">Riwayat Transaksi</button>
+        <button type="button" class="r-tab" id="tab-budidaya" role="tab" aria-selected="true" aria-controls="list">Riwayat Budidaya</button>
+      </div>
+
+      <div id="loading" class="r-loading" hidden>Memuat riwayat transaksi...</div>
+
+      <!-- Riwayat Budidaya: daftar batch -->
+      <section id="list" role="tabpanel" aria-labelledby="tab-budidaya">
+        <div class="r-tools">
+          <div class="r-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+            <input type="search" id="cari" placeholder="Cari kode batch" aria-label="Cari kode batch" autocomplete="off">
+          </div>
+          <button type="button" class="r-chip" data-filter="semua" aria-pressed="true">Semua</button>
+          <button type="button" class="r-chip" data-filter="berjalan" aria-pressed="false">Berjalan</button>
+          <button type="button" class="r-chip" data-filter="selesai" aria-pressed="false">Selesai</button>
+        </div>
+
+        <div class="r-grid" id="grid" aria-live="polite"></div>
+        <p class="r-empty" id="empty" hidden></p>
+      </section>
+
+      <!-- Riwayat Budidaya: detail batch -->
+      <section id="detail" class="panel" hidden>
+        <div class="panel-head">
+          <div>
+            <h2 id="dt-kode" class="panel-title"></h2>
+            <span id="dt-status" class="badge"></span>
+          </div>
+          <button type="button" class="btn btn-ghost" id="btn-back-list">Kembali</button>
+        </div>
+
+        <h3 class="sub-title">Data budidaya</h3>
+        <dl class="facts" id="f-budidaya"></dl>
+
+        <h3 class="sub-title">Perpindahan fase</h3>
+        <dl class="facts" id="f-fase"></dl>
+
+        <h3 class="sub-title">Riwayat perpindahan fase</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Urutan</th><th>Fase</th><th>Mulai</th><th>Selesai</th><th>Lama</th><th>Catatan</th></tr></thead>
+            <tbody id="hist-rows"></tbody>
+          </table>
+        </div>
+
+        <h3 class="sub-title">Data panen</h3>
+        <dl class="facts" id="f-panen"></dl>
+        <p class="note-empty" id="panen-kosong" hidden>Belum ada data panen untuk batch ini.</p>
+      </section>
+
+      <!-- Riwayat Transaksi: daftar -->
+      <section id="t-list" role="tabpanel" aria-labelledby="tab-transaksi" hidden>
+        <div id="tx-wrap" hidden>
+          <p class="tx-info" id="tx-info"></p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Kode batch</th>
+                  <th>Nomor pesanan</th>
+                  <th>Tanggal pesanan</th>
+                  <th>Nama pembeli</th>
+                  <th class="num">Total pembayaran</th>
+                  <th>Metode pembayaran</th>
+                  <th>Status pembayaran</th>
+                  <th>Status pesanan</th>
+                </tr>
+              </thead>
+              <tbody id="tx-rows"></tbody>
+            </table>
+          </div>
+        </div>
+        <p class="r-empty" id="tx-empty" hidden>Belum Ada Riwayat Transaksi</p>
+      </section>
+
+      <!-- Riwayat Transaksi: detail -->
+      <section id="t-detail" class="panel" aria-labelledby="tx-nomor" hidden>
+        <div class="panel-head">
+          <div>
+            <h2 id="tx-nomor" class="panel-title" tabindex="-1"></h2>
+            <span id="tx-badge" class="badge"></span>
+          </div>
+          <button type="button" class="btn btn-ghost" id="btn-back-tx">Kembali</button>
+        </div>
+        <dl class="facts" id="tx-facts"></dl>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    window.addEventListener("error", function (e) {
+      var a = document.getElementById("alert");
+      if (a) { a.textContent = "Error: " + e.message + " (" + String(e.filename || "").split("/").pop() + " baris " + e.lineno + ")"; a.hidden = false; }
+    });
+  </script>
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/lonceng.js"></script>
+  <script src="../assets/js/guard.js"></script>
+  <script src="../assets/js/riwayat.js"></script>
+</body>
+</html>

@@ -2,10 +2,10 @@
 const $ = (id) => document.getElementById(id);
 
 const views = {
-  login:  $("form-login"),
+  login: $("form-login"),
   forgot: $("form-forgot"),
-  code:   $("form-code"),
-  reset:  $("form-reset"),
+  code: $("form-code"),
+  reset: $("form-reset"),
 };
 
 function showView(name) {
@@ -20,60 +20,36 @@ function showAlert(id, message, type = "error") {
   el.hidden = false;
 }
 
-// Path endpoint. "verifikasi" belum ada di config.js, jadi diberi nilai bawaan.
-// Kalau BE memakai path lain, tambahkan  verifikasi: "/path-nya"  di ENDPOINTS pada config.js
+// Path endpoint
 const EP = {
-  login:  ENDPOINTS.login,
+  login: ENDPOINTS.login,
   forgot: ENDPOINTS.forgot,
-  verify: ENDPOINTS.verifikasi || "/verify-code",
-  reset:  ENDPOINTS.reset,
 };
-
-// ---------- Data palsu untuk uji coba (USE_MOCK = true di config.js) ----------
-//   Berhasil : pembudidaya@selasi.com / 12345678
-//   Role lain: admin@selasi.com / 12345678
-//   Lupa password: pakai pembudidaya@selasi.com. Kode verifikasi ditampilkan di layar.
-let mockKode = "";
-const acakKode = () => {
-  const huruf = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  return Array.from({ length: 6 }, () => huruf[Math.floor(Math.random() * huruf.length)]).join("");
-};
-
-function mockPost(path, body) {
-  if (path === EP.login) {
-    if (body.password !== "12345678") return { ok: false, data: {} };
-    if (body.email === "pembudidaya@selasi.com") {
-      return { ok: true, data: { token: "token-palsu", user: { id_pengguna: 1, email: body.email, role: "pembudidaya" } } };
-    }
-    if (body.email === "admin@selasi.com") {
-      return { ok: true, data: { token: "token-palsu", user: { id_pengguna: 2, email: body.email, role: "admin" } } };
-    }
-    return { ok: false, data: {} };
-  }
-  if (path === EP.forgot) {
-    if (body.email !== "pembudidaya@selasi.com") return { ok: false, data: {} };
-    mockKode = acakKode();
-    return { ok: true, data: { kode_uji: mockKode } };
-  }
-  if (path === EP.verify) {
-    return { ok: !!mockKode && body.kode === mockKode, data: {} };
-  }
-  return { ok: true, data: {} }; // simpan password baru
-}
 
 async function post(path, body) {
-  if (USE_MOCK) {
-    await new Promise((r) => setTimeout(r, 600)); // pura-pura menunggu server
-    return mockPost(path, body);
-  }
-  const res = await fetch(API_BASE_URL + path, {
+  const url = API_BASE_URL + path;
+  console.log("%c[API REQUEST] POST " + url, "color: #2f5230; font-weight: bold;", body);
+
+  const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify(body),
   });
+
   let data = {};
-  try { data = await res.json(); } catch (_) {}
-  return { ok: res.ok, data };
+  try {
+    data = await res.json();
+  } catch (err) {
+    console.error("[API ERROR] Gagal parse JSON:", err);
+  }
+
+  console.log(
+    `%c[API RESPONSE] Status: ${res.status}`,
+    res.ok ? "color: green; font-weight: bold;" : "color: red; font-weight: bold;",
+    data
+  );
+
+  return { ok: res.ok, status: res.status, data };
 }
 
 const isEmail = (v) => /^\S+@\S+\.\S+$/.test(v);
@@ -109,34 +85,52 @@ views.login.addEventListener("submit", async (e) => {
   const password = $("login-password").value;
 
   if (!email || !password) {
-    return showAlert("alert-login", "Email atau Password salah");
+    return showAlert("alert-login", "Lengkapi Data");
   }
 
   await withButton($("btn-login"), "Memproses...", async () => {
     try {
-      const { ok, data } = await post(EP.login, { email, password });
-      if (!ok) return showAlert("alert-login", "Email atau Password salah");
+      const { ok, status, data } = await post(EP.login, { email, password });
 
-      // Identifikasi role (sesuaikan nama field dengan respons BE)
-      const role = data.user?.role ?? data.role;
-      if (String(role).toLowerCase() !== ROLE_PEMBUDIDAYA) {
+      if (!ok) {
+        console.warn("[LOGIN GAGAL]", data);
+        return showAlert("alert-login", "Email atau Password salah");
+      }
+
+      // Backend response format: { success: true, message: "...", data: { user: {...}, token: "..." } }
+      const payload = data.data || data;
+      const user = payload.user;
+      const token = payload.token;
+      const role = String(user?.role ?? "").toLowerCase();
+
+      console.log("%c[LOGIN BERHASIL] Akun:", "color: green; font-weight: bold;", user);
+      console.log("[LOGIN BERHASIL] Sanctum Token:", token);
+
+      if (role !== ROLE_PEMBUDIDAYA) {
+        console.warn("[ROLE BUKAN PEMBUDIDAYA]:", role);
         return showAlert("alert-login", "Akun ini bukan akun Pembudidaya.");
       }
 
-      localStorage.setItem("token", data.token);
+      localStorage.setItem("token", token);
       localStorage.setItem("role", ROLE_PEMBUDIDAYA);
-      localStorage.setItem("user", JSON.stringify(data.user ?? {}));
-      window.location.href = DASHBOARD_URL;
+      localStorage.setItem("user", JSON.stringify(user ?? {}));
+
+      showAlert("alert-login", "Login berhasil! Mengalihkan ke dashboard...", "success");
+
+      // Beri jeda 800ms agar user dan developer sempat melihat log response di console
+      setTimeout(() => {
+        window.location.href = DASHBOARD_URL;
+      }, 800);
     } catch (err) {
-      showAlert("alert-login", "Tidak bisa terhubung ke server. Coba lagi nanti.");
+      console.error("[KONEKSI ERROR]", err);
+      showAlert("alert-login", "Tidak bisa terhubung ke backend. Pastikan server backend (php artisan serve) sudah berjalan di http://127.0.0.1:8000.");
     }
   });
 });
 
 // ---------- UC2 Lupa password ----------
-const pulih = { email: "", kode: "", token: "" };
+const pulih = { email: "" };
 
-// Langkah 1: email pemulihan -> kirim kode verifikasi
 views.forgot.addEventListener("submit", async (e) => {
   e.preventDefault();
   const email = $("forgot-email").value.trim();
@@ -145,77 +139,14 @@ views.forgot.addEventListener("submit", async (e) => {
   await withButton($("btn-forgot"), "Mengirim...", async () => {
     try {
       const { ok, data } = await post(EP.forgot, { email });
-      if (!ok) return showAlert("alert-forgot", "Email Pemulihan tidak sesuai");
+      if (!ok) return showAlert("alert-forgot", data.message || "Email Pemulihan tidak sesuai");
 
       pulih.email = email;
-      $("code-input").value = "";
-      $("code-hint").textContent = "Kami mengirim kode 6 karakter ke " + email + ". Masukkan kode tersebut di bawah.";
-      showView("code");
-      if (data.kode_uji) {
-        showAlert("alert-code", "Mode uji coba: kode verifikasimu adalah " + data.kode_uji, "success");
-      }
-      $("code-input").focus();
+      // Backend berhasil mengirim link reset
+      showView("login");
+      showAlert("alert-login", data.message || data.data?.message || "Link reset password telah dikirim ke email Anda.", "success");
     } catch (err) {
       showAlert("alert-forgot", "Tidak bisa terhubung ke server. Coba lagi nanti.");
-    }
-  });
-});
-
-// Langkah 2: kode verifikasi
-views.code.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const kode = $("code-input").value.trim().toUpperCase();
-  if (kode.length !== 6) return showAlert("alert-code", "Kode Verifikasi tidak sesuai");
-
-  await withButton($("btn-code"), "Memeriksa...", async () => {
-    try {
-      const { ok, data } = await post(EP.verify, { email: pulih.email, kode });
-      if (!ok) return showAlert("alert-code", "Kode Verifikasi tidak sesuai");
-
-      pulih.kode = kode;
-      pulih.token = data.token ?? data.data?.token ?? "";
-      $("reset-password").value = "";
-      $("reset-confirm").value = "";
-      showView("reset");
-      $("reset-password").focus();
-    } catch (err) {
-      showAlert("alert-code", "Tidak bisa terhubung ke server. Coba lagi nanti.");
-    }
-  });
-});
-
-// Langkah 3: password baru dan konfirmasi
-views.reset.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const password = $("reset-password").value;
-  const confirm = $("reset-confirm").value;
-
-  if (!password || password !== confirm) {
-    return showAlert("alert-reset", "Password Baru atau Konfirmasi Password tidak sesuai");
-  }
-  if (password.length < 8) {
-    return showAlert("alert-reset", "Password minimal 8 karakter.");
-  }
-
-  await withButton($("btn-reset"), "Menyimpan...", async () => {
-    try {
-      const { ok, data } = await post(EP.reset, {
-        email: pulih.email,
-        kode: pulih.kode,
-        token: pulih.token,
-        password,
-        password_confirmation: confirm,
-      });
-      if (!ok) return showAlert("alert-reset", data.message || "Password Baru atau Konfirmasi Password tidak sesuai");
-
-      // Post-condition UC2: pembudidaya login memakai password baru
-      showView("login");
-      $("login-email").value = pulih.email;
-      $("login-password").value = "";
-      showAlert("alert-login", "Password berhasil diperbarui. Silakan masuk dengan password barumu.", "success");
-      $("login-password").focus();
-    } catch (err) {
-      showAlert("alert-reset", "Tidak bisa terhubung ke server. Coba lagi nanti.");
     }
   });
 });
