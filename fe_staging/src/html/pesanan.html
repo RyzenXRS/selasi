@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pesanan Masuk | SelaSI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/dashboard.css">
+  <style>
+    [hidden]{display:none!important}
+    .alert.success{background:#e3f3d2;color:#25611f}
+    .list-info{margin:0 0 12px;color:#4d6a3a;font-weight:500}
+    th,td{white-space:nowrap}
+    #empty{padding:40px 24px;border:2px dashed #d5e2b3;border-radius:14px;background:#fff}
+    .loading{padding:24px;text-align:center;color:#5d7549;font-weight:500}
+
+    .thumb{width:52px;height:52px;border-radius:12px;object-fit:cover;display:block;background:#f7f9e4;border:1px solid #e3ebc6}
+    .thumb-kosong{width:52px;height:52px;border-radius:12px;display:grid;place-items:center;background:#f7f9e4;border:1px solid #e3ebc6;color:#8fa58a}
+    .thumb-kosong svg{width:24px;height:24px}
+    .nomor{font-weight:600;color:#2f5230;white-space:nowrap}
+    td.num,th.num{text-align:right;white-space:nowrap}
+    .badge.batal{background:#fde8e3;color:#b3321b}
+
+    .btn{display:inline-block;padding:10px 20px;border:0;border-radius:999px;background:#2f5230;color:#fff;font:inherit;font-weight:600;font-size:.92rem;cursor:pointer}
+    .btn:hover{background:#1f3a22}
+    .btn:disabled{opacity:.6;cursor:wait}
+    .btn-sm{padding:7px 16px;font-size:.84rem}
+    .btn-ghost{background:transparent;color:#2f5230;box-shadow:inset 0 0 0 2px #2f5230}.btn-ghost:hover{background:#dde8b0}
+    .btn:focus-visible,select:focus-visible{outline:3px solid #8fbf4d;outline-offset:2px}
+
+    .panel{background:#fff;border:1px solid #e3ebc6;border-radius:20px;padding:26px}
+    .panel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+    .panel-title{margin:0 0 8px;font-size:1.3rem;color:#2f5230}
+    .panel-title:focus{outline:none}
+    .actions{display:flex;gap:10px;flex-wrap:wrap}
+    .detail-grid{display:grid;grid-template-columns:220px 1fr;gap:24px;align-items:start}
+    .foto-besar{width:220px;height:220px;border-radius:18px;object-fit:cover;display:block;background:#f7f9e4;border:1px solid #e3ebc6}
+    .foto-kosong{width:220px;height:220px;border-radius:18px;display:grid;place-items:center;background:#f7f9e4;border:1px solid #e3ebc6;color:#8fa58a}
+    .foto-kosong svg{width:56px;height:56px}
+    .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin:0}
+    .facts div{padding:12px 16px;border-radius:12px;background:#f7f9e4}
+    .facts dt{font-size:.78rem;color:#5d7549}
+    .facts dd{margin:2px 0 0;font-weight:500;color:#1f3a22;overflow-wrap:anywhere}
+    .facts .total dd{font-size:1.15rem;font-weight:700;color:#2f5230}
+
+    .form-edit{max-width:460px}
+    .field{margin-bottom:18px}
+    .field label{display:block;margin:0 0 6px;font-size:.84rem;font-weight:600;color:#2f5230}
+    .field select{width:100%;padding:11px 14px;border:2px solid #d5e2b3;border-radius:12px;background:#fff;font:inherit;font-size:.92rem;color:#1f3a22}
+    .info-now{margin:0 0 18px;color:#5d7549;font-size:.9rem}
+
+    /* Pop up konfirmasi COD */
+    .modal{position:fixed;inset:0;background:rgba(31,58,34,.45);display:grid;place-items:center;z-index:50;padding:16px}
+    .modal-box{background:#fff;border-radius:20px;padding:26px;max-width:420px;width:100%}
+
+    @media(max-width:800px){.detail-grid{grid-template-columns:1fr}.foto-besar,.foto-kosong{width:100%;max-width:260px}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <span class="brand">SelaSI</span>
+      <nav class="nav" aria-label="Menu utama">
+        <a href="dashboard.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Dashboard</span></a>
+        <a href="budidaya.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-9"/><path d="M12 13c0-4 3-6 7-6 0 4-3 6-7 6z"/><path d="M12 16c0-3-2-5-6-5 0 3 2 5 6 5z"/></svg><span>Data Budidaya</span></a>
+        <a href="produk.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l1 13H5z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg><span>Manajemen Produk</span></a>
+        <a href="panen.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18l-2 11H5z"/><path d="M8 9l4-6 4 6"/></svg><span>Data Panen</span></a>
+        <a aria-current="page" href="pesanan.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.5L21 8H6"/><circle cx="10" cy="20" r="1.2"/><circle cx="17" cy="20" r="1.2"/></svg><span>Penjualan dan Transaksi</span></a>
+        <a href="prediksi.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg><span>AI Prediksi Panen</span></a>
+        <a href="riwayat.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 8v4l3 2"/></svg><span>Riwayat</span></a>
+        <a href="todo.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg><span>To-Do List</span></a>
+        <a href="profil.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg><span>Akun Saya</span></a>
+      </nav>
+      <div class="sidebar-foot">
+        <span id="user-email" class="user-email"></span>
+        <button type="button" class="btn-logout" id="btn-logout"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg><span>Keluar</span></button>
+      </div>
+    </aside>
+
+    <main class="page">
+      <div class="page-head">
+        <h1 id="page-title">Pesanan Masuk</h1>
+        <p class="sub" id="page-sub">Ringkasan pesanan yang dilakukan pembeli.</p>
+      </div>
+
+      <div id="alert" class="alert" role="alert" hidden></div>
+      <div id="notice" class="alert success" role="status" tabindex="-1" hidden></div>
+      <div id="loading" class="loading" hidden>Memuat...</div>
+
+      <!-- UC26: ringkasan pesanan -->
+      <div id="v-list" hidden>
+        <section id="list" aria-labelledby="h-daftar" hidden>
+          <h2 id="h-daftar" class="sr-only">Daftar pesanan masuk</h2>
+          <p class="list-info" id="list-info"></p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Foto produk</th>
+                  <th>Nomor pesanan</th>
+                  <th>Tanggal pesanan</th>
+                  <th>Nama pembeli</th>
+                  <th class="num">Total pembayaran</th>
+                  <th>Status pesanan</th>
+                  <th><span class="sr-only">Aksi</span></th>
+                </tr>
+              </thead>
+              <tbody id="rows"></tbody>
+            </table>
+          </div>
+        </section>
+        <p class="empty" id="empty" hidden>Belum ada pesanan masuk</p>
+      </div>
+
+      <!-- UC27: detail pesanan -->
+      <section id="v-detail" class="panel" aria-labelledby="dt-nomor" hidden>
+        <div class="panel-head">
+          <div>
+            <h2 id="dt-nomor" class="panel-title" tabindex="-1"></h2>
+            <span id="dt-status-badge" class="badge"></span>
+          </div>
+          <div class="actions">
+            <button type="button" class="btn" id="btn-cod" hidden>Konfirmasi Pembayaran COD</button>
+            <button type="button" class="btn" id="btn-edit">Edit Status</button>
+            <button type="button" class="btn btn-ghost" id="btn-back">Kembali</button>
+          </div>
+        </div>
+        <div class="detail-grid">
+          <div id="dt-foto"></div>
+          <dl class="facts">
+            <div><dt>Nomor pesanan</dt><dd id="dt-no"></dd></div>
+            <div><dt>Tanggal pesanan</dt><dd id="dt-tgl"></dd></div>
+            <div><dt>Nama pembeli</dt><dd id="dt-pembeli"></dd></div>
+            <div><dt>Nama produk</dt><dd id="dt-produk"></dd></div>
+            <div><dt>Jumlah produk</dt><dd id="dt-jumlah"></dd></div>
+            <div><dt>Harga produk</dt><dd id="dt-harga"></dd></div>
+            <div class="total"><dt>Total pembayaran</dt><dd id="dt-total"></dd></div>
+            <div><dt>Metode pembayaran</dt><dd id="dt-metode"></dd></div>
+            <div><dt>Status pembayaran</dt><dd id="dt-bayar"></dd></div>
+            <div><dt>Status pesanan</dt><dd id="dt-status"></dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <!-- UC28: edit status pesanan -->
+      <form id="v-edit" class="panel form-edit" novalidate hidden>
+        <h2 class="panel-title" id="ed-title" tabindex="-1">Edit status pesanan</h2>
+        <p class="info-now" id="ed-info"></p>
+        <div id="ed-alert" class="alert" role="alert" hidden></div>
+        <div class="field">
+          <label for="ed-status">Status pesanan</label>
+          <select id="ed-status"></select>
+        </div>
+        <div class="actions">
+          <button type="submit" class="btn" id="btn-save">Simpan</button>
+          <button type="button" class="btn btn-ghost" id="btn-cancel">Batal</button>
+        </div>
+      </form>
+
+      <!-- UC30: pop up konfirmasi pembayaran COD -->
+      <div id="cod-modal" class="modal" role="alertdialog" aria-modal="true" aria-labelledby="cod-title" hidden>
+        <div class="modal-box">
+          <h2 id="cod-title" class="panel-title">Konfirmasi Pembayaran COD</h2>
+          <p id="cod-text" class="info-now"></p>
+          <div id="cod-alert" class="alert" role="alert" hidden></div>
+          <div class="actions">
+            <button type="button" class="btn" id="cod-yes">Konfirmasi</button>
+            <button type="button" class="btn btn-ghost" id="cod-no">Batal</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    window.addEventListener("error", function (e) {
+      var a = document.getElementById("alert");
+      if (a) { a.textContent = "Error: " + e.message + " (" + String(e.filename || "").split("/").pop() + " baris " + e.lineno + ")"; a.hidden = false; }
+    });
+  </script>
+  <script src="../assets/js/config.js?v=backend4"></script>
+  <script src="../assets/js/lonceng.js"></script>
+  <script src="../assets/js/guard.js?v=backend4"></script>
+  <script src="../assets/js/pesanan.js?v=backend4"></script>
+</body>
+</html>
