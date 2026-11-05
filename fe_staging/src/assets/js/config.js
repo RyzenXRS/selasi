@@ -15,6 +15,7 @@ const ENDPOINTS = {
   logout:       "/auth/logout",
   forgot:       "/auth/forgot-password",
   reset:        "/auth/reset-password",   // placeholder
+  verifikasi:   "/auth/verify-code",      // placeholder: cek kode 6 karakter, samakan dengan routes/api.php
   profil:       "/profile",        // GET: data akun
   profilUbah:   "/profile",        // PUT: ubah profil (dikirim POST + _method=PUT kalau ada foto)
   dashboard:    "/dashboard",
@@ -64,5 +65,13 @@ async function apiFetch(path, options = {}) {
     logout();
     return null;
   }
+
+  // Teks peringatan PHP (misalnya "Deprecated: ...") kadang tercetak sebelum JSON.
+  // res.json() dibuat membuang teks itu dulu, mulai dari tanda { atau [ yang pertama.
+  res.json = async () => {
+    const raw = await res.clone().text();
+    const awal = raw.search(/[\[{]/);
+    return JSON.parse(awal >= 0 ? raw.slice(awal) : raw);
+  };
   return res;
 }
