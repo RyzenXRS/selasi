@@ -23,7 +23,7 @@ function notifBaca() {
   notifTulis(d);
   return d;
 }
-function perbaruiBadgeNotif() {
+function updateBadgeDOM() {
   const badge = document.querySelector(".notif-bell .notif-badge");
   const bell = document.querySelector(".notif-bell");
   if (!badge || !bell) return;
@@ -31,6 +31,37 @@ function perbaruiBadgeNotif() {
   badge.textContent = belum > 99 ? "99+" : String(belum);
   badge.hidden = belum === 0;
   bell.setAttribute("aria-label", belum ? "Notifikasi, " + belum + " belum dibaca" : "Notifikasi");
+}
+
+async function refreshNotifFromBackend() {
+  if (typeof USE_MOCK !== "undefined" && !USE_MOCK && typeof apiFetch === "function" && localStorage.getItem("token")) {
+    try {
+      const ep = (typeof ENDPOINTS !== "undefined" && ENDPOINTS.notifications) || "/notifications";
+      const res = await apiFetch(ep + "?per_page=50");
+      if (res && res.ok) {
+        const json = await res.json();
+        const list = Array.isArray(json) ? json : (json.data?.data || json.data || []);
+        if (list.length > 0) {
+          const mapped = list.map((item) => ({
+            id_notifikasi: item.id_notifikasi || item.id,
+            judul_notifikasi: item.judul_notifikasi || (item.jenis_notifikasi ? (item.jenis_notifikasi.charAt(0).toUpperCase() + item.jenis_notifikasi.slice(1).replace(/_/g, ' ')) : "Notifikasi Budidaya"),
+            isi_notifikasi: item.isi_notifikasi || item.message || "-",
+            tanggal_notifikasi: item.waktu_notifikasi || item.created_at || new Date().toISOString(),
+            status_notifikasi: item.status_dibaca ? "Sudah Dibaca" : "Belum Dibaca",
+            jenis_notifikasi: item.jenis_notifikasi || "Budidaya",
+            referensi_notifikasi: item.referensi_notifikasi || (item.id_pengelolaan ? "Batch #" + item.id_pengelolaan : "-"),
+          }));
+          notifTulis(mapped);
+          updateBadgeDOM();
+        }
+      }
+    } catch (_) {}
+  }
+}
+
+function perbaruiBadgeNotif() {
+  updateBadgeDOM();
+  refreshNotifFromBackend();
 }
 
 (function pasangIkonNotifikasi() {

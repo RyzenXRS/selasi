@@ -30,24 +30,75 @@ const PH_MIN = 5.5, PH_MAX = 6.5;   // di luar rentang ini -> "Perlu Diperhatika
 const BATAS_HARI_PINDAH = 2;        // sisa <= 2 hari -> "Mendekati Perpindahan Fase" / "Mendekati Panen"
 
 // ---------- Data (data palsu dulu; sambungkan ke BE nanti) ----------
-// meja = lokasi/meja tujuan default saat batch pindah ke fase tersebut (TEBAKAN)
-// Semai: sampai 14 hari
-// Peremajaan: hari ke-15 sampai 21 hari (durasi 7 hari)
-// Pendewasaan: hari ke-22 sampai panen (panen sekitaran 45-55 hari)
+// Rotasi: Semai 14 hari -> Peremajaan s/d 21 hari -> Pendewasaan -> Panen 45-55 hari
 const FASE = [
-<<<<<<< HEAD
-  { id_fase: 1, nama_fase: "Semai", urutan_fase: 1, durasi: 14, meja: "Meja Persemaian" },
-  { id_fase: 2, nama_fase: "Peremajaan", urutan_fase: 2, durasi: 7, meja: "Meja Peremajaan" },
-  { id_fase: 3, nama_fase: "Pendewasaan", urutan_fase: 3, durasi: 29, meja: "Meja Pendewasaan" },
-  { id_fase: 4, nama_fase: "Panen", urutan_fase: 4, durasi: 5, meja: "Meja Panen" },
-=======
-  { id_fase: 1, nama_fase: "Semai", urutan_fase: 1, durasi: 14, meja: "Meja Semai" },              // sampai umur 14 hari
-  { id_fase: 2, nama_fase: "Peremajaan", urutan_fase: 2, durasi: 7, meja: "Meja Peremajaan" },      // pindah hari ke-15, sampai umur 21 hari
-  { id_fase: 3, nama_fase: "Pendewasaan", urutan_fase: 3, durasi: 29, meja: "Meja Pendewasaan" },   // sampai panen, sekitar umur 50 hari (45-55, nanti dari AI)
-  { id_fase: 4, nama_fase: "Panen", urutan_fase: 4, durasi: 7, meja: "Meja Panen" },
->>>>>>> 3619d1409b2ad972994775ad859e5e79023047dd
+  { id_fase: 1, nama_fase: "Semai", urutan_fase: 1, durasi: 14, meja: "Meja Semai", rentang: "1 - 14 hari" },              // sampai umur 14 hari
+  { id_fase: 2, nama_fase: "Peremajaan", urutan_fase: 2, durasi: 7, meja: "Meja Peremajaan", rentang: "15 - 21 hari" },      // pindah hari ke-15, sampai umur 21 hari
+  { id_fase: 3, nama_fase: "Pendewasaan", urutan_fase: 3, durasi: 24, meja: "Meja Pendewasaan", rentang: "22 - 45/55 hari" },   // sampai panen fleksibel 45-55 hari
+  { id_fase: 4, nama_fase: "Panen", urutan_fase: 4, durasi: 10, meja: "Meja Panen", rentang: "45 - 55 hari (Fleksibel Pasar/AI)" },
 ];
 const faseById = (id) => FASE.find((f) => f.id_fase === Number(id));
+
+// Helper: Auto-generate kode batch dengan format konsisten SLD-xxx (contoh: SLD-001, SLD-002, dst)
+function generateBatchCode() {
+  let maxNum = 0;
+  if (data && Array.isArray(data)) {
+    data.forEach((b) => {
+      const kode = String(b.kode_pengelolaan || b.batch_code || "").trim();
+      const match = kode.match(/SLD[-_]?(\d+)/i);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (num > maxNum) maxNum = num;
+      }
+    });
+  }
+  const nextNum = maxNum + 1;
+  return `SLD-${String(nextNum).padStart(3, "0")}`;
+}
+
+// Helper: Ambil data suhu real-time dari API Cuaca publik (Open-Meteo)
+// Lokasi: Sepasang Petani farm (Kebonsari, Sumbersari, Jember) [RM6X+MM5]
+async function fetchCurrentTemperature() {
+  const lat = (typeof FARM_LOCATION !== "undefined" && FARM_LOCATION.latitude) ? FARM_LOCATION.latitude : -8.1883;
+  const lon = (typeof FARM_LOCATION !== "undefined" && FARM_LOCATION.longitude) ? FARM_LOCATION.longitude : 113.6992;
+  try {
+    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m`);
+    if (!res.ok) throw new Error("Gagal mengambil data cuaca");
+    const json = await res.json();
+    return {
+      temp: json.current?.temperature_2m ?? 24.5,
+      humidity: json.current?.relative_humidity_2m ?? 70,
+    };
+  } catch (e) {
+    console.warn("[API CUACA JEMBER] Menggunakan suhu default hidroponik:", e);
+    return { temp: 24.5, humidity: 70 };
+  }
+}
+
+async function applyApiSuhu() {
+  const btn = $("btn-api-suhu");
+  if (btn) { btn.disabled = true; btn.textContent = "Mengambil..."; }
+  try {
+    const w = await fetchCurrentTemperature();
+    if (w && w.temp !== undefined) {
+      const fSuhu = $("f-suhu");
+      if (fSuhu) fSuhu.value = w.temp;
+      const fLingkungan = $("f-lingkungan");
+      if (fLingkungan) {
+        const textLingkungan = fLingkungan.value.trim();
+        const suhuStr = `Suhu ${w.temp}°C, Kelembaban ${w.humidity}%`;
+        if (!textLingkungan) {
+          fLingkungan.value = `${suhuStr}, DLI dan sirkulasi udara baik`;
+        } else if (!textLingkungan.toLowerCase().includes("suhu")) {
+          fLingkungan.value = `${suhuStr}. ${textLingkungan}`;
+        }
+      }
+    }
+  } catch (_) {
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "API Suhu"; }
+  }
+}
 const STATUS_CLASS = {
   "Normal": "badge", "Perlu Diperhatikan": "badge perlu", "Mendekati Perpindahan Fase": "badge perlu",
   "Mendekati Panen": "badge panen", "Sudah Dipanen": "badge selesai",
@@ -59,23 +110,49 @@ const PANEN_KEY = "mock_panen_v1";     // dikelola panen.js
 function seed() {
   return [
     {
-      id_budidaya: 1, kode_pengelolaan: "SLD-001", tanggal_tanam: isoDaysAgo(9), jumlah_tanaman: 120,
-<<<<<<< HEAD
-      lokasi: "Meja Persemaian 1", kondisi_tanaman: "Daun hijau segar, pertumbuhan normal.",
-=======
+      id_budidaya: 1, kode_pengelolaan: "SLD-005", tanggal_tanam: isoDaysAgo(11), jumlah_tanaman: 120,
       lokasi: "Meja Semai 1", kondisi_tanaman: "Daun hijau segar, pertumbuhan normal.",
->>>>>>> 3619d1409b2ad972994775ad859e5e79023047dd
-      kondisi_air_nutrisi: "Nutrisi 900 ppm.", kondisi_instalasi: "Pompa dan selang normal.",
-      kondisi_lingkungan: "Suhu 27 C, cahaya cukup.", nilai_ph: 6.0, catatan: "",
-      fase: [{ id_fase: 1, tanggal_mulai: isoDaysAgo(9) }]
+      kondisi_air_nutrisi: "900 ppm", kondisi_instalasi: "Pompa dan selang normal.",
+      kondisi_lingkungan: "Suhu 24.5 °C, kelembaban 65%.", nilai_ph: 6.0, catatan: "Varietas Selada Hijau Segar",
+      fase: [{ id_fase: 1, tanggal_mulai: isoDaysAgo(11) }]
     },
     {
-      id_budidaya: 2, kode_pengelolaan: "SLD-002", tanggal_tanam: isoDaysAgo(30), jumlah_tanaman: 80,
-      lokasi: "Meja Pembibitan 2", kondisi_tanaman: "Sebagian daun menguning di tepi.",
-      kondisi_air_nutrisi: "Nutrisi 1000 ppm.", kondisi_instalasi: "Satu nozzle tersumbat.",
-      kondisi_lingkungan: "Lembap, suhu 29 C.", nilai_ph: 6.3, catatan: "Pantau tiap pagi.",
-      fase: [{ id_fase: 1, tanggal_mulai: isoDaysAgo(30), tanggal_selesai: isoDaysAgo(22) },
-      { id_fase: 2, tanggal_mulai: isoDaysAgo(22), lokasi_tujuan: "Meja Pembibitan 2", catatan: "Bibit sehat." }]
+      id_budidaya: 2, kode_pengelolaan: "SLD-004", tanggal_tanam: isoDaysAgo(12), jumlah_tanaman: 100,
+      lokasi: "Meja Semai 2", kondisi_tanaman: "Pertumbuhan seragam.",
+      kondisi_air_nutrisi: "950 ppm", kondisi_instalasi: "Aliran NFT normal.",
+      kondisi_lingkungan: "Suhu 25.0 °C, kelembaban 68%.", nilai_ph: 6.2, catatan: "",
+      fase: [{ id_fase: 1, tanggal_mulai: isoDaysAgo(12) }]
+    },
+    {
+      id_budidaya: 3, kode_pengelolaan: "SLD-003", tanggal_tanam: isoDaysAgo(13), jumlah_tanaman: 110,
+      lokasi: "Meja Semai 1", kondisi_tanaman: "Daun sejati 4 helai, sangat sehat.",
+      kondisi_air_nutrisi: "920 ppm", kondisi_instalasi: "Semua instalasi normal.",
+      kondisi_lingkungan: "Suhu 24.0 °C.", nilai_ph: 6.1, catatan: "",
+      fase: [{ id_fase: 1, tanggal_mulai: isoDaysAgo(13) }]
+    },
+    {
+      id_budidaya: 4, kode_pengelolaan: "SLD-002", tanggal_tanam: isoDaysAgo(14), jumlah_tanaman: 90,
+      lokasi: "Meja Semai 3", kondisi_tanaman: "Siap pindah meja peremajaan.",
+      kondisi_air_nutrisi: "1000 ppm", kondisi_instalasi: "Normal.",
+      kondisi_lingkungan: "Suhu 24.5 °C.", nilai_ph: 6.3, catatan: "",
+      fase: [{ id_fase: 1, tanggal_mulai: isoDaysAgo(14) }]
+    },
+    {
+      id_budidaya: 5, kode_pengelolaan: "SLD-001", tanggal_tanam: isoDaysAgo(18), jumlah_tanaman: 150,
+      lokasi: "Meja Peremajaan 1", kondisi_tanaman: "Klorofil pekat, tajuk berkembang baik.",
+      kondisi_air_nutrisi: "1100 ppm", kondisi_instalasi: "Aerasi gelembung lancar.",
+      kondisi_lingkungan: "Suhu 24.5 °C.", nilai_ph: 6.2, catatan: "Hari ke-4 di fase peremajaan",
+      fase: [{ id_fase: 1, tanggal_mulai: isoDaysAgo(18), tanggal_selesai: isoDaysAgo(4) },
+             { id_fase: 2, tanggal_mulai: isoDaysAgo(4), lokasi_tujuan: "Meja Peremajaan 1" }]
+    },
+    {
+      id_budidaya: 6, kode_pengelolaan: "SLD-006", tanggal_tanam: isoDaysAgo(35), jumlah_tanaman: 120,
+      lokasi: "Meja Pendewasaan 1", kondisi_tanaman: "Daun lebat, masuk pembesaran akhir.",
+      kondisi_air_nutrisi: "1250 ppm", kondisi_instalasi: "Aliran NFT optimal.",
+      kondisi_lingkungan: "Suhu 24.0 °C.", nilai_ph: 6.2, catatan: "Masa pendewasaan",
+      fase: [{ id_fase: 1, tanggal_mulai: isoDaysAgo(35), tanggal_selesai: isoDaysAgo(21) },
+             { id_fase: 2, tanggal_mulai: isoDaysAgo(21), tanggal_selesai: isoDaysAgo(14) },
+             { id_fase: 3, tanggal_mulai: isoDaysAgo(14), lokasi_tujuan: "Meja Pendewasaan 1" }]
     },
   ];
 }
@@ -88,28 +165,139 @@ const save = (key, v) => { try { localStorage.setItem(key, JSON.stringify(v)); }
 let data = load(MOCK_KEY, null) || seed();
 let panenList = load(PANEN_KEY, []);
 
-// ---------- Turunan data ----------
-const faseAktif = (b) => b.fase[b.fase.length - 1];
-const infoFase = (b) => faseById(faseAktif(b)?.id_fase) ?? FASE[0];
-const hariDiFase = (b) => faseAktif(b) ? daysBetween(faseAktif(b).tanggal_mulai) : 0;
-const faseNext = (b) => FASE.find((f) => f.urutan_fase === infoFase(b).urutan_fase + 1);
-const perkiraan = (b) => (faseNext(b) ? addDays(faseAktif(b).tanggal_mulai, infoFase(b).durasi) : null);
-const sisaHari = (b) => { const p = perkiraan(b); return p ? Math.max(0, Math.round((toDate(p) - today()) / MS_HARI)) : null; };
-const lokasiTujuan = (b) => { const nx = faseNext(b); return nx ? nx.meja : "-"; };
-const sudahPanen = (b) => panenList.some((p) => p.id_budidaya === b.id_budidaya);
+// ---------- Turunan data & Siklus Otomatis ----------
+const sudahPanen = (b) => (Array.isArray(b.panen) && b.panen.length > 0) || (b.panen && b.panen.id_panen) || panenList.some((p) => p.id_budidaya === b.id_budidaya);
 const phDiLuar = (b) => Number(b.nilai_ph) < PH_MIN || Number(b.nilai_ph) > PH_MAX;
 
 function hitungStatus(b) {
-  if (!b.fase || b.fase.length === 0) return "Normal";
+  if (sudahPanen(b)) return "Sudah Dipanen";
   if (phDiLuar(b)) return "Perlu Diperhatikan";
-  const nx = faseNext(b);
-  if (!nx) return "Mendekati Panen";   // sudah di fase Panen, data panen belum dicatat
-  if (sisaHari(b) <= BATAS_HARI_PINDAH) return nx.urutan_fase === FASE.length ? "Mendekati Panen" : "Mendekati Perpindahan Fase";
+  const umur = daysBetween(b.tanggal_tanam);
+  if (umur >= 45) return "Mendekati Panen";
+  if ((umur >= 12 && umur <= 14) || (umur >= 19 && umur <= 21)) return "Mendekati Perpindahan Fase";
   return "Normal";
 }
+
 function persist() {
   data.forEach((b) => { b.status = hitungStatus(b); });
   save(MOCK_KEY, data);
+}
+
+// ── Logika Pengingat Perpindahan Fase Sesuai Permintaan ──
+// Semai: awal s/d 14 hari → pindah ke Peremajaan
+// Peremajaan: hari ke-15 s/d 21 → pindah ke Pendewasaan
+// Pendewasaan: hari ke-22 s/d panen (45-55 hari, menyesuaikan AI)
+function getPengingatFase(b) {
+  if (!b || !b.tanggal_tanam) return null;
+  if (sudahPanen(b)) return null;
+  const umur = daysBetween(b.tanggal_tanam);
+  const kode = b.kode_pengelolaan || "-";
+
+  // 1. Fase Semai (awal s/d 14 hari) → pindah ke Peremajaan
+  if (umur <= 14) {
+    const sisa = 14 - umur;
+    if (sisa === 3) {
+      return `H-3: Batch ${kode}: 3 hari lagi waktunya pindah dari fase Semai ke Peremajaan (durasi 14 hari).`;
+    } else if (sisa === 2) {
+      return `H-2: Batch ${kode}: 2 hari lagi waktunya pindah ke fase Peremajaan (durasi 14 hari).`;
+    } else if (sisa === 1) {
+      return `H-1: Batch ${kode}: Besok waktunya pindah ke fase Peremajaan (durasi 14 hari).`;
+    } else if (sisa === 0) {
+      return `H: Batch ${kode}: Hari ini waktunya pindah ke fase Peremajaan (durasi 14 hari).`;
+    }
+    return null;
+  }
+
+  // 2. Fase Peremajaan (hari ke-15 s/d 21) → pindah ke Pendewasaan
+  if (umur <= 21) {
+    const sisa = 21 - umur;
+    if (sisa === 3) {
+      return `H-3: Batch ${kode}: 3 hari lagi waktunya pindah ke fase Pendewasaan (sampai 21 hari).`;
+    } else if (sisa === 2) {
+      return `H-2: Batch ${kode}: 2 hari lagi waktunya pindah ke fase Pendewasaan (sampai 21 hari).`;
+    } else if (sisa === 1) {
+      return `H-1: Batch ${kode}: Besok waktunya pindah ke fase Pendewasaan (sampai 21 hari).`;
+    } else if (sisa === 0) {
+      return `H: Batch ${kode}: Hari ini waktunya pindah ke fase Pendewasaan (sampai 21 hari).`;
+    }
+    return null;
+  }
+
+  // 3. Fase Pendewasaan → menuju Panen (45-55 hari menyesuaikan AI)
+  const sisaPanen = 45 - umur;
+  if (sisaPanen === 3) {
+    return `H-3: Batch ${kode}: 3 hari lagi estimasi masuk masa panen (panen 45 - 55 hari menyesuaikan AI).`;
+  } else if (sisaPanen === 2) {
+    return `H-2: Batch ${kode}: 2 hari lagi estimasi masuk masa panen (panen 45 - 55 hari menyesuaikan AI).`;
+  } else if (sisaPanen === 1) {
+    return `H-1: Batch ${kode}: Besok estimasi masuk masa panen (panen 45 - 55 hari menyesuaikan AI).`;
+  } else if (umur >= 45 && umur <= 55) {
+    return `H: Batch ${kode}: Sudah masuk masa panen (umur ${umur} hari, panen 45 - 55 hari menyesuaikan AI).`;
+  } else if (umur > 55) {
+    return `H+: Batch ${kode}: Sudah melewati 55 hari (umur ${umur} hari), segera lakukan panen.`;
+  }
+  return null;
+}
+
+// ── Logika Riwayat Perpindahan Fase Otomatis (3 Fase Bertahap) ──
+// Semai: awal s/d 14 hari | Peremajaan: hari ke-15 s/d 21 | Pendewasaan: hari ke-22 s/d panen (45-55 hari)
+function getFaseOtomatisList(b) {
+  if (!b || !b.tanggal_tanam) return [];
+  const tanam = b.tanggal_tanam;
+  const umur = daysBetween(tanam);
+  const list = [];
+
+  // 1. Fase Semai (awal s/d 14 hari)
+  const tglSelesaiSemai = addDays(tanam, 14);
+  const sudahLewatSemai = umur >= 14;
+
+  list.push({
+    urutan: 1,
+    nama_fase: "Semai",
+    tanggal_mulai: tanam,
+    tanggal_selesai: sudahLewatSemai ? tglSelesaiSemai : "",
+    lama: sudahLewatSemai ? "14 hari (awal s/d 14 hari)" : `${Math.max(1, umur)} hari (target 14 hari)`,
+  });
+
+  // 2. Fase Peremajaan (hari ke-15 s/d 21) — muncul bertahap jika umur >= 14
+  if (umur >= 14) {
+    const tglMulaiPeremajaan = tglSelesaiSemai;
+    const tglSelesaiPeremajaan = addDays(tanam, 21);
+    const sudahLewatPeremajaan = umur >= 21;
+
+    list.push({
+      urutan: 2,
+      nama_fase: "Peremajaan",
+      tanggal_mulai: tglMulaiPeremajaan,
+      tanggal_selesai: sudahLewatPeremajaan ? tglSelesaiPeremajaan : "",
+      lama: sudahLewatPeremajaan ? "Sampai 21 hari (hari ke-15 s/d 21)" : `Hari ke-${umur} (target sampai 21 hari)`,
+    });
+  }
+
+  // 3. Fase Pendewasaan (hari ke-22 s/d panen 45-55 hari) — muncul bertahap jika umur >= 21
+  if (umur >= 21) {
+    const tglMulaiPendewasaan = addDays(tanam, 21);
+    const hasPanen = panenList.find((p) => p.id_budidaya === b.id_budidaya) || (Array.isArray(b.panen) && b.panen.length ? b.panen[0] : null);
+    const tglPanen = hasPanen?.tanggal_panen || (hasPanen?.harvest_date ? hasPanen.harvest_date.slice(0, 10) : "");
+
+    let lamaPendewasaan;
+    if (tglPanen) {
+      const hariPendewasaan = Math.max(1, selisih(toDate(tglMulaiPendewasaan), toDate(tglPanen)));
+      lamaPendewasaan = `${hariPendewasaan} hari (panen umur ${hariPendewasaan + 21} hari)`;
+    } else {
+      lamaPendewasaan = `Hari ke-${umur} (panen 45 - 55 hari menyesuaikan AI)`;
+    }
+
+    list.push({
+      urutan: 3,
+      nama_fase: "Pendewasaan",
+      tanggal_mulai: tglMulaiPendewasaan,
+      tanggal_selesai: tglPanen ? tglPanen : "",
+      lama: lamaPendewasaan,
+    });
+  }
+
+  return list;
 }
 
 // ---------- Integrasi API Backend ----------
@@ -150,10 +338,6 @@ async function loadDataFromBackend() {
         jumlah_tanaman: b.jumlah_tanaman || b.plant_quantity || 0,
         lokasi: b.lokasi || b.location || "",
         nilai_ph: b.nilai_ph,
-<<<<<<< HEAD
-        suhu: b.suhu ?? b.temperature ?? null,
-=======
->>>>>>> 3619d1409b2ad972994775ad859e5e79023047dd
         kondisi_tanaman: b.kondisi_tanaman || "",
         kondisi_air_nutrisi: b.kondisi_air_nutrisi || "",
         kondisi_instalasi: b.kondisi_instalasi || "",
@@ -169,26 +353,12 @@ async function loadDataFromBackend() {
   }
 }
 
-function perluPindah(b) {
-  if (!b.fase || !b.fase.length) return false;
-  const f = infoFase(b);
-  return f.urutan_fase < FASE.length && hariDiFase(b) >= f.durasi - BATAS_HARI_PINDAH;
-}
 const badgeClass = (b) => STATUS_CLASS[hitungStatus(b)] || "badge";
 
 let current = null;  // batch yang sedang dibuka
 let mode = "add";    // "add" atau "edit"
-let moveIdx = -1;    // -1 = tambah perpindahan, >=0 = ubah riwayat
-let hDel = -1;       // indeks riwayat yang akan dihapus
-
-function aksi(onEdit, onDel) {
-  const td = el("td"), box = el("div", undefined, "row-actions");
-  const mk = (t, fn, c) => { const b = el("button", t, "link-kode" + (c ? " " + c : "")); b.type = "button"; b.addEventListener("click", fn); return b; };
-  box.appendChild(mk("Ubah", onEdit));
-  if (onDel) box.appendChild(mk("Hapus", onDel, "link-hapus"));
-  td.appendChild(box);
-  return td;
-}
+let moveIdx = -1;
+let hDel = -1;
 
 // ---------- Tampilan ----------
 function showOnly(name) { ["list", "detail", "form"].forEach((id) => show(id, id === name)); }
@@ -208,22 +378,35 @@ function showList() {
   const rows = $("rows");
   rows.replaceChildren();
   data.forEach((b) => {
-    const tr = el("tr"), td = el("td");
+    const tr = el("tr");
+    const tdKode = el("td");
     const link = el("button", b.kode_pengelolaan, "link-kode");
     link.type = "button";
     link.addEventListener("click", () => showDetail(b.id_budidaya));
-    td.appendChild(link);
-    tr.appendChild(td);
+    tdKode.appendChild(link);
+
+    const tdStatus = el("td");
+    const st = hitungStatus(b);
+    const badge = el("span", st, STATUS_CLASS[st] || "badge");
+    tdStatus.appendChild(badge);
+
+    tr.appendChild(tdKode);
+    tr.appendChild(tdStatus);
     rows.appendChild(tr);
   });
 
-  const due = data.filter(perluPindah);
-  show("reminder", due.length > 0);
+  // Pengingat perpindahan fase otomatis sesuai format H-3 s/d H
+  const reminders = [];
+  data.forEach((b) => {
+    const text = getPengingatFase(b);
+    if (text) reminders.push(text);
+  });
+
+  show("reminder", reminders.length > 0);
   const ul = $("reminder-list");
   ul.replaceChildren();
-  due.forEach((b) => {
-    const f = infoFase(b);
-    ul.appendChild(el("li", `${b.kode_pengelolaan}: fase ${f.nama_fase} sudah ${hariDiFase(b)} hari (durasi sekitar ${f.durasi} hari).`));
+  reminders.forEach((msg) => {
+    ul.appendChild(el("li", msg));
   });
 }
 
@@ -231,12 +414,9 @@ function showList() {
 function showDetail(id) {
   current = data.find((b) => b.id_budidaya === id);
   if (!current) return showList();
-  if (!current.fase || !current.fase.length) {
-    // Batch tanpa fase, tetap tampilkan data dasar
-    current.fase = [{ id_fase: 1, tanggal_mulai: current.tanggal_tanam }];
-  }
 
-  const b = current, f = infoFase(b), nx = faseNext(b), sisa = sisaHari(b);
+  const b = current;
+  const umur = daysBetween(b.tanggal_tanam);
   const st = hitungStatus(b);
 
   $("dt-kode").textContent = b.kode_pengelolaan;
@@ -245,64 +425,95 @@ function showDetail(id) {
   stEl.className = STATUS_CLASS[st] || "badge";
 
   $("dt-tanam").textContent = fmtTanggal(b.tanggal_tanam);
-  $("dt-umur").textContent = daysBetween(b.tanggal_tanam) + " hari";
+  $("dt-umur").textContent = umur + " hari";
   $("dt-jumlah").textContent = b.jumlah_tanaman + " tanaman";
   $("dt-lokasi").textContent = b.lokasi || "-";
   $("dt-ph").textContent = b.nilai_ph === undefined || b.nilai_ph === "" || b.nilai_ph === null ? "-" : fmtAngka(b.nilai_ph);
-<<<<<<< HEAD
-  $("dt-suhu").textContent = (b.suhu !== undefined && b.suhu !== null && b.suhu !== "") ? fmtAngka(b.suhu, 1) + " °C" : "-";
-=======
->>>>>>> 3619d1409b2ad972994775ad859e5e79023047dd
+
+  const suhuMatch = String(b.kondisi_lingkungan || "").match(/(\d+(\.\d+)?)\s*°?C/i);
+  const suhuVal = suhuMatch ? suhuMatch[1] + " °C" : (b.suhu ? b.suhu + " °C" : "24.5 °C (Optimal)");
+  const dtSuhu = $("dt-suhu");
+  if (dtSuhu) dtSuhu.textContent = suhuVal;
+
   $("dt-kondisi").textContent = b.kondisi_tanaman || "-";
-  $("dt-air").textContent = b.kondisi_air_nutrisi || "-";
+
+  // Tampilkan Nilai PPM
+  const airVal = b.kondisi_air_nutrisi 
+    ? (String(b.kondisi_air_nutrisi).toLowerCase().includes("ppm") ? b.kondisi_air_nutrisi : b.kondisi_air_nutrisi + " ppm")
+    : "-";
+  $("dt-air").textContent = airVal;
+
   $("dt-instalasi").textContent = b.kondisi_instalasi || "-";
   $("dt-lingkungan").textContent = b.kondisi_lingkungan || "-";
   $("dt-catatan").textContent = b.catatan || "-";
 
-  $("dt-fase").textContent = f.nama_fase;
-  $("dt-next").textContent = nx ? nx.nama_fase : "-";
-  $("dt-perkiraan").textContent = fmtTanggal(perkiraan(b));
-  $("dt-sisa").textContent = sisa === null ? "-" : sisa + " hari";
-  $("dt-tujuan").textContent = lokasiTujuan(b);
+  // Data fase otomatis — Semai: awal s/d 14 hari | Peremajaan: s/d 21 hari | Pendewasaan: s/d panen 45-55 hari
+  let namaFase = "Semai";
+  let nextFase = "Peremajaan";
+  let perkiraanTgl = addDays(b.tanggal_tanam, 14);
+  let sisaHari = Math.max(0, 14 - umur);
+  let mejaTujuan = "Meja Peremajaan";
+
+  if (umur >= 14 && umur < 21) {
+    namaFase = "Peremajaan";
+    nextFase = "Pendewasaan";
+    perkiraanTgl = addDays(b.tanggal_tanam, 21);
+    sisaHari = Math.max(0, 21 - umur);
+    mejaTujuan = "Meja Pendewasaan";
+  } else if (umur >= 21) {
+    const isPanen = sudahPanen(b);
+    namaFase = isPanen ? "Panen" : "Pendewasaan";
+    nextFase = isPanen ? "-" : "Panen (45 - 55 hari menyesuaikan AI)";
+    perkiraanTgl = addDays(b.tanggal_tanam, 45);
+    sisaHari = isPanen ? 0 : Math.max(0, 45 - umur);
+    mejaTujuan = isPanen ? "-" : "Meja Panen";
+  }
+
+  $("dt-fase").textContent = namaFase;
+  $("dt-next").textContent = nextFase;
+  $("dt-perkiraan").textContent = fmtTanggal(perkiraanTgl);
+  $("dt-sisa").textContent = sisaHari + " hari";
+  $("dt-tujuan").textContent = mejaTujuan;
   $("dt-status-text").textContent = st;
 
   $("dt-dasar").replaceChildren(
     el("li", phDiLuar(b)
       ? `Nilai pH ${fmtAngka(b.nilai_ph)} di luar rentang ${fmtAngka(PH_MIN, 1)} sampai ${fmtAngka(PH_MAX, 1)}.`
       : `Nilai pH ${b.nilai_ph !== "" && b.nilai_ph !== null ? fmtAngka(b.nilai_ph) : "-"} masih dalam rentang normal.`),
-    el("li", `Sudah ${hariDiFase(b)} hari di fase ${f.nama_fase} (durasi sekitar ${f.durasi} hari).`),
-    el("li", nx ? `Sisa waktu menuju ${nx.nama_fase}: ${sisa} hari.` : "Sudah di fase terakhir, tidak ada perpindahan lagi."),
+    el("li", `Umur tanaman saat ini ${umur} hari (berada di fase ${namaFase}).`),
+    el("li", nextFase !== "-" ? `Sisa waktu menuju fase ${nextFase}: ${sisaHari} hari.` : "Batch budidaya sudah dipanen."),
   );
 
-  $("btn-move").disabled = !nx;
+  if ($("btn-move")) $("btn-move").hidden = true;
   ["confirm", "h-confirm", "move"].forEach((x) => show(x, false));
   ["h-alert", "move-alert"].forEach(hideAlert);
   renderHist();
   showOnly("detail");
 }
 
-// ---------- Riwayat perpindahan fase ----------
+// ---------- Riwayat perpindahan fase (Otomatis 3 Fase, tanpa Catatan & Aksi) ----------
 function renderHist() {
   const rows = $("hist-rows");
   rows.replaceChildren();
-  current.fase.forEach((h, i) => {
-    const nxt = current.fase[i + 1];
-    const selesai = h.tanggal_selesai || (nxt ? nxt.tanggal_mulai : "");
-    const lama = selisih(toDate(h.tanggal_mulai), selesai ? toDate(selesai) : today());
-    const cat = [h.lokasi_tujuan && "Ke " + h.lokasi_tujuan, h.catatan].filter(Boolean).join(" · ") || "-";
-    const namaFase = faseById(h.id_fase)?.nama_fase ?? "Fase " + h.id_fase;
+  const fList = getFaseOtomatisList(current);
+  fList.forEach((h) => {
     const tr = el("tr");
-    tr.append(el("td", String(i + 1)), el("td", namaFase), el("td", fmtTanggal(h.tanggal_mulai)),
-      el("td", selesai ? fmtTanggal(selesai) : "Berjalan"), el("td", lama + " hari"), el("td", cat),
-      aksi(() => openMove(i), i > 0 ? () => askDelHist(i) : null));
+    tr.append(
+      el("td", String(h.urutan)),
+      el("td", h.nama_fase),
+      el("td", fmtTanggal(h.tanggal_mulai)),
+      el("td", h.tanggal_selesai ? fmtTanggal(h.tanggal_selesai) : "Berjalan"),
+      el("td", h.lama)
+    );
     rows.appendChild(tr);
   });
 }
 
 function openMove(idx) {
+  if (!$("move")) return;
   moveIdx = idx;
   hideAlert("move-alert"); hideAlert("h-alert"); hideAlert("notice"); show("h-confirm", false);
-  const h = idx >= 0 ? current.fase[idx] : {};
+  const h = idx >= 0 ? (current.fase?.[idx] || {}) : {};
   $("m-title").textContent = idx >= 0 ? "Ubah perpindahan fase" : "Tambah perpindahan fase";
   const sel = $("m-fase");
   sel.replaceChildren();
@@ -318,67 +529,11 @@ function openMove(idx) {
 }
 
 function askDelHist(i) {
+  if (!$("h-confirm")) return;
   hDel = i;
-  const namaFase = faseById(current.fase[i].id_fase)?.nama_fase ?? "fase";
+  const namaFase = faseById(current.fase?.[i]?.id_fase)?.nama_fase ?? "fase";
   $("h-confirm-text").textContent = `Hapus riwayat fase ${namaFase}?`;
   show("h-confirm");
-}
-
-// Buat kode batch otomatis
-function generateAutoBatchCode() {
-  const existingNums = (data || [])
-    .map((b) => {
-      const m = String(b.kode_pengelolaan || "").match(/SLD-(\d+)/i);
-      return m ? parseInt(m[1], 10) : 0;
-    })
-    .filter(Boolean);
-  const nextNum = existingNums.length ? Math.max(...existingNums) + 1 : (data?.length || 0) + 1;
-  return "SLD-" + String(nextNum).padStart(3, "0");
-}
-
-// Ambil suhu otomatis via Open-Meteo Weather API (Real-time & Akurat)
-async function fetchCurrentTemperature(setField = true) {
-  const suhuStatus = $("suhu-status");
-  if (suhuStatus) suhuStatus.textContent = "🌡️ Mengambil suhu cuaca real-time...";
-
-  let lat = -6.9175;
-  let lon = 107.6191;
-
-  if (navigator.geolocation) {
-    try {
-      const pos = await new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 2500 });
-      });
-      lat = pos.coords.latitude;
-      lon = pos.coords.longitude;
-    } catch (_) {}
-  }
-
-  try {
-    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m`);
-    if (res.ok) {
-      const json = await res.json();
-      const temp = json.current?.temperature_2m;
-      if (temp !== undefined && temp !== null) {
-        if (setField) {
-          $("f-suhu").value = temp;
-          if (!$("f-lingkungan").value || $("f-lingkungan").value.startsWith("Suhu")) {
-            $("f-lingkungan").value = `Suhu lingkungan ${temp}°C, kondisi pencahayaan dan sirkulasi udara baik.`;
-          }
-        }
-        if (suhuStatus) suhuStatus.textContent = `✅ Suhu terdeteksi: ${temp} °C (Open-Meteo API)`;
-        return temp;
-      }
-    }
-  } catch (err) {
-    console.warn("[WEATHER API] Gagal memuat suhu:", err);
-  }
-
-  if (setField && !$("f-suhu").value) {
-    $("f-suhu").value = 26.5;
-  }
-  if (suhuStatus) suhuStatus.textContent = "Suhu default hidroponik (26.5 °C)";
-  return 26.5;
 }
 
 // ---------- Form tambah (UC6) / ubah (UC8) ----------
@@ -395,30 +550,35 @@ function showForm(editing) {
   $("f-jumlah").value = b.jumlah_tanaman || "";
   $("f-lokasi").value = b.lokasi || "";
   $("f-ph").value = b.nilai_ph === undefined || b.nilai_ph === null ? "" : b.nilai_ph;
-<<<<<<< HEAD
-  $("f-suhu").value = b.suhu === undefined || b.suhu === null ? "" : b.suhu;
-=======
->>>>>>> 3619d1409b2ad972994775ad859e5e79023047dd
   $("f-kondisi").value = b.kondisi_tanaman || "";
   $("f-air").value = b.kondisi_air_nutrisi || "";
   $("f-instalasi").value = b.kondisi_instalasi || "";
   $("f-lingkungan").value = b.kondisi_lingkungan || "";
   $("f-catatan").value = b.catatan || "";
 
+  const fSuhu = $("f-suhu");
+  if (!editing) {
+    if (!$("f-kode").value) {
+      $("f-kode").value = generateBatchCode();
+    }
+    applyApiSuhu();
+  } else {
+    const suhuMatch = String(b.kondisi_lingkungan || "").match(/(\d+(\.\d+)?)\s*°?C/i);
+    if (fSuhu) fSuhu.value = suhuMatch ? suhuMatch[1] : (b.suhu || "");
+  }
+
   fld("f-kode").hidden = editing;
   fld("f-tanam").hidden = editing;
-
-  if (!editing) {
-    if (!$("f-kode").value) $("f-kode").value = generateAutoBatchCode();
-    fetchCurrentTemperature(true);
-  } else {
-    const suhuStatus = $("suhu-status");
-    if (suhuStatus) suhuStatus.textContent = b.suhu ? `Suhu tersimpan: ${b.suhu} °C` : "Klik 'Ambil Suhu' untuk deteksi otomatis";
-  }
 
   showOnly("form");
   (editing ? $("f-jumlah") : $("f-kode")).focus();
 }
+
+// Event listener tombol otomatis kode & api suhu
+$("btn-auto-kode")?.addEventListener("click", () => {
+  $("f-kode").value = generateBatchCode();
+});
+$("btn-api-suhu")?.addEventListener("click", applyApiSuhu);
 
 // ---------- Aksi ----------
 $("btn-add").addEventListener("click", () => { hideAlert("notice"); showForm(false); });
@@ -427,15 +587,6 @@ $("btn-back").addEventListener("click", showList);
 $("btn-cancel").addEventListener("click", () => (mode === "edit" && current ? showDetail(current.id_budidaya) : showList()));
 $("btn-logout").addEventListener("click", logout);
 
-<<<<<<< HEAD
-const btnAutoKode = $("btn-auto-kode");
-if (btnAutoKode) btnAutoKode.addEventListener("click", () => { $("f-kode").value = generateAutoBatchCode(); });
-
-const btnFetchSuhu = $("btn-fetch-suhu");
-if (btnFetchSuhu) btnFetchSuhu.addEventListener("click", () => { fetchCurrentTemperature(true); });
-
-=======
->>>>>>> 3619d1409b2ad972994775ad859e5e79023047dd
 // Hapus batch (UC9)
 $("btn-delete").addEventListener("click", () => {
   $("confirm-text").textContent = `Hapus batch ${current.kode_pengelolaan}? Riwayat fase dan data panennya ikut terhapus.`;
@@ -447,17 +598,6 @@ $("btn-yes").addEventListener("click", async () => {
   if (!USE_MOCK) {
     try {
       const res = await apiFetch(`${ENDPOINTS.budidaya}/${id}`, { method: "DELETE" });
-<<<<<<< HEAD
-      if (!res || (!res.ok && res.status !== 204)) {
-        const err = await res?.json().catch(() => ({}));
-        show("confirm", false);
-        return showAlert("alert", err?.message || "Gagal menghapus data budidaya dari server.");
-      }
-      await loadDataFromBackend();
-    } catch (e) {
-      show("confirm", false);
-      return showAlert("alert", "Error koneksi: " + e.message);
-=======
       if (!res || !res.ok) {
         const err = await res?.json().catch(() => ({}));
         return showAlert("notice", err?.message || "Gagal menghapus data budidaya dari server.");
@@ -465,7 +605,6 @@ $("btn-yes").addEventListener("click", async () => {
       await loadDataFromBackend();
     } catch (e) {
       return showAlert("notice", "Error koneksi: " + e.message);
->>>>>>> 3619d1409b2ad972994775ad859e5e79023047dd
     }
   } else {
     data = data.filter((b) => b.id_budidaya !== id);
@@ -478,14 +617,15 @@ $("btn-yes").addEventListener("click", async () => {
   notify("Data budidaya berhasil dihapus.");
 });
 
-// Perpindahan fase
-$("btn-move").addEventListener("click", () => openMove(-1));
-$("m-cancel").addEventListener("click", () => show("move", false));
-$("m-fase").addEventListener("change", () => {
+// Perpindahan fase (opsional / manual jika elemen ada)
+$("btn-move")?.addEventListener("click", () => openMove(-1));
+$("m-cancel")?.addEventListener("click", () => show("move", false));
+$("m-fase")?.addEventListener("change", () => {
   if (moveIdx < 0) $("m-lokasi").value = faseById(Number($("m-fase").value))?.meja ?? "";
 });
-$("h-no").addEventListener("click", () => show("h-confirm", false));
-$("h-yes").addEventListener("click", () => {
+$("h-no")?.addEventListener("click", () => show("h-confirm", false));
+$("h-yes")?.addEventListener("click", () => {
+  if (!current.fase) return;
   const prev = current.fase[hDel - 1];
   if (prev) prev.tanggal_selesai = "";
   current.fase.splice(hDel, 1);
@@ -495,7 +635,7 @@ $("h-yes").addEventListener("click", () => {
   notify("Riwayat perpindahan fase berhasil dihapus.");
 });
 
-$("move").addEventListener("submit", async (e) => {
+$("move")?.addEventListener("submit", async (e) => {
   e.preventDefault();
   hideAlert("move-alert");
   const add = moveIdx < 0;
@@ -565,32 +705,26 @@ $("form").addEventListener("submit", async (e) => {
   if (mode === "add") wajib.push(raw.kode, raw.tanam);
   if (wajib.some((x) => !x)) return showAlert("form-alert", MSG_LENGKAP);
 
+  if (mode === "add") {
+    // Validasi format kode pengelolaan: huruf, angka, strip, underscore (3-50 karakter)
+    const validKode = /^[A-Za-z0-9\-_]{3,50}$/.test(raw.kode);
+    if (!validKode) {
+      return showAlert("form-alert", "Format kode batch tidak sesuai (gunakan format seperti BATCH-2026-001 atau SLD-001).");
+    }
+  }
+
   const jumlah = Number(raw.jumlah), ph = Number(raw.ph);
   let salah = !Number.isInteger(jumlah) || jumlah < 1 || !/^\d{1,2}(\.\d{1,2})?$/.test(raw.ph) || ph > 14;
-
-  const kodeRegex = /^[A-Za-z0-9_-]{3,30}$/;
   if (mode === "add") {
-    if (!kodeRegex.test(raw.kode)) {
-      return showAlert("form-alert", "Format kode batch tidak sesuai (contoh: SLD-001 atau BATCH-001). Gunakan huruf, angka, dan tanda hubung.");
-    }
     salah = salah || toDate(raw.tanam) > today() ||
       data.some((b) => b.kode_pengelolaan.toLowerCase() === raw.kode.toLowerCase());
   }
   if (salah) return showAlert("form-alert", MSG_FORMAT);
 
-<<<<<<< HEAD
-  const suhuVal = $("f-suhu").value ? Number($("f-suhu").value) : null;
-
-=======
->>>>>>> 3619d1409b2ad972994775ad859e5e79023047dd
   const body = {
     jumlah_tanaman: jumlah,
     lokasi: raw.lokasi,
     nilai_ph: ph,
-<<<<<<< HEAD
-    suhu: suhuVal,
-=======
->>>>>>> 3619d1409b2ad972994775ad859e5e79023047dd
     kondisi_tanaman: raw.kondisi,
     kondisi_air_nutrisi: raw.air,
     kondisi_instalasi: raw.instalasi,
@@ -606,10 +740,6 @@ $("form").addEventListener("submit", async (e) => {
         const payload = {
           kode_pengelolaan: raw.kode,
           tanggal_tanam: raw.tanam,
-<<<<<<< HEAD
-          suhu: suhuVal,
-=======
->>>>>>> 3619d1409b2ad972994775ad859e5e79023047dd
           ...body,
         };
         const res = await apiFetch(ENDPOINTS.budidaya, {

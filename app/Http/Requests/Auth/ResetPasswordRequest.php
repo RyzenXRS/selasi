@@ -15,20 +15,24 @@ class ResetPasswordRequest extends FormRequest
     {
         return [
             'email'                 => ['required', 'string', 'email', 'exists:pengguna,email'],
-            'password'              => ['required', 'string', 'min:8', 'confirmed'],
             'token'                 => ['nullable', 'string'],
             'kode'                  => ['nullable', 'string'],
+            'password'              => ['required', 'string', 'min:8', 'confirmed'],
+            'password_confirmation' => ['required', 'string', 'min:8'],
         ];
     }
 
     public function messages(): array
     {
         return [
-            'email.required'     => 'Email wajib diisi.',
-            'email.exists'       => 'Email tidak terdaftar.',
-            'password.required'  => 'Password baru wajib diisi.',
-            'password.min'       => 'Password minimal 8 karakter.',
-            'password.confirmed' => 'Konfirmasi password tidak cocok.',
+            'email.required'                 => 'Email wajib diisi.',
+            'email.email'                    => 'Format email tidak valid.',
+            'email.exists'                   => 'Email tidak terdaftar di sistem.',
+            'password.required'              => 'Password baru wajib diisi.',
+            'password.min'                   => 'Password minimal harus 8 karakter.',
+            'password.confirmed'             => 'Konfirmasi password tidak cocok.',
+            'password_confirmation.required' => 'Konfirmasi password wajib diisi.',
         ];
     }
 }
+

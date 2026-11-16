@@ -133,17 +133,17 @@ function showForm(editing) {
     });
   }
 
-  $("f-kode").value = p.kode_panen || "";
+  if ($("f-kode")) $("f-kode").value = p.kode_panen || "";
   $("f-tgl").value = p.tanggal_panen || iso(today());
   $("f-jumlah").value = p.jumlah_panen || "";
   $("f-berat").value = p.berat_panen || "";
   $("f-kondisi").value = p.kondisi_hasil_panen || "";
 
   fld("f-batch").hidden = editing;
-  fld("f-kode").hidden = editing;
+  if ($("f-kode")) fld("f-kode").hidden = true;
 
   showOnly("form");
-  (editing ? $("f-tgl") : $("f-kode")).focus();
+  $("f-tgl").focus();
 }
 
 // ---------- Event Listeners ----------
@@ -197,8 +197,7 @@ $("form").addEventListener("submit", async (e) => {
   hideAlert("form-alert");
 
   const raw = {
-    batch: $("f-batch").value,
-    kode: $("f-kode").value.trim(),
+    batch: $("f-batch")?.value || "",
     tgl: $("f-tgl").value,
     jumlah: $("f-jumlah").value.trim(),
     berat: $("f-berat").value.trim(),
@@ -206,11 +205,12 @@ $("form").addEventListener("submit", async (e) => {
   };
 
   const wajib = [raw.tgl, raw.jumlah, raw.berat, raw.kondisi];
-  if (mode === "add") wajib.push(raw.batch, raw.kode);
+  if (mode === "add") wajib.push(raw.batch);
   if (wajib.some((x) => !x)) return showAlert("form-alert", MSG_LENGKAP);
 
   const idBatch = mode === "add" ? parseInt(raw.batch, 10) : current.id_budidaya;
   const b = batchList.find((x) => x.id_budidaya === idBatch);
+  const autoKodePanen = current?.kode_panen || (b ? "PNN-" + (b.kode_pengelolaan || b.id_budidaya) : "PNN-" + Date.now());
   const jumlah = Number(raw.jumlah);
   const berat = Number(raw.berat);
 
@@ -218,16 +218,16 @@ $("form").addEventListener("submit", async (e) => {
     !Number.isInteger(jumlah) || jumlah < 1 ||
     !(berat > 0) || !/^\d{1,8}(\.\d{1,2})?$/.test(raw.berat);
 
-  if (mode === "add") {
-    salah = salah || panenList.some((p) => p.kode_panen.toLowerCase() === raw.kode.toLowerCase());
-  }
   if (salah) return showAlert("form-alert", MSG_FORMAT);
 
   const payload = {
     tanggal_panen: raw.tgl,
+    harvest_date: raw.tgl,
     jumlah_panen: jumlah,
+    quantity: jumlah,
     berat_panen: berat,
     berat_total_kg: berat,
+    total_weight_kg: berat,
     kondisi_hasil_panen: raw.kondisi,
     kualitas: raw.kondisi,
   };
@@ -271,7 +271,7 @@ $("form").addEventListener("submit", async (e) => {
     panenList.push({
       id_panen: id,
       id_budidaya: idBatch,
-      kode_panen: raw.kode,
+      kode_panen: autoKodePanen,
       ...payload,
     });
     try { localStorage.setItem("mock_panen_v1", JSON.stringify(panenList)); } catch (_) {}

@@ -119,4 +119,26 @@ class OrderController extends Controller
             'Status pesanan berhasil diperbarui.'
         );
     }
+
+    /**
+     * Cultivator confirm COD payment
+     */
+    public function konfirmasiCod(Request $request, int $id): JsonResponse
+    {
+        $userId = $request->user()->id_pengguna;
+
+        $order = Pesanan::whereHas('detailPesanan.produk', fn($q) => $q->where('id_pembudidaya', $userId))->findOrFail($id);
+
+        if ($order->pembayaran) {
+            $order->pembayaran->update([
+                'status_pembayaran' => \App\Models\Pembayaran::STATUS_LUNAS,
+                'waktu_pembayaran'  => \Illuminate\Support\Carbon::now(),
+            ]);
+        }
+
+        return $this->successResponse(
+            new OrderResource($order->fresh(['detailPesanan.produk', 'pembeli', 'pembayaran'])),
+            'Pembayaran COD berhasil dikonfirmasi.'
+        );
+    }
 }

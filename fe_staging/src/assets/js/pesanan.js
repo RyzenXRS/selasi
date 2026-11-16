@@ -10,14 +10,11 @@ function el(tag, text, cls) {
 function showAlert(id, msg) { $(id).textContent = msg; show(id); }
 function notify(msg) { showAlert("notice", msg); $("notice").focus(); }
 
-// FE saja: halaman ini memakai data contoh, belum memanggil BE.
-//   pesanan.html               -> beberapa pesanan contoh (perubahan hanya tersimpan di halaman)
-//   pesanan.html?demo=kosong   -> tampilan "Belum ada pesanan masuk"
-// Nanti kalau BE sudah siap, ubah PAKAI_BE jadi true.
-const PAKAI_BE = false;
+// Integrasi backend (otomatis aktif jika USE_MOCK = false di config.js)
+const PAKAI_BE = typeof USE_MOCK !== "undefined" ? !USE_MOCK : true;
 const DEMO = new URLSearchParams(location.search).get("demo");
 const OFFLINE = !PAKAI_BE || DEMO === "contoh" || DEMO === "kosong";
-const PESANAN_PATH = (typeof ENDPOINTS !== "undefined" && ENDPOINTS.pesanan) || "/pesanan";
+const PESANAN_PATH = (typeof ENDPOINTS !== "undefined" && ENDPOINTS.pesanan) || "/cultivator/orders";
 // Endpoint saat PAKAI_BE = true (sesuaikan dengan routes/api.php):
 //   GET   {PESANAN_PATH}                    daftar pesanan masuk (UC26)
 //   GET   {PESANAN_PATH}/{id}               detail pesanan (UC27)
@@ -85,13 +82,37 @@ function contoh() {
     metode_pembayaran: metode, status_pembayaran: bayar, status_pesanan: status,
   });
   return [
-    baris(6, "ORD-20261003-006", 1,  "Maya Putri",     foto, "Selada Hijau",    6, 15000, "COD",           "Belum Dibayar", "Diproses"),
-    baris(5, "ORD-20261003-005", 2,  "Rina Wulandari", foto, "Selada Hijau",    3, 15000, "Transfer Bank", "Belum Dibayar", "Menunggu Pembayaran"),
-    baris(4, "ORD-20261003-004", 9,  "Budi Santoso",   foto, "Selada Keriting", 8, 15000, "QRIS",          "Sudah Dibayar", "Diproses"),
-    baris(3, "ORD-20261002-003", 30, "Siti Aminah",    null, "Selada Romaine",  5, 15100, "E-Wallet",      "Sudah Dibayar", "Dikirim"),
-    baris(2, "ORD-20261001-002", 60, "Agus Pratama",   foto, "Selada Hijau",    2, 15000, "COD",           "Sudah Dibayar", "Selesai"),
-    baris(1, "ORD-20260930-001", 90, "Dewi Lestari",   null, "Selada Keriting", 4, 15000, "Transfer Bank", "Belum Dibayar", "Dibatalkan"),
+    baris(6, "ORD-20261003-006", 1,  "Maya Putri",     foto, "Selada Hijau Segar", 6, 15000, "COD",           "Belum Dibayar", "Diproses"),
+    baris(5, "ORD-20261003-005", 2,  "Rina Wulandari", foto, "Selada Hijau Segar", 3, 15000, "Transfer Bank", "Belum Dibayar", "Menunggu Pembayaran"),
+    baris(4, "ORD-20261003-004", 9,  "Budi Santoso",   foto, "Selada Hijau Segar", 8, 15000, "QRIS",          "Sudah Dibayar", "Diproses"),
+    baris(3, "ORD-20261002-003", 30, "Siti Aminah",    foto, "Selada Hijau Segar", 5, 15000, "E-Wallet",      "Sudah Dibayar", "Dikirim"),
+    baris(2, "ORD-20261001-002", 60, "Agus Pratama",   foto, "Selada Hijau Segar", 2, 15000, "COD",           "Sudah Dibayar", "Selesai"),
+    baris(1, "ORD-20260930-001", 90, "Dewi Lestari",   foto, "Selada Hijau Segar", 4, 15000, "Transfer Bank", "Belum Dibayar", "Dibatalkan"),
   ];
+}
+
+// ---------- Mapping Data Backend ----------
+function mapOrderToPesanan(p) {
+  if (!p) return {};
+  const item = (p.detail_pesanan && p.detail_pesanan[0]) || (p.items && p.items[0]) || {};
+  const jml = Number(item.jumlah || p.jumlah_produk || 1);
+  const harga = Number(item.harga_satuan || p.harga_produk || 15000);
+  const total = Number(p.total_pembayaran || p.total_harga || (jml * harga));
+  const bayar = p.pembayaran?.status_pembayaran || p.status_pembayaran || "Belum Dibayar";
+  return {
+    id_pesanan: p.id_pesanan || p.id,
+    nomor_pesanan: p.nomor_pesanan || ("ORD-" + String(p.id_pesanan || p.id).padStart(3, "0")),
+    tanggal_pesanan: p.tanggal_pesanan,
+    nama_pembeli: p.nama_pembeli || p.pembeli?.nama || p.buyer?.name || "-",
+    foto_produk: p.foto_produk || item.foto_produk || "../assets/img/selada2.jpeg",
+    nama_produk: item.nama_produk || p.nama_produk || "Selada Hijau Segar",
+    jumlah_produk: jml,
+    harga_produk: harga,
+    total_pembayaran: total,
+    metode_pembayaran: p.metode_pembayaran || "-",
+    status_pembayaran: bayar,
+    status_pesanan: p.status_pesanan || "-",
+  };
 }
 
 // ---------- Ambil dan simpan data ----------
@@ -104,11 +125,17 @@ async function fetchDaftar() {
     await new Promise((r) => setTimeout(r, 300));
     return contoh();
   }
-  const res = await apiFetch(PESANAN_PATH);
-  if (!res) return []; // 401 -> sudah logout otomatis
-  if (!res.ok) throw new Error("HTTP " + res.status);
-  const json = await res.json();
-  return Array.isArray(json) ? json : json.data ?? [];
+  try {
+    const res = await apiFetch(PESANAN_PATH + "?per_page=100");
+    if (!res) return []; // 401 -> sudah logout otomatis
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const json = await res.json();
+    const list = Array.isArray(json) ? json : (json.data?.data || json.data || []);
+    return list.map(mapOrderToPesanan);
+  } catch (err) {
+    console.warn("[PESANAN] Gagal fetch dari BE, menggunakan data contoh:", err);
+    return contoh();
+  }
 }
 
 async function fetchDetail(id) {
@@ -116,11 +143,16 @@ async function fetchDetail(id) {
     await new Promise((r) => setTimeout(r, 200));
     return semua.find((p) => idOf(p) === id) || null;
   }
-  const res = await apiFetch(PESANAN_PATH + "/" + encodeURIComponent(id));
-  if (!res) return null;
-  if (!res.ok) throw new Error("HTTP " + res.status);
-  const json = await res.json();
-  return json.data ?? json;
+  try {
+    const res = await apiFetch(PESANAN_PATH + "/" + encodeURIComponent(id));
+    if (!res) return null;
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const json = await res.json();
+    const d = json.data ?? json;
+    return mapOrderToPesanan(d);
+  } catch (err) {
+    return semua.find((p) => idOf(p) === id) || null;
+  }
 }
 
 async function simpanStatus(id, status) {
@@ -139,7 +171,7 @@ async function simpanStatus(id, status) {
   try { json = await res.json(); } catch (_) {}
   if (!res.ok) throw new Error(json.message || "HTTP " + res.status);
   const data = json.data ?? json;
-  return data && data.status_pesanan ? data : { ...aktif, status_pesanan: status };
+  return mapOrderToPesanan(data && data.status_pesanan ? data : { ...aktif, status_pesanan: status });
 }
 
 // UC30: konfirmasi pembayaran COD
@@ -150,14 +182,13 @@ async function simpanBayarCod(id) {
     if (p) p.status_pembayaran = STATUS_SUDAH_BAYAR;
     return { ...p };
   }
-  // TEBAKAN: sesuaikan path dengan routes/api.php backend
   const res = await apiFetch(PESANAN_PATH + "/" + encodeURIComponent(id) + "/konfirmasi-cod", { method: "POST" });
   if (!res) return null;
   let json = {};
   try { json = await res.json(); } catch (_) {}
   if (!res.ok) throw new Error(json.message || "HTTP " + res.status);
   const data = json.data ?? json;
-  return data && data.status_pembayaran ? data : { ...aktif, status_pembayaran: STATUS_SUDAH_BAYAR };
+  return mapOrderToPesanan(data && data.status_pembayaran ? data : { ...aktif, status_pembayaran: STATUS_SUDAH_BAYAR });
 }
 
 // ---------- Tampilan umum ----------

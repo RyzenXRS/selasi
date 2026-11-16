@@ -52,6 +52,18 @@
     .pr-legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin:10px 0 26px;font-size:.76rem;color:var(--grass)}
     .pr-legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px}
 
+    .pr-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:20px}
+    .pr-metric{background:#f7f9e4;border:1px solid #e3ebc6;border-radius:18px;padding:16px;text-align:center}
+    .pr-metric p{margin:0 0 4px;font-size:.78rem;font-weight:600;color:var(--grass)}
+    .pr-metric strong{display:block;font-size:1.8rem;color:var(--forest);line-height:1.2}
+    .pr-metric small{font-size:.8rem;color:var(--forest);opacity:.85}
+
+    .pr-params-box{background:#fdfdf7;border:1px solid #e3ebc6;border-radius:18px;padding:18px 20px;margin-bottom:20px}
+    .pr-params-title{margin:0 0 12px;font-size:.84rem;font-weight:600;color:var(--forest)}
+    .pr-params-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+    .pr-param-item{font-size:.82rem;color:var(--grass)}
+    .pr-param-item b{display:block;font-size:.9rem;color:var(--forest);margin-top:2px}
+
     .pr-dates{display:flex;align-items:stretch;gap:14px;flex-wrap:wrap;margin-bottom:22px}
     .pr-date{flex:1;min-width:170px;border-radius:18px;background:var(--white);border:2px dashed color-mix(in srgb,var(--moss) 60%,white);padding:14px 18px;text-align:center}
     .pr-date p{margin:0;font-size:.76rem;font-weight:600;color:var(--grass)}
@@ -133,10 +145,40 @@
               <span><i style="background:#e0b23a"></i>Rentang panen</span>
             </div>
 
+            <div class="pr-metrics">
+              <div class="pr-metric">
+                <p>Sisa Hari Menuju Panen</p>
+                <strong id="r-sisa-hari">-</strong>
+                <small id="r-sisa-label">Estimasi AI</small>
+              </div>
+              <div class="pr-metric">
+                <p>Estimasi Umur Panen</p>
+                <strong id="r-umur-panen">-</strong>
+                <small>Rentang 45 - 55 hari</small>
+              </div>
+              <div class="pr-metric">
+                <p>Status Kesiapan</p>
+                <strong id="r-kesiapan-text" style="font-size:1.35rem;margin-top:4px">-</strong>
+                <small id="r-kesiapan-sub">Kondisi Budidaya</small>
+              </div>
+            </div>
+
             <div class="pr-dates">
               <div class="pr-date"><p>Perkiraan tanggal mulai panen</p><strong id="r-mulai-d"></strong><small id="r-mulai-m"></small></div>
               <span class="pr-arrow" aria-hidden="true">&rarr;</span>
               <div class="pr-date"><p>Perkiraan tanggal selesai panen</p><strong id="r-selesai-d"></strong><small id="r-selesai-m"></small></div>
+            </div>
+
+            <div class="pr-params-box">
+              <h4 class="pr-params-title">Parameter Input Model AI</h4>
+              <div class="pr-params-grid">
+                <div class="pr-param-item">Nilai pH Air:<b id="r-param-ph">-</b></div>
+                <div class="pr-param-item">Nutrisi PPM:<b id="r-param-ppm">-</b></div>
+                <div class="pr-param-item">Suhu Lingkungan:<b id="r-param-suhu">-</b></div>
+                <div class="pr-param-item">Kondisi Tanaman:<b id="r-param-tanaman">-</b></div>
+                <div class="pr-param-item">Kondisi Instalasi:<b id="r-param-instalasi">-</b></div>
+                <div class="pr-param-item">Kondisi Cuaca:<b id="r-param-cuaca">-</b></div>
+              </div>
             </div>
 
             <p class="pr-note"><b>Informasi pendukung prediksi</b><span id="r-info"></span></p>

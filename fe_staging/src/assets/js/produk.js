@@ -26,19 +26,139 @@ const ANGKA = /^\d{1,8}(\.\d{1,2})?$/;
 const fmtStok = (n) => Number(n).toLocaleString("id-ID", { maximumFractionDigits: 2 }) + " kg";
 const fmtHarga = (n) => "Rp " + Number(n).toLocaleString("id-ID", { maximumFractionDigits: 2 });
 
-// ---------- Data palsu (frontend saja, belum ke backend) ----------
+// ---------- Data Produk (Hanya jual Selada Hijau Segar, stok menyesuaikan panen/budidaya) ----------
 const MOCK_KEY = "mock_produk";
 const fotoContoh = (warna) => "data:image/svg+xml;utf8," + encodeURIComponent(
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><rect width="400" height="300" fill="#dde8b0"/><circle cx="200" cy="160" r="86" fill="${warna}"/><circle cx="200" cy="160" r="52" fill="#ecf39e" opacity=".7"/></svg>`);
-let produk = (() => {
-  try { const s = localStorage.getItem(MOCK_KEY); if (s) return JSON.parse(s); } catch (_) {}
-  return [
-    { id_produk: 1, nama_produk: "Selada Hijau Segar", deskripsi: "Selada hidroponik dipanen pagi hari, renyah dan bebas pestisida.", stok: 12.5, harga: 15000, foto_produk: fotoContoh("#4F772D") },
-    { id_produk: 2, nama_produk: "Selada Merah", deskripsi: "Daun merah keunguan, cocok untuk salad dan hiasan hidangan.", stok: 6, harga: 22000, foto_produk: fotoContoh("#9B4A5A") },
-  ];
-})();
+
+// Hitung stok siap jual yang otomatis menyesuaikan hasil panen atau batch siap panen
+function hitungStokDariPanenDanBudidaya() {
+  try {
+    const rawPanen = localStorage.getItem("mock_panen_v1");
+    const listPanen = rawPanen ? JSON.parse(rawPanen) : [];
+    const totalPanenKg = listPanen.reduce((tot, p) => tot + Number(p.berat_panen || 0), 0);
+
+    // Ambil data batch budidaya
+    const rawBudidaya = localStorage.getItem("mock_budidaya_v2");
+    const listBudidaya = rawBudidaya ? JSON.parse(rawBudidaya) : [];
+    
+    // Hitung batch yang berada di fase Panen atau umur >= 45 hari (siap panen)
+    let estimasiPanenKg = 0;
+    listBudidaya.forEach((b) => {
+      const tanam = b.tanggal_tanam;
+      const umur = tanam ? Math.max(0, Math.floor((new Date() - new Date(tanam + "T00:00:00")) / 86400000)) : 0;
+      const faseTerakhir = b.fase && b.fase.length ? b.fase[b.fase.length - 1].id_fase : 1;
+      if ((faseTerakhir === 4 || umur >= 45) && !listPanen.some((p) => p.id_budidaya === b.id_budidaya)) {
+        estimasiPanenKg += Number(b.jumlah_tanaman || 100) * 0.2; // ~200g per tanaman
+      }
+    });
+
+    const totalStok = totalPanenKg + estimasiPanenKg;
+    return totalStok > 0 ? Number(totalStok.toFixed(2)) : 50.0;
+  } catch (_) {
+    return 50.0;
+  }
+}
+
+let produk = [{
+  id_produk: 1,
+  nama_produk: "Selada Hijau Segar",
+  deskripsi: "Selada hijau hidroponik super segar dipanen langsung dari Sepasang Petani Farm (Kebonsari, Sumbersari, Jember). Renyah, manis, bebas pestisida.",
+  stok: hitungStokDariPanenDanBudidaya(),
+  harga: 15000,
+  foto_produk: fotoContoh("#4F772D"),
+}];
+
 function persist() {
-  try { localStorage.setItem(MOCK_KEY, JSON.stringify(produk)); return true; } catch (_) { return false; }
+  try {
+    localStorage.setItem(MOCK_KEY, JSON.stringify(produk));
+    return true;
+  } catch (_) {
+    try {
+      const sanitized = produk.map((p) => ({
+        ...p,
+        foto_produk: (typeof p.foto_produk === "string" && p.foto_produk.startsWith("data:image")) ? "" : p.foto_produk,
+      }));
+      localStorage.setItem(MOCK_KEY, JSON.stringify(sanitized));
+      return true;
+    } catch (e2) {
+      return false;
+    }
+  }
+}
+
+async function loadProdukFromBackend() {
+  let stokTersedia = hitungStokDariPanenDanBudidaya();
+
+  if (typeof USE_MOCK !== "undefined" && !USE_MOCK && typeof apiFetch === "function") {
+    try {
+      // Ambil data budidaya & panen dari backend untuk sinkronisasi stok panen
+      try {
+        const resBudidaya = await apiFetch((typeof ENDPOINTS !== "undefined" ? ENDPOINTS.budidaya : "/pengelolaan") + "?per_page=100");
+        if (resBudidaya && resBudidaya.ok) {
+          const jsonB = await resBudidaya.json();
+          const batches = Array.isArray(jsonB.data) ? jsonB.data : (jsonB.data?.data || []);
+          let hitungKg = 0;
+          batches.forEach((b) => {
+            const panenList = b.panen || [];
+            if (panenList.length > 0) {
+              panenList.forEach((pn) => { hitungKg += Number(pn.berat_panen || pn.berat_total_kg || 0); });
+            } else {
+              const tanam = b.tanggal_tanam || b.seed_date;
+              const umur = tanam ? Math.max(0, Math.floor((new Date() - new Date(tanam + "T00:00:00")) / 86400000)) : 0;
+              const faseList = b.perpindahan_fase || [];
+              const faseTerakhir = faseList.length ? (faseList[faseList.length - 1].id_fase || 1) : 1;
+              if (faseTerakhir === 4 || umur >= 45) {
+                hitungKg += Number(b.jumlah_tanaman || 100) * 0.2; // ~200g per tanaman
+              }
+            }
+          });
+          if (hitungKg > 0) {
+            stokTersedia = Number(hitungKg.toFixed(2));
+          }
+        }
+      } catch (_) {}
+
+      const res = await apiFetch((typeof ENDPOINTS !== "undefined" ? ENDPOINTS.produk : "/produk") + "?per_page=50");
+      if (res && res.ok) {
+        const json = await res.json();
+        const items = Array.isArray(json.data) ? json.data : (json.data?.data || []);
+
+        let utama = items.find((p) => {
+          const nm = (p.nama_produk || p.name || "").toLowerCase();
+          return nm.includes("selada hijau segar") || nm.includes("selada hijau");
+        });
+        if (!utama && items.length > 0) utama = items[0];
+
+        if (utama) {
+          produk = [{
+            id_produk: utama.id_produk || utama.id,
+            nama_produk: "Selada Hijau Segar",
+            deskripsi: utama.deskripsi || utama.description || "Selada hijau hidroponik super segar dipanen langsung dari Sepasang Petani Farm (Kebonsari, Sumbersari, Jember).",
+            stok: Number(utama.jumlah_stok ?? utama.stock ?? stokTersedia),
+            harga: Number(utama.harga ?? utama.price ?? 15000),
+            foto_produk: utama.foto_produk || utama.image || fotoContoh("#4F772D"),
+          }];
+          persist();
+          showList();
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn("[PRODUK API] Menggunakan data lokal:", e);
+    }
+  }
+
+  produk = [{
+    id_produk: 1,
+    nama_produk: "Selada Hijau Segar",
+    deskripsi: "Selada hijau hidroponik super segar dipanen langsung dari Sepasang Petani Farm (Kebonsari, Sumbersari, Jember). Renyah, manis, bebas pestisida.",
+    stok: stokTersedia,
+    harga: 15000,
+    foto_produk: fotoContoh("#4F772D"),
+  }];
+  persist();
+  showList();
 }
 
 // Perkecil foto sebelum disimpan supaya localStorage tidak penuh
@@ -65,8 +185,13 @@ const LEAF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-
 function showList() {
   show("form", false);
   show("list-view");
-  $("list-info").textContent = produk.length + " produk";
+  $("list-info").textContent = "1 produk (Khusus Selada Hijau Segar)";
   show("empty", produk.length === 0);
+
+  // Hanya jual 1 jenis produk (Selada Hijau Segar): sembunyikan tombol Tambah jika produk sudah ada
+  if ($("btn-add")) {
+    $("btn-add").hidden = produk.length > 0;
+  }
 
   const grid = $("grid");
   grid.replaceChildren();
@@ -190,15 +315,69 @@ $("form").addEventListener("submit", async (e) => {
         Object.assign(editing, lama);
         return showAlert("form-alert", "Penyimpanan browser penuh. Hapus data lama atau pakai foto yang lebih kecil.");
       }
+
+      // Sinkronisasi update ke backend API jika terhubung
+      if (typeof USE_MOCK !== "undefined" && !USE_MOCK && typeof apiFetch === "function" && editing.id_produk) {
+        try {
+          const bodyPayload = {
+            nama_produk: editing.nama_produk || "Selada Hijau Segar",
+            deskripsi: editing.deskripsi || "Selada hijau hidroponik super segar dipanen langsung dari Sepasang Petani Farm.",
+            harga: Number(harga),
+            jumlah_stok: Number(stok),
+            foto_produk: foto || editing.foto_produk,
+          };
+          const resUp = await apiFetch((typeof ENDPOINTS !== "undefined" ? ENDPOINTS.produk : "/produk") + "/" + editing.id_produk, {
+            method: "PUT",
+            body: JSON.stringify(bodyPayload),
+          });
+          if (resUp && resUp.ok) {
+            const upJson = await resUp.json();
+            if (upJson.data?.foto_produk) {
+              editing.foto_produk = upJson.data.foto_produk;
+              persist();
+            }
+          }
+        } catch (apiErr) {
+          console.warn("[PRODUK API UPDATE] Disimpan lokal:", apiErr);
+        }
+      }
+
       showList();
       notify(MSG_UBAH_OK);
     } else {
-      const id = produk.reduce((m, p) => Math.max(m, p.id_produk), 0) + 1;
-      produk.push({ id_produk: id, nama_produk: nama, deskripsi, stok: Number(stok), harga: Number(harga), foto_produk: foto });
-      if (!persist()) {
-        produk.pop();
-        return showAlert("form-alert", "Penyimpanan browser penuh. Hapus data lama atau pakai foto yang lebih kecil.");
+      let savedFoto = foto;
+      let newId = produk.reduce((m, p) => Math.max(m, p.id_produk), 0) + 1;
+
+      // Sinkronisasi create ke backend API jika terhubung
+      if (typeof USE_MOCK !== "undefined" && !USE_MOCK && typeof apiFetch === "function") {
+        try {
+          const bodyPayload = {
+            nama_produk: nama,
+            deskripsi: deskripsi,
+            harga: Number(harga),
+            jumlah_stok: Number(stok),
+            foto_produk: foto,
+          };
+          const resAdd = await apiFetch((typeof ENDPOINTS !== "undefined" ? ENDPOINTS.produk : "/produk"), {
+            method: "POST",
+            body: JSON.stringify(bodyPayload),
+          });
+          if (resAdd && resAdd.ok) {
+            const addJson = await resAdd.json();
+            if (addJson.data) {
+              newId = addJson.data.id_produk || addJson.data.id || newId;
+              if (addJson.data.foto_produk) {
+                savedFoto = addJson.data.foto_produk;
+              }
+            }
+          }
+        } catch (apiErr) {
+          console.warn("[PRODUK API ADD] Disimpan lokal:", apiErr);
+        }
       }
+
+      produk.push({ id_produk: newId, nama_produk: nama, deskripsi, stok: Number(stok), harga: Number(harga), foto_produk: savedFoto });
+      persist();
       showList();
       notify(MSG_TAMBAH_OK);
     }
@@ -238,10 +417,10 @@ $("m-ya").addEventListener("click", () => {
 });
 
 // ---------- Mulai ----------
-(function init() {
+(async function init() {
   try {
     const u = JSON.parse(localStorage.getItem("user") || "{}");
     $("user-email").textContent = u.email || "";
   } catch (_) {}
-  showList();
+  await loadProdukFromBackend();
 })();

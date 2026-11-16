@@ -64,24 +64,15 @@ class HarvestController extends Controller
             $q->where('id_pembudidaya', $request->user()->id_pengguna);
         })->findOrFail($id);
 
-        $data = $request->validated();
-        if (isset($data['kondisi_hasil_panen']) && !isset($data['kualitas'])) {
-            $data['kualitas'] = $data['kondisi_hasil_panen'];
+        $val = $request->validated();
+        if (isset($val['berat_panen']) || isset($val['berat_total_kg']) || isset($val['total_weight_kg'])) {
+            $val['berat_panen'] = $val['berat_panen'] ?? $val['berat_total_kg'] ?? $val['total_weight_kg'] ?? 0;
         }
-        if (isset($data['total_weight_kg']) && !isset($data['berat_panen'])) {
-            $data['berat_panen'] = $data['total_weight_kg'];
-        }
-        if (isset($data['berat_total_kg']) && !isset($data['berat_panen'])) {
-            $data['berat_panen'] = $data['berat_total_kg'];
-        }
-        if (isset($data['harvest_date']) && !isset($data['tanggal_panen'])) {
-            $data['tanggal_panen'] = $data['harvest_date'];
-        }
-        if (isset($data['quantity']) && !isset($data['jumlah_panen'])) {
-            $data['jumlah_panen'] = $data['quantity'];
+        if (isset($val['kondisi_hasil_panen'])) {
+            $val['kualitas'] = $val['kondisi_hasil_panen'];
         }
 
-        $harvest->update($data);
+        $harvest->update($val);
 
         return $this->successResponse(
             new HarvestResource($harvest->fresh()),

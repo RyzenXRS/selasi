@@ -15,7 +15,7 @@ class VerifyCodeRequest extends FormRequest
     {
         return [
             'email' => ['required', 'string', 'email', 'exists:pengguna,email'],
-            'kode'  => ['required', 'string'],
+            'kode'  => ['required', 'string', 'size:6'],
         ];
     }
 
@@ -23,8 +23,11 @@ class VerifyCodeRequest extends FormRequest
     {
         return [
             'email.required' => 'Email wajib diisi.',
-            'email.exists'   => 'Email tidak terdaftar.',
+            'email.email'    => 'Format email tidak valid.',
+            'email.exists'   => 'Email tidak terdaftar di sistem.',
             'kode.required'  => 'Kode verifikasi wajib diisi.',
+            'kode.size'      => 'Kode verifikasi harus 6 digit.',
         ];
     }
 }
+

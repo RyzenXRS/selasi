@@ -73,8 +73,6 @@ Route::prefix('v1')->middleware(['auth:sanctum'])->group(function () {
         // Perpindahan Fase
         Route::apiResource('batches.phases', \App\Http\Controllers\API\PhaseHistoryController::class)->shallow();
         Route::apiResource('pengelolaan.fase', \App\Http\Controllers\API\PhaseHistoryController::class)->shallow();
-        Route::put('/fase/{id}',    [\App\Http\Controllers\API\PhaseHistoryController::class, 'update']);
-        Route::delete('/fase/{id}', [\App\Http\Controllers\API\PhaseHistoryController::class, 'destroy']);
 
         // Panen
         Route::apiResource('batches.harvests', \App\Http\Controllers\API\HarvestController::class)->shallow();
@@ -108,9 +106,13 @@ Route::prefix('v1')->middleware(['auth:sanctum'])->group(function () {
         Route::put('/produk/{id}',      [\App\Http\Controllers\API\ProductController::class, 'update']);
         Route::delete('/produk/{id}',   [\App\Http\Controllers\API\ProductController::class, 'destroy']);
 
-        // Kelola Pesanan Masuk
-        Route::get('/cultivator/orders',             [\App\Http\Controllers\API\OrderController::class, 'cultivatorOrders']);
-        Route::put('/cultivator/orders/{id}/status', [\App\Http\Controllers\API\OrderController::class, 'updateStatus']);
+        // Kelola Pesanan Masuk & Transaksi Pembudidaya
+        Route::get('/cultivator/orders',                      [\App\Http\Controllers\API\OrderController::class, 'cultivatorOrders']);
+        Route::put('/cultivator/orders/{id}/status',          [\App\Http\Controllers\API\OrderController::class, 'updateStatus']);
+        Route::patch('/cultivator/orders/{id}/status',        [\App\Http\Controllers\API\OrderController::class, 'updateStatus']);
+        Route::post('/cultivator/orders/{id}/konfirmasi-cod', [\App\Http\Controllers\API\OrderController::class, 'konfirmasiCod']);
+        Route::get('/riwayat-transaksi',                      [\App\Http\Controllers\API\OrderController::class, 'cultivatorOrders']);
+        Route::get('/riwayat-transaksi/{id}',                 [\App\Http\Controllers\API\OrderController::class, 'show']);
     });
 
     // ============================================================

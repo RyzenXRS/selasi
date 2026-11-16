@@ -2,8 +2,21 @@
 // false = pakai API BE sungguhan (jalankan dulu: php artisan serve)
 const USE_MOCK = false;
 
+// Lokasi Kebun Budidaya: Sepasang Petani farm (Kebonsari, Sumbersari, Jember)
+// Plus Code: RM6X+MM5
+const FARM_LOCATION = {
+  nama: "Sepasang Petani Farm",
+  alamat: "Lingkungan Krajan, Kebonsari, Kec. Sumbersari, Kabupaten Jember, Jawa Timur 68122",
+  plusCode: "RM6X+MM5",
+  latitude: -8.1883,
+  longitude: 113.6992,
+};
+
 // Alamat API BE (Laravel, prefix /api/v1)
 const API_BASE_URL = "http://127.0.0.1:8000/api/v1";
+
+// Alamat API Microservice AI (FastAPI Python) di port 8001
+const AI_API_URL = "http://127.0.0.1:8001";
 
 // Alamat dasar untuk file foto profil di BE (butuh: php artisan storage:link)
 const STORAGE_BASE_URL = "http://127.0.0.1:8000/storage/";
@@ -14,12 +27,9 @@ const ENDPOINTS = {
   register:     "/auth/register",
   logout:       "/auth/logout",
   forgot:       "/auth/forgot-password",
-<<<<<<< HEAD
   verify:       "/auth/verify-code",
+  verifikasi:   "/auth/verify-code",
   reset:        "/auth/reset-password",
-=======
-  reset:        "/auth/reset-password",   // placeholder
->>>>>>> 3619d1409b2ad972994775ad859e5e79023047dd
   profil:       "/profile",        // GET: data akun
   profilUbah:   "/profile",        // PUT: ubah profil (dikirim POST + _method=PUT kalau ada foto)
   dashboard:    "/dashboard",
@@ -33,11 +43,10 @@ const ENDPOINTS = {
   tasks:        "/tasks",          // alias /to-do
   prediksiPanen:     "/pengelolaan",  // /{id}/prediksi-panen
   prediksiPermintaan: "/prediksi-permintaan",
-  produk:       "/produk",         // GET katalog produk
-<<<<<<< HEAD
-=======
-  pesanan:      "/pesanan",        // GET daftar pesanan masuk (UC26), sesuaikan dengan routes/api.php
->>>>>>> 3619d1409b2ad972994775ad859e5e79023047dd
+  produk:           "/produk",         // GET katalog produk, POST tambah
+  pesanan:          "/cultivator/orders", // GET daftar pesanan masuk pembudidaya
+  notifications:    "/notifications",  // GET daftar notifikasi, POST /{id}/read, POST /read-all
+  riwayatTransaksi: "/cultivator/orders", // GET riwayat transaksi pembudidaya
 };
 
 const ROLE_PEMBUDIDAYA = "pembudidaya"; // BE mengirim "PEMBUDIDAYA", simpan versi huruf kecil saat login
@@ -72,5 +81,13 @@ async function apiFetch(path, options = {}) {
     logout();
     return null;
   }
+
+  // Teks peringatan PHP (misalnya "Deprecated: ...") kadang tercetak sebelum JSON.
+  // res.json() dibuat membuang teks itu dulu, mulai dari tanda { atau [ yang pertama.
+  res.json = async () => {
+    const raw = await res.clone().text();
+    const awal = raw.search(/[\[{]/);
+    return JSON.parse(awal >= 0 ? raw.slice(awal) : raw);
+  };
   return res;
 }

@@ -27,16 +27,50 @@ function fmtTanggal(v) {
 let data = [];
 
 async function ambilNotifikasi() {
-  await new Promise((r) => setTimeout(r, 250));
-  return KOSONG ? [] : notifBaca();
+  if (KOSONG) return [];
+  if (typeof USE_MOCK !== "undefined" && !USE_MOCK && typeof apiFetch === "function" && localStorage.getItem("token")) {
+    try {
+      const ep = (typeof ENDPOINTS !== "undefined" && ENDPOINTS.notifications) || "/notifications";
+      const res = await apiFetch(ep + "?per_page=50");
+      if (res && res.ok) {
+        const json = await res.json();
+        const list = Array.isArray(json) ? json : (json.data?.data || json.data || []);
+        if (list.length > 0) {
+          const mapped = list.map((item) => ({
+            id_notifikasi: item.id_notifikasi || item.id,
+            judul_notifikasi: item.judul_notifikasi || (item.jenis_notifikasi ? (item.jenis_notifikasi.charAt(0).toUpperCase() + item.jenis_notifikasi.slice(1).replace(/_/g, ' ')) : "Notifikasi Budidaya"),
+            isi_notifikasi: item.isi_notifikasi || item.message || "-",
+            tanggal_notifikasi: item.waktu_notifikasi || item.created_at || new Date().toISOString(),
+            status_notifikasi: item.status_dibaca ? "Sudah Dibaca" : "Belum Dibaca",
+            jenis_notifikasi: item.jenis_notifikasi || "Budidaya",
+            referensi_notifikasi: item.referensi_notifikasi || (item.id_pengelolaan ? "Batch #" + item.id_pengelolaan : "-"),
+          }));
+          notifTulis(mapped);
+          return mapped;
+        }
+      }
+    } catch (e) {
+      console.warn("[NOTIF API] Gagal fetch dari BE, fallback lokal:", e);
+    }
+  }
+  return notifBaca();
 }
 
-function tandaiDibaca(id) {
+async function tandaiDibaca(id) {
   const n = data.find((x) => x.id_notifikasi === id);
   if (!n || n.status_notifikasi === "Sudah Dibaca") return;
   n.status_notifikasi = "Sudah Dibaca";
   if (!KOSONG) notifTulis(data);
   perbaruiBadgeNotif();
+
+  if (typeof USE_MOCK !== "undefined" && !USE_MOCK && typeof apiFetch === "function" && localStorage.getItem("token")) {
+    try {
+      const ep = (typeof ENDPOINTS !== "undefined" && ENDPOINTS.notifications) || "/notifications";
+      await apiFetch(ep + "/" + encodeURIComponent(id) + "/read", { method: "POST" });
+    } catch (e) {
+      console.warn("[NOTIF API] Gagal update status baca:", e);
+    }
+  }
 }
 
 // ---------- Tampilan ----------

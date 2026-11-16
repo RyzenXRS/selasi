@@ -16,6 +16,16 @@ class ProductService
         $fotoPath = null;
         if ($foto && is_object($foto) && method_exists($foto, 'store')) {
             $fotoPath = $foto->store('products', 'public');
+        } elseif (is_string($foto) && preg_match('/^data:image\/(\w+);base64,/', $foto, $matches)) {
+            $imageType = strtolower($matches[1]);
+            $imageData = substr($foto, strpos($foto, ',') + 1);
+            $imageData = base64_decode($imageData);
+            if ($imageData !== false) {
+                $ext = ($imageType === 'jpeg' || $imageType === 'jpg') ? 'jpg' : ($imageType === 'png' ? 'png' : 'webp');
+                $fileName = 'products/' . \Illuminate\Support\Str::random(32) . '.' . $ext;
+                Storage::disk('public')->put($fileName, $imageData);
+                $fotoPath = $fileName;
+            }
         } elseif (is_string($foto)) {
             $fotoPath = $foto;
         }
@@ -43,10 +53,23 @@ class ProductService
     {
         $foto = $data['foto_produk'] ?? $data['image'] ?? null;
         if ($foto && is_object($foto) && method_exists($foto, 'store')) {
-            if ($produk->foto_produk) {
+            if ($produk->foto_produk && Storage::disk('public')->exists($produk->foto_produk)) {
                 Storage::disk('public')->delete($produk->foto_produk);
             }
             $data['foto_produk'] = $foto->store('products', 'public');
+        } elseif (is_string($foto) && preg_match('/^data:image\/(\w+);base64,/', $foto, $matches)) {
+            $imageType = strtolower($matches[1]);
+            $imageData = substr($foto, strpos($foto, ',') + 1);
+            $imageData = base64_decode($imageData);
+            if ($imageData !== false) {
+                if ($produk->foto_produk && Storage::disk('public')->exists($produk->foto_produk)) {
+                    Storage::disk('public')->delete($produk->foto_produk);
+                }
+                $ext = ($imageType === 'jpeg' || $imageType === 'jpg') ? 'jpg' : ($imageType === 'png' ? 'png' : 'webp');
+                $fileName = 'products/' . \Illuminate\Support\Str::random(32) . '.' . $ext;
+                Storage::disk('public')->put($fileName, $imageData);
+                $data['foto_produk'] = $fileName;
+            }
         }
 
         $payload = [];

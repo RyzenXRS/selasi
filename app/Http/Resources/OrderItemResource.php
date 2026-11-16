@@ -18,6 +18,8 @@ class OrderItemResource extends JsonResource
             'product_id'   => $this->id_produk,
             'nama_produk'  => $this->produk?->nama_produk,
             'product_name' => $this->produk?->nama_produk,
+            'foto_produk'  => $this->produk?->foto_produk ? asset('storage/' . $this->produk->foto_produk) : null,
+            'image'        => $this->produk?->foto_produk ? asset('storage/' . $this->produk->foto_produk) : null,
             'jumlah'       => (int) $this->jumlah,
             'quantity'     => (int) $this->jumlah,
             'harga_satuan' => (float) $this->harga_satuan,

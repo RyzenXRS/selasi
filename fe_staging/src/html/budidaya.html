@@ -99,7 +99,12 @@
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Kode pengelolaan</th></tr></thead>
+            <thead>
+              <tr>
+                <th>Kode pengelolaan</th>
+                <th>Status / Keterangan</th>
+              </tr>
+            </thead>
             <tbody id="rows"></tbody>
           </table>
           <p class="empty" id="empty" hidden>Belum ada batch. Tekan Tambah Budidaya untuk mulai.</p>
@@ -114,7 +119,7 @@
             <span id="dt-status" class="badge"></span>
           </div>
           <div class="actions">
-            <button type="button" class="btn" id="btn-move">Tambah Perpindahan Fase</button>
+            <button type="button" class="btn" id="btn-move" hidden>Tambah Perpindahan Fase</button>
             <button type="button" class="btn" id="btn-edit">Ubah Data</button>
             <button type="button" class="btn btn-danger" id="btn-delete">Hapus</button>
             <button type="button" class="btn btn-ghost" id="btn-back">Kembali</button>
@@ -136,9 +141,9 @@
           <div><dt>Jumlah tanaman</dt><dd id="dt-jumlah"></dd></div>
           <div><dt>Lokasi</dt><dd id="dt-lokasi"></dd></div>
           <div><dt>Nilai pH</dt><dd id="dt-ph"></dd></div>
-          <div><dt>Suhu Lingkungan</dt><dd id="dt-suhu">-</dd></div>
+          <div><dt>Suhu Lingkungan</dt><dd id="dt-suhu"></dd></div>
           <div class="wide"><dt>Kondisi tanaman</dt><dd id="dt-kondisi"></dd></div>
-          <div class="wide"><dt>Kondisi air dan nutrisi</dt><dd id="dt-air"></dd></div>
+          <div class="wide"><dt>Nilai PPM</dt><dd id="dt-air"></dd></div>
           <div class="wide"><dt>Kondisi instalasi</dt><dd id="dt-instalasi"></dd></div>
           <div class="wide"><dt>Kondisi lingkungan</dt><dd id="dt-lingkungan"></dd></div>
           <div class="wide"><dt>Catatan</dt><dd id="dt-catatan"></dd></div>
@@ -148,6 +153,7 @@
           <div><dt>Sisa waktu menuju perpindahan</dt><dd id="dt-sisa"></dd></div>
           <div><dt>Lokasi/meja tujuan</dt><dd id="dt-tujuan"></dd></div>
           <div><dt>Status budidaya</dt><dd id="dt-status-text"></dd></div>
+          <div class="wide"><dt>Panduan Rotasi</dt><dd>Semai (14 hari) &rarr; Peremajaan (s/d 21 hari) &rarr; Pendewasaan (Panen 45-55 hari sesuai pasar & AI)</dd></div>
         </dl>
 
         <h3 class="sub-title">Dasar status</h3>
@@ -157,7 +163,7 @@
         <div id="h-alert" class="alert" role="alert" hidden></div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Urutan</th><th>Fase</th><th>Mulai</th><th>Selesai</th><th>Lama</th><th>Catatan</th><th>Aksi</th></tr></thead>
+            <thead><tr><th>Urutan</th><th>Fase</th><th>Mulai</th><th>Selesai</th><th>Lama</th></tr></thead>
             <tbody id="hist-rows"></tbody>
           </table>
         </div>
@@ -195,25 +201,23 @@
           <div class="field">
             <label for="f-kode">Kode pengelolaan</label>
             <div style="display:flex;gap:8px">
-              <input type="text" id="f-kode" maxlength="50" placeholder="Contoh: SLD-001" required>
-              <button type="button" class="btn btn-ghost" id="btn-auto-kode" style="white-space:nowrap;padding:8px 12px;font-size:0.82rem" title="Buat kode otomatis">🔄 Otomatis</button>
+              <input type="text" id="f-kode" maxlength="50" required placeholder="Contoh: BATCH-2026-001">
+              <button type="button" class="btn btn-ghost" id="btn-auto-kode" style="padding:6px 12px;white-space:nowrap;font-size:.82rem" title="Buat kode batch otomatis">Otomatis</button>
             </div>
-            <small style="color:#5d7549;font-size:.76rem;margin-top:3px;display:block">Format: SLD-001 atau BATCH-001 (bisa otomatis)</small>
           </div>
           <div class="field"><label for="f-tanam">Tanggal tanam</label><input type="date" id="f-tanam" required></div>
           <div class="field"><label for="f-jumlah">Jumlah tanaman</label><input type="number" id="f-jumlah" min="1" step="1" required></div>
-          <div class="field"><label for="f-lokasi">Lokasi</label><input type="text" id="f-lokasi" maxlength="100" placeholder="Contoh: Meja Persemaian 1" required></div>
+          <div class="field"><label for="f-lokasi">Lokasi</label><input type="text" id="f-lokasi" maxlength="100" placeholder="Contoh: Meja Semai - Sepasang Petani Farm" required></div>
           <div class="field"><label for="f-ph">Nilai pH</label><input type="number" id="f-ph" min="0" max="14" step="0.01" placeholder="Contoh: 6.00" required></div>
           <div class="field">
             <label for="f-suhu">Suhu Lingkungan (°C)</label>
             <div style="display:flex;gap:8px">
-              <input type="number" id="f-suhu" step="0.1" placeholder="Memuat suhu otomatis..." required>
-              <button type="button" class="btn btn-ghost" id="btn-fetch-suhu" style="white-space:nowrap;padding:8px 12px;font-size:0.82rem" title="Ambil suhu cuaca terkini">🌡️ Ambil Suhu</button>
+              <input type="number" id="f-suhu" step="0.1" placeholder="Misal: 24.5">
+              <button type="button" class="btn btn-ghost" id="btn-api-suhu" style="padding:6px 12px;white-space:nowrap;font-size:.82rem" title="Ambil suhu real-time lokasi Sepasang Petani Farm (Jember)">API Suhu</button>
             </div>
-            <small id="suhu-status" style="color:#5d7549;font-size:.76rem;margin-top:3px;display:block">Suhu real-time via API cuaca</small>
           </div>
           <div class="field span-2"><label for="f-kondisi">Kondisi tanaman</label><textarea id="f-kondisi"></textarea></div>
-          <div class="field span-2"><label for="f-air">Kondisi air dan nutrisi</label><textarea id="f-air"></textarea></div>
+          <div class="field span-2"><label for="f-air">Nilai PPM (Nutrisi)</label><input type="text" id="f-air" placeholder="Contoh: 900 ppm atau 900 - 1200" required></div>
           <div class="field span-2"><label for="f-instalasi">Kondisi instalasi</label><textarea id="f-instalasi"></textarea></div>
           <div class="field span-2"><label for="f-lingkungan">Kondisi lingkungan</label><textarea id="f-lingkungan"></textarea></div>
           <div class="field span-2"><label for="f-catatan">Catatan</label><textarea id="f-catatan"></textarea></div>
@@ -234,10 +238,7 @@
     });
   </script>
   <script src="../assets/js/config.js?v=backend2"></script>
-<<<<<<< HEAD
-=======
   <script src="../assets/js/lonceng.js"></script>
->>>>>>> 3619d1409b2ad972994775ad859e5e79023047dd
   <script src="../assets/js/guard.js?v=backend2"></script>
   <script src="../assets/js/budidaya.js?v=backend2"></script>
 </body>

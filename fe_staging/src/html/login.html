@@ -66,7 +66,7 @@
       <h1>Masukkan kode</h1>
       <p class="sub" id="code-hint"></p>
       <div id="alert-code" class="alert" role="alert" hidden></div>
-      <div class="field"><label for="code-input">Kode verifikasi</label><input type="text" id="code-input" class="code" maxlength="6" autocomplete="one-time-code" required></div>
+      <div class="field"><label for="code-input">Kode OTP (6 digit)</label><input type="text" id="code-input" class="code" maxlength="6" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" required></div>
       <button type="submit" class="btn" id="btn-code">Periksa kode</button>
       <div class="links"><a href="#" data-back>Kembali ke login</a></div>
     </form>
