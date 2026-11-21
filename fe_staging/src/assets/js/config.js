@@ -44,6 +44,7 @@ const ENDPOINTS = {
   prediksiPanen:     "/pengelolaan",  // /{id}/prediksi-panen
   prediksiPermintaan: "/prediksi-permintaan",
   produk:           "/produk",         // GET katalog produk, POST tambah
+  keranjang:        "/keranjang",
   pesanan:          "/cultivator/orders", // GET daftar pesanan masuk pembudidaya
   notifications:    "/notifications",  // GET daftar notifikasi, POST /{id}/read, POST /read-all
   riwayatTransaksi: "/cultivator/orders", // GET riwayat transaksi pembudidaya

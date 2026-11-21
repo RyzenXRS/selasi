@@ -17,14 +17,23 @@ const MSG_TAMBAH_OK = "Produk berhasil ditambahkan";
 const MSG_UBAH_OK = "Berhasil mengubah data produk";
 const MSG_HAPUS_OK = "Produk berhasil di hapus";
 const MSG_FORMAT = "Format data yang diinputkan tidak sesuai";
-const MSG_LENGKAP_TAMBAH = "Data produk belum lengkap. Silahkan lengkapi seluruh data";
-const MSG_LENGKAP_UBAH = "Data produk belum lengkap. Silahkan lengkapi seluruh data";
+const MSG_LENGKAP_TAMBAH = "Data produk belum lengkap. Silakan lengkapi seluruh data";   // UC22
+const MSG_LENGKAP_UBAH = "Data produk belum lengkap. Silahkan lengkapi seluruh data";    // UC23
 
-// Format sesuai dokumen: nama maksimal 50 karakter; stok dan harga Decimal (10,2); foto berupa gambar.
+// Format sesuai dokumen: nama maksimal 50 karakter; stok dan harga Decimal (10,2); foto berupa gambar;
+// Tanggal Pengambilan berupa Date (YYYY-MM-DD) dan Jam Pengambilan berupa Time (HH:MM).
 const ANGKA = /^\d{1,8}(\.\d{1,2})?$/;
+const FORMAT_TANGGAL = /^\d{4}-\d{2}-\d{2}$/;
+const FORMAT_JAM = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+// Nama field tanggal dan jam pengambilan pada permintaan ke BE.
+// BELUM dipastikan dengan backend: samakan dengan field di request validasi produk.
+const FIELD_BE = { tanggal: "tanggal_pengambilan", jam: "jam_pengambilan" };
 
 const fmtStok = (n) => Number(n).toLocaleString("id-ID", { maximumFractionDigits: 2 }) + " kg";
 const fmtHarga = (n) => "Rp " + Number(n).toLocaleString("id-ID", { maximumFractionDigits: 2 });
+const jamHHMM = (v) => String(v || "").slice(0, 5); // BE kadang mengirim "HH:MM:SS"; input jam memakai "HH:MM"
+const tanggalYMD = (v) => String(v || "").slice(0, 10);
 
 // ---------- Data Produk (Hanya jual Selada Hijau Segar, stok menyesuaikan panen/budidaya) ----------
 const MOCK_KEY = "mock_produk";
@@ -41,7 +50,7 @@ function hitungStokDariPanenDanBudidaya() {
     // Ambil data batch budidaya
     const rawBudidaya = localStorage.getItem("mock_budidaya_v2");
     const listBudidaya = rawBudidaya ? JSON.parse(rawBudidaya) : [];
-    
+
     // Hitung batch yang berada di fase Panen atau umur >= 45 hari (siap panen)
     let estimasiPanenKg = 0;
     listBudidaya.forEach((b) => {
@@ -138,6 +147,9 @@ async function loadProdukFromBackend() {
             stok: Number(utama.jumlah_stok ?? utama.stock ?? stokTersedia),
             harga: Number(utama.harga ?? utama.price ?? 15000),
             foto_produk: utama.foto_produk || utama.image || fotoContoh("#4F772D"),
+            // Tanggal dan jam pengambilan dipakai untuk mengisi form edit (UC23) kalau BE mengirimnya
+            [FIELD_BE.tanggal]: tanggalYMD(utama[FIELD_BE.tanggal]),
+            [FIELD_BE.jam]: jamHHMM(utama[FIELD_BE.jam]),
           }];
           persist();
           showList();
@@ -188,15 +200,14 @@ function showList() {
   $("list-info").textContent = "1 produk (Khusus Selada Hijau Segar)";
   show("empty", produk.length === 0);
 
-  // Hanya jual 1 jenis produk (Selada Hijau Segar): sembunyikan tombol Tambah jika produk sudah ada
-  if ($("btn-add")) {
-    $("btn-add").hidden = produk.length > 0;
-  }
+  // Tombol Tambah Produk selalu tampil (UC22)
+  if ($("btn-add")) $("btn-add").hidden = false;
 
   const grid = $("grid");
   grid.replaceChildren();
-  produk.forEach((p) => {
+  produk.forEach((p, i) => {
     const card = el("article", undefined, "produk");
+    card.style.setProperty("--i", String(Math.min(i, 8)));
     const foto = el("div", undefined, "foto");
     if (p.foto_produk) {
       const img = el("img");
@@ -240,12 +251,17 @@ function showForm(p) {
   fotoDipilih = null;
   $("f-foto").value = "";
 
-  // UC23: form edit hanya berisi stok, harga, dan foto produk
+  // UC23: form edit berisi stok, harga, foto produk, tanggal pengambilan, dan jam pengambilan
+  // (nama dan deskripsi hanya ada di form tambah). Tanggal dan jam tampil di form tambah maupun edit.
   fld("f-nama").hidden = !!p;
   fld("f-deskripsi").hidden = !!p;
+  fld("f-tanggal").hidden = false;
+  fld("f-jam").hidden = false;
   $("form-title").textContent = p ? "Ubah produk: " + p.nama_produk : "Tambah produk";
   $("f-nama").value = "";
   $("f-deskripsi").value = "";
+  $("f-tanggal").value = p ? tanggalYMD(p[FIELD_BE.tanggal]) : "";
+  $("f-jam").value = p ? jamHHMM(p[FIELD_BE.jam]) : "";
   $("f-stok").value = p ? p.stok : "";
   $("f-harga").value = p ? p.harga : "";
   $("f-foto-help").textContent = p && p.foto_produk
@@ -289,15 +305,18 @@ $("form").addEventListener("submit", async (e) => {
   const deskripsi = $("f-deskripsi").value.trim();
   const stok = $("f-stok").value.trim();
   const harga = $("f-harga").value.trim();
+  const tanggal = $("f-tanggal").value.trim();
+  const jam = $("f-jam").value.trim();
 
   // Alternative flow: data tidak lengkap
   // Saat edit, foto boleh kosong kalau produk sudah punya foto (foto lama dipakai).
+  // Tanggal dan jam pengambilan wajib diisi, baik saat tambah (UC22) maupun edit (UC23).
   const butuhFoto = edit ? !editing.foto_produk : true;
-  const kurang = !stok || !harga || (butuhFoto && !fotoDipilih) || (!edit && (!nama || !deskripsi));
+  const kurang = !stok || !harga || !tanggal || !jam || (butuhFoto && !fotoDipilih) || (!edit && (!nama || !deskripsi));
   if (kurang) return showAlert("form-alert", edit ? MSG_LENGKAP_UBAH : MSG_LENGKAP_TAMBAH);
 
   // Alternative flow: format data tidak sesuai
-  if ((!edit && nama.length > 50) || !ANGKA.test(stok) || !ANGKA.test(harga)) {
+  if ((!edit && nama.length > 50) || !FORMAT_TANGGAL.test(tanggal) || !FORMAT_JAM.test(jam) || !ANGKA.test(stok) || !ANGKA.test(harga)) {
     return showAlert("form-alert", MSG_FORMAT);
   }
 
@@ -310,6 +329,8 @@ $("form").addEventListener("submit", async (e) => {
       const lama = { ...editing };
       editing.stok = Number(stok);
       editing.harga = Number(harga);
+      editing[FIELD_BE.tanggal] = tanggal;
+      editing[FIELD_BE.jam] = jam;
       if (foto) editing.foto_produk = foto;
       if (!persist()) {
         Object.assign(editing, lama);
@@ -325,6 +346,8 @@ $("form").addEventListener("submit", async (e) => {
             harga: Number(harga),
             jumlah_stok: Number(stok),
             foto_produk: foto || editing.foto_produk,
+            [FIELD_BE.tanggal]: tanggal,
+            [FIELD_BE.jam]: jam,
           };
           const resUp = await apiFetch((typeof ENDPOINTS !== "undefined" ? ENDPOINTS.produk : "/produk") + "/" + editing.id_produk, {
             method: "PUT",
@@ -357,6 +380,8 @@ $("form").addEventListener("submit", async (e) => {
             harga: Number(harga),
             jumlah_stok: Number(stok),
             foto_produk: foto,
+            [FIELD_BE.tanggal]: tanggal,
+            [FIELD_BE.jam]: jam,
           };
           const resAdd = await apiFetch((typeof ENDPOINTS !== "undefined" ? ENDPOINTS.produk : "/produk"), {
             method: "POST",
@@ -376,7 +401,10 @@ $("form").addEventListener("submit", async (e) => {
         }
       }
 
-      produk.push({ id_produk: newId, nama_produk: nama, deskripsi, stok: Number(stok), harga: Number(harga), foto_produk: savedFoto });
+      produk.push({
+        id_produk: newId, nama_produk: nama, deskripsi, stok: Number(stok), harga: Number(harga), foto_produk: savedFoto,
+        [FIELD_BE.tanggal]: tanggal, [FIELD_BE.jam]: jam,
+      });
       persist();
       showList();
       notify(MSG_TAMBAH_OK);

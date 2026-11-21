@@ -20,6 +20,9 @@ const fmtTanggal = (s) => (s ? toDate(s).toLocaleDateString("id-ID", { dateStyle
 const fmtPendek = (s) => toDate(s).toLocaleDateString("id-ID", { day: "numeric", month: "short" });
 const fmtAngka = (n, d = 2) => Number(n).toLocaleString("id-ID", { minimumFractionDigits: d, maximumFractionDigits: d });
 
+// Umur batch: jumlah hari dari tanggal tanam sampai hari ini (dipakai showDetail)
+const daysBetween = (tanggalTanam) => (tanggalTanam ? selisih(toDate(tanggalTanam), today()) : 0);
+
 // ---------- Aturan fase ----------
 const NAMA_FASE = { 1: "Semai", 2: "Peremajaan", 3: "Pendewasaan", 4: "Panen" };
 const UMUR_SEMAI = 14;        // pindah di hari ke-15

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Checkout | SelaSI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/dashboard.css">
+  <link rel="stylesheet" href="../assets/css/pembeli-app.css">
+  <link rel="stylesheet" href="../assets/css/pembeli-belanja.css">
+  <link rel="stylesheet" href="../assets/css/pembeli-pesanan.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <span class="brand">SelaSI</span>
+      <nav class="nav" aria-label="Menu utama">
+        <a href="katalog-pembeli.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l1 13H5z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg><span>Katalog Produk</span></a>
+        <a href="pesanan-pembeli.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4h6v3H9z"/><path d="M7 5.5H6a1 1 0 0 0-1 1V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6.5a1 1 0 0 0-1-1h-1"/><path d="M9 12h6M9 16h4"/></svg><span>Pesanan</span></a>
+        <a href="profil-pembeli.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg><span>Profil</span></a>
+      </nav>
+      <div class="sidebar-foot">
+        <span id="user-email" class="user-email" style="display:none"></span>
+        <button type="button" class="btn-logout" id="btn-logout"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg><span>Keluar</span></button>
+      </div>
+    </aside>
+
+    <main class="page">
+      <div class="topbar">
+        <a class="cart-link" href="keranjang.html" aria-label="Keranjang"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.5L21 8H6"/><circle cx="10" cy="20" r="1.2"/><circle cx="17" cy="20" r="1.2"/></svg><span class="cart-badge" id="cart-count" hidden>0</span></a>
+      </div>
+      <div class="page-head">
+        <h1>Checkout</h1>
+        <p class="sub">Periksa pesananmu, pilih jadwal pengambilan dan metode pembayaran.</p>
+      </div>
+
+      <div id="alert" class="alert" role="alert" hidden></div>
+      <p class="kosong-info" id="kosong" hidden><strong>Keranjang belanja masih kosong</strong><a href="katalog-pembeli.html">Lihat katalog produk</a></p>
+
+      <div id="form" hidden>
+        <section class="panel" style="--i:0" aria-labelledby="h-ringkas">
+          <h2 id="h-ringkas">Ringkasan Pesanan</h2>
+          <div id="ringkas"></div>
+        </section>
+
+        <section class="panel" style="--i:1" aria-labelledby="h-jadwal">
+          <h2 id="h-jadwal">Jadwal Pengambilan</h2>
+          <div class="jadwal-grid">
+            <div>
+              <label class="sub-label" for="tanggal">Tanggal Pengambilan</label>
+              <select id="tanggal" class="input-jadwal"></select>
+            </div>
+            <div>
+              <label class="sub-label" for="jam">Jam Pengambilan</label>
+              <select id="jam" class="input-jadwal"></select>
+            </div>
+          </div>
+          <a class="lokasi" id="lokasi" href="#" target="_blank" rel="noopener" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+            <div><strong id="lokasi-nama"></strong><span id="lokasi-alamat"></span><span class="buka">Buka di Google Maps</span></div>
+          </a>
+        </section>
+
+        <section class="panel" style="--i:2" aria-labelledby="h-bayar">
+          <h2 id="h-bayar">Metode Pembayaran</h2>
+          <div class="opts" id="metode" role="radiogroup" aria-labelledby="h-bayar"></div>
+        </section>
+
+        <section class="cart-ringkasan" aria-label="Total dan aksi">
+          <div class="cart-total"><span>Total harga</span><strong id="total">Rp 0</strong></div>
+          <div class="co-aksi">
+            <a class="batal" id="btn-batal" href="keranjang.html">Batal</a>
+            <button type="button" class="btn-checkout" id="btn-buat">Buat Pesanan</button>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/pembeli-guard.js"></script>
+  <script src="../assets/js/pembeli-cart.js"></script>
+  <script src="../assets/js/pembeli-pesanan.js"></script>
+  <script src="../assets/js/checkout-pembeli.js"></script>
+</body>
+</html>

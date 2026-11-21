@@ -1,0 +1,159 @@
+/* Checkout, daftar pesanan, dan detail pesanan Pembeli. Dimuat setelah pembeli-belanja.css. */
+
+.panel { background:#fff; border:1.5px solid #e3ebc6; border-radius:20px; padding:20px 22px; margin-bottom:16px;
+  animation: naik .45s var(--ease) both; animation-delay: calc(var(--i, 0) * 70ms); }
+.panel h2 { margin:0 0 14px; font-size:1.02rem; color:#1f3a22; }
+.panel .hint { margin:-6px 0 12px; font-size:.84rem; color:#5d7549; }
+
+/* Ringkasan pesanan */
+.sum-item { display:grid; grid-template-columns:64px 1fr auto; gap:14px; align-items:center; padding:10px 0; border-top:1px solid #eef3d8; }
+.sum-item:first-of-type { border-top:0; padding-top:0; }
+.sum-item .cart-foto { width:64px; height:64px; border-radius:14px; }
+.sum-item h3 { margin:0 0 2px; font-size:.98rem; color:#1f3a22; overflow-wrap:anywhere; }
+.sum-item p { margin:0; font-size:.84rem; color:#5d7549; }
+.sum-item .cart-sub { min-width:0; }
+
+/* Pilihan jadwal */
+.sub-label { margin:14px 0 8px; font-size:.78rem; font-weight:600; color:#5d7549; }
+.sub-label:first-of-type { margin-top:0; }
+.chips { display:flex; flex-wrap:wrap; gap:8px; }
+.chip { position:relative; }
+.chip input { position:absolute; inset:0; width:100%; height:100%; opacity:0; margin:0; cursor:pointer; }
+.chip span { display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:66px; padding:8px 14px; border:2px solid #d5e2b3; border-radius:14px;
+  background:#fff; color:#2f5230; font-size:.88rem; font-weight:600; line-height:1.25; transition:background .15s, border-color .15s, color .15s, transform .12s var(--ease); }
+.chip small { font-size:.72rem; font-weight:400; color:#6b7f55; }
+.chip:hover span { border-color:#8fbf4d; }
+.chip input:active + span { transform:scale(.96); }
+.chip input:checked + span { background:#2f5230; border-color:#2f5230; color:#ECF39E; }
+.chip input:checked + span small { color:#cfe3a8; }
+.chip input:focus-visible + span { outline:3px solid #8fbf4d; outline-offset:2px; }
+.lokasi { display:flex; gap:10px; align-items:flex-start; margin-top:16px; padding:12px 14px; border-radius:14px; background:#f7f9e4; color:#2f5230; font-size:.86rem; line-height:1.5; }
+.lokasi svg { flex:0 0 18px; width:18px; height:18px; margin-top:2px; }
+.lokasi strong { display:block; }
+
+/* Metode pembayaran */
+.opts { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px; }
+.opt { position:relative; }
+.opt input { position:absolute; inset:0; width:100%; height:100%; opacity:0; margin:0; cursor:pointer; }
+.opt span { display:block; padding:14px 16px; border:2px solid #d5e2b3; border-radius:16px; background:#fff; color:#2f5230; font-weight:600; transition:background .15s, border-color .15s; }
+.opt small { display:block; margin-top:2px; font-size:.78rem; font-weight:400; color:#6b7f55; }
+.opt:hover span { border-color:#8fbf4d; }
+.opt input:checked + span { background:#f1f7d8; border-color:#2f5230; }
+.opt input:focus-visible + span { outline:3px solid #8fbf4d; outline-offset:2px; }
+
+/* Bar bawah checkout */
+.co-aksi { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+.co-aksi .batal { color:#cfe3a8; font-weight:600; font-size:.92rem; text-decoration:none; padding:8px 4px; }
+.co-aksi .batal:hover { color:#fff; }
+button.btn-checkout { border:0; font-family:inherit; cursor:pointer; }
+button.btn-checkout:disabled { opacity:.55; cursor:not-allowed; }
+
+/* Status */
+.badge-s { display:inline-block; padding:4px 12px; border-radius:999px; font-size:.78rem; font-weight:600; background:#eef3d8; color:#4a6b2f; white-space:nowrap; }
+.badge-s.menunggu { background:#fff3d6; color:#8a5a00; }
+.badge-s.berhasil { background:#e3f3d2; color:#25611f; }
+.badge-s.gagal { background:#fde8e3; color:#b3321b; }
+
+/* Daftar pesanan */
+.order-item { display:grid; grid-template-columns:72px 1fr auto auto auto; gap:18px; align-items:center; padding:14px 18px; border-radius:20px; background:#fff; border:1.5px solid #e3ebc6;
+  animation: naik .45s var(--ease) both; animation-delay: calc(var(--i, 0) * 60ms); transition: box-shadow .25s, border-color .25s; }
+.order-item:hover { box-shadow:0 10px 22px rgba(49,87,44,.1); border-color:#b9d27c; }
+.order-item .cart-foto { width:72px; height:72px; }
+.order-no { margin:0 0 2px; font-size:.76rem; font-weight:600; color:#5d7549; letter-spacing:.02em; }
+.order-item h3 { margin:0 0 2px; font-size:1rem; color:#1f3a22; overflow-wrap:anywhere; }
+.order-item .jml { margin:0; font-size:.84rem; color:#5d7549; }
+.order-total { text-align:right; font-weight:700; color:#2f5230; min-width:110px; }
+.btn-detail { display:inline-flex; align-items:center; height:36px; padding:0 18px; border-radius:999px; border:2px solid #2f5230; color:#2f5230; background:#fff; font-weight:600; font-size:.85rem; text-decoration:none; transition:background .15s, color .15s; }
+.btn-detail:hover { background:#2f5230; color:#ECF39E; }
+
+/* Detail pesanan */
+.detail-head { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+.detail-head h2 { margin:0; }
+.kv { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:12px; margin:0; }
+.kv div { padding:12px 14px; border-radius:14px; background:#f7f9e4; }
+.kv dt { font-size:.74rem; color:#5d7549; margin-bottom:2px; }
+.kv dd { margin:0; font-weight:600; color:#1f3a22; }
+.aksi-detail { display:flex; gap:10px; flex-wrap:wrap; margin-top:4px; }
+.btn-outline { display:inline-flex; align-items:center; justify-content:center; height:42px; padding:0 22px; border-radius:999px; border:2px solid #2f5230; background:#fff; color:#2f5230; font:inherit; font-weight:600; font-size:.9rem; text-decoration:none; cursor:pointer; transition:background .15s, color .15s; }
+.btn-outline:hover { background:#2f5230; color:#ECF39E; }
+.btn-outline.bahaya { border-color:#b3321b; color:#b3321b; }
+.btn-outline.bahaya:hover { background:#b3321b; color:#fff; }
+.btn-isi { background:#2f5230; color:#ECF39E; }
+.btn-isi:hover { background:#244024; }
+.kembali { display:inline-block; margin-bottom:10px; color:#2f5230; font-weight:600; font-size:.88rem; text-decoration:none; }
+.kembali:hover { text-decoration:underline; }
+
+@media (max-width: 700px) {
+  .order-item { grid-template-columns:64px 1fr auto; gap:10px 14px; }
+  .order-item .cart-foto { width:64px; height:64px; }
+  .order-item > .order-total { grid-column:1 / 3; grid-row:2; text-align:left; }
+  .order-item > .badge-s { grid-column:3; grid-row:1; justify-self:end; }
+  .order-item > .btn-detail { grid-column:3; grid-row:2; justify-self:end; }
+  .opts, .kv { grid-template-columns:1fr; }
+  .co-aksi { width:100%; }
+  .co-aksi .btn-checkout { flex:1; }
+}
+
+/* ---------- Kategori pesanan (UC50) ---------- */
+.tabs { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 16px; }
+.tab { height:36px; padding:0 16px; border-radius:999px; border:2px solid #d5e2b3; background:#fff; color:#2f5230; font:inherit; font-weight:600; font-size:.85rem; cursor:pointer;
+  transition:background .15s, border-color .15s, color .15s, transform .12s var(--ease); }
+.tab:hover { border-color:#8fbf4d; }
+.tab:active { transform:scale(.96); }
+.tab[aria-selected="true"] { background:#2f5230; border-color:#2f5230; color:#ECF39E; }
+.tab:focus-visible { outline:3px solid #8fbf4d; outline-offset:2px; }
+.link-ulasan { display:inline-block; margin-top:4px; font-size:.84rem; font-weight:600; color:#2f5230; text-decoration:underline; text-underline-offset:3px; }
+.link-ulasan:hover { color:#4F772D; }
+.sudah-ulasan { display:inline-block; margin-top:4px; font-size:.82rem; font-weight:600; color:#6b7f55; }
+
+/* ---------- Bintang, formulir ulasan (UC51, UC52) ---------- */
+.stars { display:flex; gap:4px; border:0; padding:0; margin:0 0 14px; }
+.stars label { position:relative; display:block; color:#cfd8b0; cursor:pointer; border-radius:8px; transition:transform .12s var(--ease), color .15s; }
+.stars input { position:absolute; inset:0; width:100%; height:100%; margin:0; opacity:0; cursor:pointer; }
+.stars svg { display:block; width:34px; height:34px; fill:currentColor; }
+.stars label.on { color:#e0a100; }
+.stars label:hover { transform:scale(1.12); }
+.stars label:focus-within { outline:3px solid #8fbf4d; outline-offset:2px; }
+.ulasan-card .produk-baris { margin-bottom:16px; }
+.field-label { display:block; margin:0 0 6px; font-size:.78rem; font-weight:600; color:#5d7549; }
+.ulasan-card textarea { width:100%; min-height:110px; padding:12px 14px; border:2px solid #d5e2b3; border-radius:14px; background:#fff; font:inherit; font-size:.92rem; color:#1f3a22; resize:vertical;
+  transition:border-color .2s, box-shadow .2s; }
+.ulasan-card textarea:focus { outline:none; border-color:#2f5230; box-shadow:0 0 0 4px #ECF39E; }
+.ulasan-card .aksi-detail { margin-top:14px; }
+
+/* ---------- Ulasan produk (UC13) ---------- */
+.bintang-tampil { display:inline-flex; gap:2px; color:#e0a100; vertical-align:middle; }
+.bintang-tampil svg { width:18px; height:18px; fill:currentColor; display:block; }
+.bintang-tampil .off { color:#d9e0bd; }
+.rating-ringkas { display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
+.rating-angka { font-size:2.6rem; font-weight:700; line-height:1; color:#2f5230; }
+.rating-ringkas small { display:block; margin-top:4px; color:#5d7549; font-size:.86rem; }
+.review-item { padding:14px 0; border-top:1px solid #eef3d8; }
+.review-item:first-of-type { border-top:0; padding-top:0; }
+.review-meta { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:6px; }
+.review-nama { font-weight:600; color:#1f3a22; }
+.review-tgl { font-size:.78rem; color:#6b7f55; }
+.review-item p { margin:6px 0 0; color:#2f3d2a; font-size:.92rem; line-height:1.6; overflow-wrap:anywhere; }
+.rating-link { display:inline-flex; align-items:center; gap:6px; margin-top:6px; font-size:.82rem; font-weight:600; color:#2f5230; text-decoration:none; }
+.rating-link:hover { text-decoration:underline; text-underline-offset:3px; }
+.rating-link svg { width:15px; height:15px; fill:#e0a100; }
+
+/* ---------- Jadwal pengambilan: kalender dan jam ---------- */
+.jadwal-grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:14px; }
+.jadwal-grid .sub-label { display:block; margin:0 0 6px; }
+.input-jadwal { width:100%; height:46px; padding:0 14px; border:2px solid #d5e2b3; border-radius:14px; background:#fff; font:inherit; font-size:.95rem; color:#1f3a22; cursor:pointer;
+  transition:border-color .2s, box-shadow .2s; }
+.input-jadwal:focus { outline:none; border-color:#2f5230; box-shadow:0 0 0 4px #ECF39E; }
+.panel .hint { margin:10px 0 0; }
+a.lokasi { text-decoration:none; transition:background .15s, transform .12s var(--ease); }
+a.lokasi:hover { background:#eef4d6; }
+a.lokasi:active { transform:scale(.995); }
+a.lokasi:focus-visible { outline:3px solid #8fbf4d; outline-offset:2px; }
+.lokasi .buka { display:block; margin-top:4px; font-size:.78rem; font-weight:600; text-decoration:underline; text-underline-offset:3px; }
+@media (max-width: 700px) { .jadwal-grid { grid-template-columns:1fr; } }
+
+/* ---------- Pembayaran QRIS (UC42) ---------- */
+.qris-total { margin:0 0 12px; font-size:.92rem; color:#5d7549; }
+.qris-total strong { color:#2f5230; font-size:1.05rem; }
+#snap-container { min-height:420px; border-radius:14px; overflow:hidden; }
+#snap-container:empty { display:none; }

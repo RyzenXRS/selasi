@@ -71,7 +71,14 @@ function perbaruiBadgeNotif() {
     const css = document.createElement("style");
     css.textContent =
       ".notif-bell{position:fixed;top:18px;right:24px;z-index:40;width:44px;height:44px;border-radius:50%;background:#fff;border:1.5px solid #d5e2b3;color:#31572C;display:grid;place-items:center;box-shadow:0 4px 12px rgba(49,87,44,.15);text-decoration:none}" +
-      ".notif-bell:hover{background:#ECF39E}" +
+      ".notif-bell{animation:notif-masuk .5s ease both;transition:transform .15s ease,background .15s ease}" +
+      ".notif-bell:hover{background:#ECF39E;transform:scale(1.08)}" +
+      ".notif-bell:active{transform:scale(.95)}" +
+      ".notif-bell svg{transform-origin:50% 12%}" +
+      ".notif-bell:hover svg{animation:notif-goyang .6s ease}" +
+      "@keyframes notif-masuk{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}" +
+      "@keyframes notif-goyang{0%,100%{transform:rotate(0)}20%{transform:rotate(14deg)}40%{transform:rotate(-12deg)}60%{transform:rotate(8deg)}80%{transform:rotate(-5deg)}}" +
+      "@media(prefers-reduced-motion:reduce){.notif-bell,.notif-bell:hover svg{animation:none;transition:none}}" +
       ".notif-bell:focus-visible{outline:3px solid #90A955;outline-offset:2px}" +
       ".notif-bell svg{width:22px;height:22px}" +
       ".notif-badge{position:absolute;top:-4px;right:-4px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:#b3321b;color:#fff;font:600 .72rem/20px Poppins,system-ui,sans-serif;text-align:center}" +

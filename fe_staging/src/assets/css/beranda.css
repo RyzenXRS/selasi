@@ -58,3 +58,138 @@
   .jalur { grid-template-columns: repeat(2, 1fr); row-gap: 24px; }
   .step::before { display: none; }
 }
+
+/* ======== Perapian + animasi dashboard (ditaruh di bawah supaya menimpa aturan di atas) ======== */
+
+/* ---------- Perapian ---------- */
+.home { gap: 36px; }
+.home .sub { margin-top: 2px; }
+.home .sec-title { margin-bottom: 16px; }
+.home .list-info { margin: -8px 0 14px; }
+
+.home .sum-card,
+.home .chip,
+.home .dot {
+  transition: transform .2s ease, box-shadow .2s ease, background-color .2s ease, color .2s ease;
+}
+.home .sum-card { box-shadow: 0 4px 14px rgba(47, 82, 48, .07); }
+.home .sum-card:hover { transform: translateY(-3px); box-shadow: 0 10px 22px rgba(47, 82, 48, .15); }
+.home .sum-card:active { transform: translateY(-1px); }
+
+/* Jalur tanam: garis putus-putus tepat di tengah lingkaran, berhenti sebelum lingkaran berikutnya */
+.home .step { padding-right: 0; }
+.home .step::before { top: 26px; left: 70px; right: 14px; height: 4px; border-radius: 2px; }
+.home .step-btn { padding-bottom: 4px; border-radius: 12px; }
+.home .step-btn:hover .dot { transform: scale(1.08); }
+.home .step-btn:active .dot { transform: scale(.97); }
+.home .step-btn:focus-visible { outline: 3px solid #90A955; outline-offset: 6px; }
+.home .step b { margin-top: 14px; }
+
+/* Status budidaya */
+.home .legend { gap: 12px; }
+.home .chip { padding: 9px 18px; }
+.home .chip:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(47, 82, 48, .14); }
+.home .chip:active { transform: translateY(0); }
+.home .chip:focus-visible { outline: 3px solid #90A955; outline-offset: 3px; }
+
+/* ---------- Tabel: seluruh baris bisa dipencet ---------- */
+.home .table-wrap { border-radius: 16px; box-shadow: 0 4px 14px rgba(47, 82, 48, .06); }
+.home table { min-width: 480px; }
+.home th, .home td { padding: 14px 22px; }
+.home thead th { font-size: .85rem; letter-spacing: .01em; }
+.home tbody tr { position: relative; transition: background-color .15s ease; }
+.home tbody tr:hover,
+.home tbody tr:focus-within { background: #f3f7de; }
+
+/* tautan di kolom kode dilebarkan menutupi seluruh baris */
+.home td a.baris-link {
+  color: var(--h-ink, #24401f);
+  font-weight: 600;
+  text-decoration: none;
+}
+.home td a.baris-link:hover { color: var(--h-ink, #24401f); }
+.home td a.baris-link::after { content: ""; position: absolute; inset: 0; z-index: 1; cursor: pointer; }
+.home td a.baris-link:focus-visible { outline: none; }
+.home td a.baris-link:focus-visible::after {
+  outline: 3px solid #90A955; outline-offset: -3px; border-radius: 10px;
+}
+
+/* panah kecil di ujung kanan sebagai petunjuk baris bisa dipencet */
+.home tbody td:last-child { position: relative; padding-right: 52px; }
+.home tbody td:last-child::after {
+  content: ""; position: absolute; right: 24px; top: 50%;
+  width: 8px; height: 8px;
+  border-right: 2px solid #90A955; border-top: 2px solid #90A955;
+  transform: translateY(-50%) rotate(45deg);
+  transition: transform .2s ease, border-color .2s ease;
+}
+.home tbody tr:hover td:last-child::after,
+.home tbody tr:focus-within td:last-child::after {
+  transform: translate(4px, -50%) rotate(45deg);
+  border-color: #4F772D;
+}
+
+/* ---------- Animasi ---------- */
+@keyframes dh-naik   { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes dh-muncul { from { opacity: 0; transform: scale(.6); } to { opacity: 1; transform: none; } }
+@keyframes dh-garis  { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes dh-baris  { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* judul dan bagian halaman muncul berurutan */
+.home > .page-head { animation: dh-naik .5s ease both; }
+.home > section { animation: dh-naik .55s ease both; }
+.home > section:nth-of-type(1) { animation-delay: .08s; }
+.home > section:nth-of-type(2) { animation-delay: .16s; }
+.home > section:nth-of-type(3) { animation-delay: .24s; }
+.home > section:nth-of-type(4) { animation-delay: .32s; }
+
+/* lingkaran fase muncul bergantian, garis putus-putus memanjang menyusul (hanya saat halaman dibuka) */
+.home:not(.sudah) .step .dot { animation: dh-muncul .5s cubic-bezier(.3, 1.4, .5, 1) both; }
+.home:not(.sudah) .step::before { transform-origin: left center; animation: dh-garis .5s ease both; }
+.home:not(.sudah) .step:nth-child(1) .dot { animation-delay: .30s; }
+.home:not(.sudah) .step:nth-child(2) .dot { animation-delay: .50s; }
+.home:not(.sudah) .step:nth-child(3) .dot { animation-delay: .70s; }
+.home:not(.sudah) .step:nth-child(4) .dot { animation-delay: .90s; }
+.home:not(.sudah) .step:nth-child(1)::before { animation-delay: .45s; }
+.home:not(.sudah) .step:nth-child(2)::before { animation-delay: .65s; }
+.home:not(.sudah) .step:nth-child(3)::before { animation-delay: .85s; }
+
+/* chip status muncul satu per satu */
+.home:not(.sudah) .chip { animation: dh-naik .4s ease both; }
+.home:not(.sudah) .chip:nth-child(1) { animation-delay: .35s; }
+.home:not(.sudah) .chip:nth-child(2) { animation-delay: .43s; }
+.home:not(.sudah) .chip:nth-child(3) { animation-delay: .51s; }
+.home:not(.sudah) .chip:nth-child(4) { animation-delay: .59s; }
+.home:not(.sudah) .chip:nth-child(5) { animation-delay: .67s; }
+
+/* baris tabel muncul berurutan, juga saat filter diganti */
+.home tbody tr { animation: dh-baris .35s ease both; }
+.home tbody tr:nth-child(1)  { animation-delay: .04s; }
+.home tbody tr:nth-child(2)  { animation-delay: .08s; }
+.home tbody tr:nth-child(3)  { animation-delay: .12s; }
+.home tbody tr:nth-child(4)  { animation-delay: .16s; }
+.home tbody tr:nth-child(5)  { animation-delay: .20s; }
+.home tbody tr:nth-child(6)  { animation-delay: .24s; }
+.home tbody tr:nth-child(7)  { animation-delay: .28s; }
+.home tbody tr:nth-child(8)  { animation-delay: .32s; }
+.home tbody tr:nth-child(n+9) { animation-delay: .36s; }
+
+/* ---------- Layar kecil ---------- */
+@media (max-width: 900px) {
+  .home .step::before { display: none; }
+}
+@media (max-width: 560px) {
+  .home th, .home td { padding: 12px 16px; }
+  .home tbody td:last-child { padding-right: 40px; }
+  .home tbody td:last-child::after { right: 16px; }
+}
+
+/* ---------- Kurangi gerakan ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .home, .home *, .home *::before, .home *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  .home .sum-card:hover, .home .chip:hover,
+  .home .step-btn:hover .dot { transform: none; }
+}

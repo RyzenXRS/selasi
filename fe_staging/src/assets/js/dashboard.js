@@ -193,21 +193,29 @@ function renderList() {
 
   list.forEach((b) => {
     const tr = el("tr");
-    tr.appendChild(el("td", "", b.kode_budidaya));
+    // Seluruh baris bisa dipencet: tautan ada di kolom kode, lalu dilebarkan lewat CSS
+    const tdKode = el("td");
+    const a = el("a", "baris-link", b.kode_budidaya);
+    a.href = "budidaya.html?id=" + encodeURIComponent(b.id_budidaya);
+    tdKode.appendChild(a);
+    tr.appendChild(tdKode);
     tr.appendChild(el("td", "", b.nama_fase));
     const tdStatus = el("td");
     tdStatus.appendChild(el("span", "badge " + (STATUS_CLASS[b.status] || ""), b.status));
     tr.appendChild(tdStatus);
-    const tdAksi = el("td");
-    const a = el("a", "", "Lihat detail");
-    a.href = "budidaya.html?id=" + encodeURIComponent(b.id_budidaya);
-    tdAksi.appendChild(a);
-    tr.appendChild(tdAksi);
     tbody.appendChild(tr);
   });
 }
 
-function render() { renderCards(); renderList(); }
+let sudahMuncul = false;
+function render() {
+  renderCards(); renderList();
+  // animasi masuk kartu hanya sekali, tidak diulang saat filter diganti
+  if (!sudahMuncul) {
+    sudahMuncul = true;
+    setTimeout(() => document.querySelector(".home")?.classList.add("sudah"), 1600);
+  }
+}
 
 // ---------- Mulai ----------
 (async function init() {
