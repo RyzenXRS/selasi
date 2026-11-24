@@ -217,6 +217,9 @@ $("edit").addEventListener("submit", async (e) => {
       const u = JSON.parse(localStorage.getItem("user") || "{}");
       u.nama = profile.nama;
       u.email = profile.email;
+      if (profile.foto_profil) {
+        u.foto_profil = profile.foto_profil;
+      }
       localStorage.setItem("user", JSON.stringify(u));
       $("user-email").textContent = profile.email;
     } catch (_) {}

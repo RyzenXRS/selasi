@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Midtrans\Config;
 use Midtrans\Snap;
+use Midtrans\Transaction;
 
 class MidtransService
 {
@@ -89,6 +90,57 @@ class MidtransService
             Log::error('Midtrans Snap Error: ' . $e->getMessage(), ['id_pesanan' => $pesanan->id_pesanan]);
             throw $e;
         }
+    }
+
+    /**
+     * Cek status transaksi langsung ke Midtrans API (tanpa webhook)
+     * Digunakan untuk polling dari frontend saat development (localhost)
+     */
+    public function checkAndSyncStatus(Pesanan $pesanan): Pesanan
+    {
+        $pembayaran = Pembayaran::where('id_pesanan', $pesanan->id_pesanan)
+            ->whereNotNull('order_id_gateway')
+            ->firstOrFail();
+
+        $status = Transaction::status($pembayaran->order_id_gateway);
+
+        $transactionStatus = $status->transaction_status ?? null;
+        $fraudStatus       = $status->fraud_status ?? null;
+        $transactionId     = $status->transaction_id ?? null;
+
+        Log::info("Midtrans CheckStatus for {$pembayaran->order_id_gateway}: status={$transactionStatus}");
+
+        return DB::transaction(function () use ($pembayaran, $pesanan, $transactionStatus, $fraudStatus, $transactionId, $status) {
+            $pembayaran->id_transaksi_gateway = $transactionId;
+
+            if ($transactionStatus === 'capture') {
+                if ($fraudStatus === 'accept') {
+                    $pembayaran->status_pembayaran = Pembayaran::STATUS_LUNAS;
+                    $pembayaran->waktu_pembayaran  = Carbon::now();
+                    $pesanan->status_pesanan       = Pesanan::STATUS_DIBAYAR;
+                }
+            } elseif ($transactionStatus === 'settlement') {
+                $pembayaran->status_pembayaran = Pembayaran::STATUS_LUNAS;
+                $pembayaran->waktu_pembayaran  = Carbon::now();
+                $pesanan->status_pesanan       = Pesanan::STATUS_DIBAYAR;
+            } elseif ($transactionStatus === 'pending') {
+                $pembayaran->status_pembayaran = Pembayaran::STATUS_MENUNGGU;
+            } elseif (in_array($transactionStatus, ['deny', 'expire', 'cancel'])) {
+                $pembayaran->status_pembayaran = ($transactionStatus === 'expire')
+                    ? Pembayaran::STATUS_KADALUARSA
+                    : Pembayaran::STATUS_GAGAL;
+                $pesanan->status_pesanan = Pesanan::STATUS_DIBATALKAN;
+
+                foreach ($pesanan->detailPesanan as $item) {
+                    Stok::where('id_produk', $item->id_produk)->increment('jumlah_stok', $item->jumlah);
+                }
+            }
+
+            $pembayaran->save();
+            $pesanan->save();
+
+            return $pesanan->fresh(['detailPesanan.produk', 'pembeli', 'pembayaran']);
+        });
     }
 
     /**

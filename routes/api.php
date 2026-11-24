@@ -137,10 +137,11 @@ Route::prefix('v1')->middleware(['auth:sanctum'])->group(function () {
         Route::delete('/keranjang',                [\App\Http\Controllers\API\CartController::class, 'clear']);
 
         // Pesanan Pembeli
-        Route::get('/orders',              [\App\Http\Controllers\API\OrderController::class, 'index']);
-        Route::post('/orders/checkout',    [\App\Http\Controllers\API\OrderController::class, 'checkout']);
-        Route::get('/orders/{id}',         [\App\Http\Controllers\API\OrderController::class, 'show']);
-        Route::post('/orders/{id}/cancel', [\App\Http\Controllers\API\OrderController::class, 'cancel']);
+        Route::get('/orders',                        [\App\Http\Controllers\API\OrderController::class, 'index']);
+        Route::post('/orders/checkout',              [\App\Http\Controllers\API\OrderController::class, 'checkout']);
+        Route::get('/orders/{id}',                   [\App\Http\Controllers\API\OrderController::class, 'show']);
+        Route::post('/orders/{id}/cancel',           [\App\Http\Controllers\API\OrderController::class, 'cancel']);
+        Route::post('/orders/{id}/check-payment',    [\App\Http\Controllers\API\MidtransController::class, 'checkStatus']);
 
         Route::get('/pesanan',              [\App\Http\Controllers\API\OrderController::class, 'index']);
         Route::post('/pesanan/checkout',    [\App\Http\Controllers\API\OrderController::class, 'checkout']);

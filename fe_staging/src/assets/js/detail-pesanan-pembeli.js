@@ -18,7 +18,7 @@ let pesanan = null;
 // Backend memakai Midtrans Snap: pembayaran.snap_token dan pembayaran.redirect_url. Kode QRIS ditampilkan lewat Snap (embed).
 // Isi Client Key Midtrans (sandbox, berawalan "SB-Mid-client-"). Ini kunci publik, bukan Server Key.
 // Kalau kosong, halaman memakai tombol "Bayar Sekarang" (redirect_url) seperti sebelumnya.
-const MIDTRANS_CLIENT_KEY = "";
+const MIDTRANS_CLIENT_KEY = "Mid-client-iae_3W1NyX5NZZw6"; // Sandbox Client Key
 const SNAP_SRC = "https://app.sandbox.midtrans.com/snap/snap.js"; // ganti ke app.midtrans.com kalau MIDTRANS_IS_PRODUCTION=true
 const JEDA_CEK = 4000;                    // cek status pembayaran tiap 4 detik selama menunggu
 const MSG_BAYAR_OK = "Pembayaran berhasil."; // UC42
@@ -46,12 +46,37 @@ async function tampilQris() {
   sudahEmbed = true;
   try {
     await muatSnap();
-    window.snap.embed(pesanan.snapToken, { embedId: "snap-container", onSuccess: cekStatus, onPending: cekStatus, onError: function () {}, onClose: function () {} });
+    window.snap.embed(pesanan.snapToken, {
+      embedId: "snap-container",
+      onSuccess: async function () {
+        // Langsung sync status dari Midtrans API (tanpa menunggu webhook)
+        await syncStatusDariMidtrans();
+        await cekStatus();
+      },
+      onPending: cekStatus,
+      onError: function () {},
+      onClose: function () {}
+    });
   } catch (_) {
     sudahEmbed = false;
     panel.hidden = true;
     render(); // kembali ke tombol Bayar Sekarang
   }
+}
+
+// Panggil endpoint check-payment agar backend sinkron status dari Midtrans API
+async function syncStatusDariMidtrans() {
+  try {
+    const API_BASE = (typeof API_BASE_URL !== "undefined") ? API_BASE_URL : "http://127.0.0.1:8000/api/v1";
+    const token = localStorage.getItem("token");
+    await fetch(API_BASE + "/orders/" + encodeURIComponent(idPesanan) + "/check-payment", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        Authorization: "Bearer " + token,
+      },
+    });
+  } catch (_) { /* tidak masalah, cekStatus akan polling */ }
 }
 
 async function cekStatus() {
@@ -62,7 +87,7 @@ async function cekStatus() {
     pesanan = baru;
     if (!menungguQris(baru)) {
       berhentiCek();
-      if (tadiMenunggu && baru.statusBayar === "Berhasil") K.toast(MSG_BAYAR_OK, "success");
+      if (tadiMenunggu && baru.statusBayar !== "Menunggu Pembayaran") K.toast(MSG_BAYAR_OK, "success");
       render();
     }
   } catch (_) { /* coba lagi pada pemeriksaan berikutnya */ }
