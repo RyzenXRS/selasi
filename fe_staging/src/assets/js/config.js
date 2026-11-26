@@ -51,7 +51,7 @@ const ENDPOINTS = {
 };
 
 const ROLE_PEMBUDIDAYA = "pembudidaya"; // BE mengirim "PEMBUDIDAYA", simpan versi huruf kecil saat login
-const LOGIN_URL = "login.html";
+const LOGIN_URL = "login-pembeli.html";
 const DASHBOARD_URL = "dashboard.html";
 const PROFIL_URL = "profil.html";
 

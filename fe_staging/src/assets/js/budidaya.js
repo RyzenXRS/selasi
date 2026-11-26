@@ -226,15 +226,15 @@ function getPengingatFase(b) {
   // 3. Fase Pendewasaan → menuju Panen (45-55 hari menyesuaikan AI)
   const sisaPanen = 45 - umur;
   if (sisaPanen === 3) {
-    return `H-3: Batch ${kode}: 3 hari lagi estimasi masuk masa panen (panen 45 - 55 hari menyesuaikan AI).`;
+    return `${kode}: 3 hari lagi estimasi masuk masa panen.`;
   } else if (sisaPanen === 2) {
-    return `H-2: Batch ${kode}: 2 hari lagi estimasi masuk masa panen (panen 45 - 55 hari menyesuaikan AI).`;
+    return `${kode}: 2 hari lagi estimasi masuk masa panen.`;
   } else if (sisaPanen === 1) {
-    return `H-1: Batch ${kode}: Besok estimasi masuk masa panen (panen 45 - 55 hari menyesuaikan AI).`;
+    return `${kode}: Besok estimasi masuk masa panen.`;
   } else if (umur >= 45 && umur <= 55) {
-    return `H: Batch ${kode}: Sudah masuk masa panen (umur ${umur} hari, panen 45 - 55 hari menyesuaikan AI).`;
+    return `${kode}: Sudah masuk masa panen.`;
   } else if (umur > 55) {
-    return `H+: Batch ${kode}: Sudah melewati 55 hari (umur ${umur} hari), segera lakukan panen.`;
+    return `${kode}: Sudah melewati 55 hari, segera lakukan panen.`;
   }
   return null;
 }

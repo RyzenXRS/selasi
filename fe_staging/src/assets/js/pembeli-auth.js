@@ -1,11 +1,11 @@
-// Registrasi, Login, dan Lupa Password untuk PEMBELI (UC33, UC34, UC35).
+// Registrasi Pembeli serta login dan pemulihan password untuk semua peran.
 // Dipakai oleh register.html dan login-pembeli.html.
 
 // ---------- Pengaturan ----------
 const ROLE_PEMBELI = "pembeli";
 // Pembeli tidak punya dashboard, jadi halaman pertamanya setelah masuk adalah Katalog Produk
 const DASHBOARD_PEMBELI_URL = "katalog-pembeli.html";
-const LOGIN_PEMBELI_URL = "login-pembeli.html";
+const LOGIN_PAGE_URL = "login-pembeli.html";
 const PASSWORD_MIN = 8; // aturan "format password": minimal 8 karakter (belum ada di skenario, sesuaikan dengan BE)
 
 // Path diambil dari config.js (ENDPOINTS), dengan cadangan kalau belum ada
@@ -61,7 +61,7 @@ document.querySelectorAll(".toggle").forEach((btn) => {
 
 // ---------- Data palsu untuk uji coba (?demo=1) ----------
 //   Pembeli contoh   : pembeli@selasi.com / 12345678
-//   Pembudidaya      : pembudidaya@selasi.com / 12345678 (ditolak di halaman ini)
+//   Pembudidaya      : pembudidaya@selasi.com / 12345678
 //   Kode verifikasi  : 123456
 const AKUN_KEY = "mock_pembeli_akun";
 const MOCK_KODE = "123456";
@@ -136,9 +136,9 @@ function bacaSesi(data) {
     role: user.role ?? isi.role ?? data.role,
   };
 }
-function simpanSesi(sesi) {
+function simpanSesi(sesi, role) {
   localStorage.setItem("token", sesi.token);
-  localStorage.setItem("role", ROLE_PEMBELI);
+  localStorage.setItem("role", role);
   localStorage.setItem("user", JSON.stringify(sesi.user || {}));
 }
 
@@ -186,7 +186,7 @@ if (formRegister) {
           return gagal((r.data && r.data.message) || "Registrasi gagal. Coba lagi.");
         }
         sessionStorage.setItem(FLASH_KEY, "Registrasi Berhasil");
-        window.location.href = LOGIN_PEMBELI_URL;
+        window.location.href = LOGIN_PAGE_URL;
       } catch (err) {
         gagal(SERVER_ERROR);
       }
@@ -195,7 +195,7 @@ if (formRegister) {
 }
 
 // =====================================================================
-// UC34 Login Pembeli  dan  UC35 Lupa Password Pembeli  (login-pembeli.html)
+// Login semua peran dan pemulihan password (login-pembeli.html)
 // =====================================================================
 const views = { login: $("form-login"), forgot: $("form-forgot"), code: $("form-code"), reset: $("form-reset") };
 
@@ -236,11 +236,12 @@ if (views.login) {
 
         const sesi = bacaSesi(r.data);
         if (!sesi.token) return gagal("Respons login dari server tidak berisi token.");
-        if (norm(sesi.role) !== ROLE_PEMBELI)
-          return gagal("Akun ini bukan akun Pembeli. Pembudidaya silakan masuk lewat halaman Login Pembudidaya.");
+        const role = norm(sesi.role);
+        if (role !== ROLE_PEMBELI && role !== ROLE_PEMBUDIDAYA)
+          return gagal("Peran akun tidak dikenali. Hubungi administrator.");
 
-        simpanSesi(sesi);
-        window.location.href = DASHBOARD_PEMBELI_URL;
+        simpanSesi(sesi, role);
+        window.location.href = role === ROLE_PEMBELI ? DASHBOARD_PEMBELI_URL : DASHBOARD_URL;
       } catch (err) {
         gagal(SERVER_ERROR);
       }
@@ -332,9 +333,10 @@ if (views.login) {
         // Masuk otomatis dengan password baru.
         const masuk = await post(EP.login, { email: pemulihan.email, password });
         const sesi = masuk.ok ? bacaSesi(masuk.data) : null;
-        if (sesi && sesi.token && norm(sesi.role) === ROLE_PEMBELI) {
-          simpanSesi(sesi);
-          window.location.href = DASHBOARD_PEMBELI_URL;
+        const role = sesi ? norm(sesi.role) : "";
+        if (sesi && sesi.token && (role === ROLE_PEMBELI || role === ROLE_PEMBUDIDAYA)) {
+          simpanSesi(sesi, role);
+          window.location.href = role === ROLE_PEMBELI ? DASHBOARD_PEMBELI_URL : DASHBOARD_URL;
           return;
         }
 

@@ -1,17 +1,17 @@
 // Penjaga halaman Pembeli: hanya Pembeli yang sudah login boleh membuka halaman ini.
 // Dipakai setelah config.js di dashboard-pembeli.html dan profil-pembeli.html.
 (function () {
-  const LOGIN_PEMBELI = "login-pembeli.html";
+  const LOGIN_URL = "login-pembeli.html";
 
   if (!localStorage.getItem("token") || localStorage.getItem("role") !== "pembeli") {
-    location.replace(LOGIN_PEMBELI);
+    location.replace(LOGIN_URL);
     return;
   }
 
   // Dipanggil juga oleh apiFetch (config.js) kalau token ditolak BE (401)
   window.logout = function () {
     ["token", "role", "user"].forEach((k) => localStorage.removeItem(k));
-    location.href = LOGIN_PEMBELI;
+    location.href = LOGIN_URL;
   };
 
   function siap() {
