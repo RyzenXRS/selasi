@@ -30,8 +30,51 @@ const FORMAT_JAM = /^([01]\d|2[0-3]):[0-5]\d$/;
 // BELUM dipastikan dengan backend: samakan dengan field di request validasi produk.
 const FIELD_BE = { tanggal: "tanggal_pengambilan", jam: "jam_pengambilan" };
 
-const fmtStok = (n) => Number(n).toLocaleString("id-ID", { maximumFractionDigits: 2 }) + " kg";
-const fmtHarga = (n) => "Rp " + Number(n).toLocaleString("id-ID", { maximumFractionDigits: 2 });
+// ---------- Satuan produk: kg atau pcs ----------
+// Field baru "satuan" ("kg" / "pcs"). Produk lama tanpa satuan dianggap kg.
+const bacaSatuan = (it) => (String((it && (it.satuan ?? it.unit)) ?? "").toLowerCase().trim() === "pcs" ? "pcs" : "kg");
+const MSG_STOK_PCS = "Stok dengan satuan pcs harus berupa bilangan bulat";
+
+// ---------- Jadwal pengambilan per produk ----------
+// Bentuk: [{ tanggal: "2026-11-27", jam: ["08:00", "10:00"] }, ...]
+// Dikirim ke BE sebagai "jadwal_pengambilan". Field lama tanggal_pengambilan / jam_pengambilan
+// tetap ikut dikirim (diisi tanggal dan jam paling awal) supaya BE yang belum diubah tetap jalan.
+const MSG_TGL_LEWAT = "Tanggal pengambilan tidak boleh sudah lewat";
+const MSG_TGL_SAMA = "Tanggal pengambilan tidak boleh sama";
+const MSG_JAM_SAMA = "Jam pengambilan pada tanggal yang sama tidak boleh sama";
+const pad2 = (n) => String(n).padStart(2, "0");
+const todayISO = () => { const d = new Date(); return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()); };
+
+function bacaJadwal(it) {
+  const hasil = [];
+  const tambah = (tgl, jam) => {
+    tgl = tanggalYMD(tgl);
+    jam = jamHHMM(jam && typeof jam === "object" ? (jam.jam ?? jam.jam_pengambilan) : jam);
+    if (!tgl) return;
+    let row = hasil.find((r) => r.tanggal === tgl);
+    if (!row) { row = { tanggal: tgl, jam: [] }; hasil.push(row); }
+    if (jam && !row.jam.includes(jam)) row.jam.push(jam);
+  };
+  const arr = it && (it.jadwal_pengambilan ?? it.jadwal);
+  if (Array.isArray(arr)) {
+    arr.forEach((r) => {
+      const tgl = r.tanggal ?? r.tanggal_pengambilan;
+      const js = r.jam ?? r.jam_pengambilan ?? r.jam_list;
+      if (Array.isArray(js)) js.forEach((j) => tambah(tgl, j)); else tambah(tgl, js);
+    });
+  } else if (it && it[FIELD_BE.tanggal]) {
+    tambah(it[FIELD_BE.tanggal], it[FIELD_BE.jam]);
+  }
+  hasil.forEach((r) => r.jam.sort());
+  return hasil.sort((a, b) => a.tanggal.localeCompare(b.tanggal));
+}
+// Untuk form ubah: hanya tanggal yang belum lewat
+const jadwalAktif = (p) => (p.jadwal || [])
+  .filter((r) => r.tanggal >= todayISO())
+  .map((r) => ({ tanggal: r.tanggal, jam: r.jam.length ? [...r.jam] : [""] }));
+
+const fmtStok = (n, satuan = "kg") => Number(n).toLocaleString("id-ID", { maximumFractionDigits: satuan === "pcs" ? 0 : 2 }) + " " + satuan;
+const fmtHarga = (n, satuan) => "Rp " + Number(n).toLocaleString("id-ID", { maximumFractionDigits: 2 }) + (satuan ? " / " + satuan : "");
 const jamHHMM = (v) => String(v || "").slice(0, 5); // BE kadang mengirim "HH:MM:SS"; input jam memakai "HH:MM"
 const tanggalYMD = (v) => String(v || "").slice(0, 10);
 
@@ -76,6 +119,8 @@ let produk = [{
   stok: hitungStokDariPanenDanBudidaya(),
   harga: 15000,
   foto_produk: fotoContoh("#4F772D"),
+  satuan: "kg",
+  jadwal: [],
 }];
 
 function persist() {
@@ -133,24 +178,26 @@ async function loadProdukFromBackend() {
         const json = await res.json();
         const items = Array.isArray(json.data) ? json.data : (json.data?.data || []);
 
-        let utama = items.find((p) => {
-          const nm = (p.nama_produk || p.name || "").toLowerCase();
-          return nm.includes("selada hijau segar") || nm.includes("selada hijau");
-        });
-        if (!utama && items.length > 0) utama = items[0];
-
-        if (utama) {
-          produk = [{
-            id_produk: utama.id_produk || utama.id,
-            nama_produk: "Selada Hijau Segar",
-            deskripsi: utama.deskripsi || utama.description || "Selada hijau hidroponik super segar dipanen langsung dari Sepasang Petani Farm (Kebonsari, Sumbersari, Jember).",
-            stok: Number(utama.jumlah_stok ?? utama.stock ?? stokTersedia),
-            harga: Number(utama.harga ?? utama.price ?? 15000),
-            foto_produk: utama.foto_produk || utama.image || fotoContoh("#4F772D"),
-            // Tanggal dan jam pengambilan dipakai untuk mengisi form edit (UC23) kalau BE mengirimnya
-            [FIELD_BE.tanggal]: tanggalYMD(utama[FIELD_BE.tanggal]),
-            [FIELD_BE.jam]: jamHHMM(utama[FIELD_BE.jam]),
-          }];
+        if (items.length > 0) {
+          produk = items.map((it) => {
+            const nm = String(it.nama_produk || it.name || "");
+            const selada = /selada hijau/i.test(nm);
+            const jadwal = bacaJadwal(it);
+            const p = {
+              id_produk: it.id_produk || it.id,
+              nama_produk: nm || "Selada Hijau Segar",
+              deskripsi: it.deskripsi || it.description || (selada ? "Selada hijau hidroponik super segar dipanen langsung dari Sepasang Petani Farm (Kebonsari, Sumbersari, Jember)." : ""),
+              stok: Number(it.jumlah_stok ?? it.stock ?? (selada ? stokTersedia : 0)),
+              harga: Number(it.harga ?? it.price ?? 15000),
+              foto_produk: it.foto_produk || it.image || fotoContoh("#4F772D"),
+              satuan: bacaSatuan(it),
+              jadwal,
+            };
+            // Tanggal dan jam pengambilan paling awal dipakai sebagai field lama
+            p[FIELD_BE.tanggal] = jadwal.length ? jadwal[0].tanggal : tanggalYMD(it[FIELD_BE.tanggal]);
+            p[FIELD_BE.jam] = jadwal.length && jadwal[0].jam.length ? jadwal[0].jam[0] : jamHHMM(it[FIELD_BE.jam]);
+            return p;
+          });
           persist();
           showList();
           return;
@@ -168,6 +215,8 @@ async function loadProdukFromBackend() {
     stok: stokTersedia,
     harga: 15000,
     foto_produk: fotoContoh("#4F772D"),
+    satuan: "kg",
+    jadwal: [],
   }];
   persist();
   showList();
@@ -197,7 +246,7 @@ const LEAF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-
 function showList() {
   show("form", false);
   show("list-view");
-  $("list-info").textContent = "1 produk (Khusus Selada Hijau Segar)";
+  $("list-info").textContent = produk.length + " produk";
   show("empty", produk.length === 0);
 
   // Tombol Tambah Produk selalu tampil (UC22)
@@ -219,7 +268,10 @@ function showList() {
     }
     const isi = el("div", undefined, "isi");
     const meta = el("div", undefined, "meta");
-    meta.append(el("span", fmtHarga(p.harga), "harga"), el("span", "Stok " + fmtStok(p.stok), "stok"));
+    const sat = p.satuan || "kg";
+    meta.append(el("span", fmtHarga(p.harga, sat), "harga"), el("span", "Stok " + fmtStok(p.stok, sat), "stok"));
+    const nTgl = (p.jadwal || []).length;
+    const ringkas = el("p", nTgl ? "Pengambilan: " + nTgl + " tanggal tersedia" : "Jadwal pengambilan belum diatur", "jadwal-ringkas");
 
     const aksi = el("div", undefined, "aksi");
     const edit = el("button", "Edit", "btn btn-ghost btn-sm");
@@ -232,7 +284,7 @@ function showList() {
     hapus.addEventListener("click", () => askHapus(p));
     aksi.append(edit, hapus);
 
-    isi.append(el("h3", p.nama_produk), el("p", p.deskripsi), meta, aksi);
+    isi.append(el("h3", p.nama_produk), el("p", p.deskripsi), meta, ringkas, aksi);
     card.append(foto, isi);
     grid.appendChild(card);
   });
@@ -255,13 +307,14 @@ function showForm(p) {
   // (nama dan deskripsi hanya ada di form tambah). Tanggal dan jam tampil di form tambah maupun edit.
   fld("f-nama").hidden = !!p;
   fld("f-deskripsi").hidden = !!p;
-  fld("f-tanggal").hidden = false;
-  fld("f-jam").hidden = false;
   $("form-title").textContent = p ? "Ubah produk: " + p.nama_produk : "Tambah produk";
   $("f-nama").value = "";
   $("f-deskripsi").value = "";
-  $("f-tanggal").value = p ? tanggalYMD(p[FIELD_BE.tanggal]) : "";
-  $("f-jam").value = p ? jamHHMM(p[FIELD_BE.jam]) : "";
+  $("f-satuan").value = p ? (p.satuan || "kg") : "kg";
+  aturSatuan();
+  jadwalState = p ? jadwalAktif(p) : [];
+  if (!jadwalState.length) jadwalState = [{ tanggal: "", jam: [""] }];
+  renderJadwal();
   $("f-stok").value = p ? p.stok : "";
   $("f-harga").value = p ? p.harga : "";
   $("f-foto-help").textContent = p && p.foto_produk
@@ -275,6 +328,111 @@ function showForm(p) {
   show("form");
   (p ? $("f-stok") : $("f-nama")).focus();
 }
+
+// ---------- Satuan: label dan aturan angka stok ikut satuan ----------
+function aturSatuan() {
+  const sat = $("f-satuan").value === "pcs" ? "pcs" : "kg";
+  $("lbl-stok").textContent = "Stok (" + sat + ")";
+  $("lbl-harga").textContent = "Harga per " + sat + " (Rp)";
+  $("f-stok").step = sat === "pcs" ? "1" : "0.01";
+  $("f-stok").placeholder = sat === "pcs" ? "Contoh: 50" : "Contoh: 12.50";
+}
+$("f-satuan").addEventListener("change", aturSatuan);
+
+// ---------- Jadwal pengambilan: banyak tanggal, tiap tanggal banyak jam ----------
+let jadwalState = [];
+
+function renderJadwal() {
+  const list = $("jadwal-list");
+  list.replaceChildren();
+  if (!jadwalState.length) list.appendChild(el("p", "Belum ada tanggal. Tekan Tambah Tanggal.", "help"));
+
+  jadwalState.forEach((row, i) => {
+    const box = el("div", undefined, "jd-tanggal");
+
+    const head = el("div", undefined, "jd-head");
+    const lbl = el("label", "Jadwal " + (i + 1), "jd-label");
+    const dt = el("input");
+    dt.type = "date";
+    dt.id = "jd-t-" + i;
+    dt.min = todayISO();
+    dt.value = row.tanggal;
+    lbl.htmlFor = dt.id;
+    dt.addEventListener("input", () => { row.tanggal = dt.value; hideAlert("form-alert"); });
+    const hapusTgl = el("button", "Hapus tanggal", "btn btn-danger btn-sm");
+    hapusTgl.type = "button";
+    hapusTgl.addEventListener("click", () => { jadwalState.splice(i, 1); renderJadwal(); });
+    head.append(lbl, hapusTgl);
+    const tglField = el("div", undefined, "jd-tgl");
+    tglField.appendChild(dt);
+
+    const jams = el("div", undefined, "jd-jams");
+    row.jam.forEach((j, k) => {
+      const chip = el("div", undefined, "jd-jam");
+      const inp = el("input");
+      inp.type = "time";
+      inp.value = j;
+      inp.setAttribute("aria-label", "Jam pengambilan " + (k + 1) + " untuk jadwal " + (i + 1));
+      inp.addEventListener("input", () => { row.jam[k] = inp.value; hideAlert("form-alert"); });
+      const x = el("button", "\u00d7", "jd-x");
+      x.type = "button";
+      x.setAttribute("aria-label", "Hapus jam " + (k + 1) + " pada jadwal " + (i + 1));
+      x.addEventListener("click", () => { row.jam.splice(k, 1); renderJadwal(); });
+      chip.append(inp, x);
+      jams.appendChild(chip);
+    });
+    const tambahJam = el("button", "+ Tambah Jam", "btn btn-ghost btn-sm");
+    tambahJam.type = "button";
+    tambahJam.addEventListener("click", () => {
+      row.jam.push("");
+      renderJadwal();
+      const t = $("jadwal-list").querySelectorAll(".jd-tanggal")[i].querySelectorAll(".jd-jam input");
+      if (t.length) t[t.length - 1].focus();
+    });
+    jams.appendChild(tambahJam);
+
+    box.append(head, tglField, jams);
+    list.appendChild(box);
+  });
+}
+
+$("btn-tambah-tanggal").addEventListener("click", () => {
+  jadwalState.push({ tanggal: "", jam: [""] });
+  renderJadwal();
+  const t = $("jadwal-list").querySelectorAll(".jd-tgl input");
+  if (t.length) t[t.length - 1].focus();
+});
+
+// Data jadwal belum lengkap (ada tanggal atau jam yang kosong)
+const jadwalKurang = () => jadwalState.length === 0 ||
+  jadwalState.some((r) => !r.tanggal || r.jam.length === 0 || r.jam.some((j) => !j));
+
+// Mengembalikan pesan kesalahan, atau "" kalau jadwal benar
+function cekJadwal() {
+  const hariIni = todayISO();
+  const sudah = new Set();
+  for (const r of jadwalState) {
+    if (!FORMAT_TANGGAL.test(r.tanggal) || r.jam.some((j) => !FORMAT_JAM.test(j))) return MSG_FORMAT;
+    if (r.tanggal < hariIni) return MSG_TGL_LEWAT;
+    if (sudah.has(r.tanggal)) return MSG_TGL_SAMA;
+    sudah.add(r.tanggal);
+    if (new Set(r.jam).size !== r.jam.length) return MSG_JAM_SAMA;
+  }
+  return "";
+}
+
+// Jadwal rapi: tanggal dan jam terurut
+const jadwalBersih = () => jadwalState
+  .map((r) => ({ tanggal: r.tanggal, jam: [...r.jam].sort() }))
+  .sort((a, b) => a.tanggal.localeCompare(b.tanggal));
+
+// Field jadwal untuk permintaan ke BE (field lama tetap diisi)
+const payloadJadwal = (satuan, jadwal) => ({
+  satuan,
+  jadwal_pengambilan: jadwal,
+  [FIELD_BE.tanggal]: jadwal[0].tanggal,
+  [FIELD_BE.jam]: jadwal[0].jam[0],
+});
 
 $("btn-add").addEventListener("click", () => showForm(null));
 $("btn-cancel").addEventListener("click", showList); // Batal: kembali ke Manajemen Produk
@@ -305,20 +463,24 @@ $("form").addEventListener("submit", async (e) => {
   const deskripsi = $("f-deskripsi").value.trim();
   const stok = $("f-stok").value.trim();
   const harga = $("f-harga").value.trim();
-  const tanggal = $("f-tanggal").value.trim();
-  const jam = $("f-jam").value.trim();
+  const satuan = $("f-satuan").value === "pcs" ? "pcs" : "kg";
 
   // Alternative flow: data tidak lengkap
   // Saat edit, foto boleh kosong kalau produk sudah punya foto (foto lama dipakai).
-  // Tanggal dan jam pengambilan wajib diisi, baik saat tambah (UC22) maupun edit (UC23).
+  // Jadwal pengambilan (minimal satu tanggal dengan satu jam) wajib diisi, baik saat tambah (UC22) maupun edit (UC23).
   const butuhFoto = edit ? !editing.foto_produk : true;
-  const kurang = !stok || !harga || !tanggal || !jam || (butuhFoto && !fotoDipilih) || (!edit && (!nama || !deskripsi));
+  const kurang = !stok || !harga || jadwalKurang() || (butuhFoto && !fotoDipilih) || (!edit && (!nama || !deskripsi));
   if (kurang) return showAlert("form-alert", edit ? MSG_LENGKAP_UBAH : MSG_LENGKAP_TAMBAH);
 
   // Alternative flow: format data tidak sesuai
-  if ((!edit && nama.length > 50) || !FORMAT_TANGGAL.test(tanggal) || !FORMAT_JAM.test(jam) || !ANGKA.test(stok) || !ANGKA.test(harga)) {
+  if ((!edit && nama.length > 50) || !ANGKA.test(stok) || !ANGKA.test(harga)) {
     return showAlert("form-alert", MSG_FORMAT);
   }
+  // Satuan pcs: stok harus bilangan bulat. Satuan kg boleh desimal.
+  if (satuan === "pcs" && !/^\d+$/.test(stok)) return showAlert("form-alert", MSG_STOK_PCS);
+  const salahJadwal = cekJadwal();
+  if (salahJadwal) return showAlert("form-alert", salahJadwal);
+  const jadwal = jadwalBersih();
 
   const btn = $("btn-save");
   btn.disabled = true;
@@ -329,8 +491,10 @@ $("form").addEventListener("submit", async (e) => {
       const lama = { ...editing };
       editing.stok = Number(stok);
       editing.harga = Number(harga);
-      editing[FIELD_BE.tanggal] = tanggal;
-      editing[FIELD_BE.jam] = jam;
+      editing.satuan = satuan;
+      editing.jadwal = jadwal;
+      editing[FIELD_BE.tanggal] = jadwal[0].tanggal;
+      editing[FIELD_BE.jam] = jadwal[0].jam[0];
       if (foto) editing.foto_produk = foto;
       if (!persist()) {
         Object.assign(editing, lama);
@@ -346,8 +510,7 @@ $("form").addEventListener("submit", async (e) => {
             harga: Number(harga),
             jumlah_stok: Number(stok),
             foto_produk: foto || editing.foto_produk,
-            [FIELD_BE.tanggal]: tanggal,
-            [FIELD_BE.jam]: jam,
+            ...payloadJadwal(satuan, jadwal),
           };
           const resUp = await apiFetch((typeof ENDPOINTS !== "undefined" ? ENDPOINTS.produk : "/produk") + "/" + editing.id_produk, {
             method: "PUT",
@@ -380,8 +543,7 @@ $("form").addEventListener("submit", async (e) => {
             harga: Number(harga),
             jumlah_stok: Number(stok),
             foto_produk: foto,
-            [FIELD_BE.tanggal]: tanggal,
-            [FIELD_BE.jam]: jam,
+            ...payloadJadwal(satuan, jadwal),
           };
           const resAdd = await apiFetch((typeof ENDPOINTS !== "undefined" ? ENDPOINTS.produk : "/produk"), {
             method: "POST",
@@ -403,7 +565,7 @@ $("form").addEventListener("submit", async (e) => {
 
       produk.push({
         id_produk: newId, nama_produk: nama, deskripsi, stok: Number(stok), harga: Number(harga), foto_produk: savedFoto,
-        [FIELD_BE.tanggal]: tanggal, [FIELD_BE.jam]: jam,
+        satuan, jadwal, [FIELD_BE.tanggal]: jadwal[0].tanggal, [FIELD_BE.jam]: jadwal[0].jam[0],
       });
       persist();
       showList();

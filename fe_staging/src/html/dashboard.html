@@ -35,40 +35,43 @@
     <main class="page home">
       <div class="page-head">
         <h1>Dashboard</h1>
-        <p class="sub">Pilih salah satu ringkasan untuk melihat daftar batch-nya.</p>
+        <p class="sub">Ringkasan budidaya, fase tanam, dan stok produk Anda.</p>
       </div>
 
       <div id="alert" class="alert" role="alert" hidden></div>
 
-      <!-- 1.3.2 Ringkasan budidaya -->
-      <section aria-labelledby="h-aktif">
-        <h2 id="h-aktif" class="sec-title">Ringkasan budidaya</h2>
-        <div class="summary"><button type="button" id="s-aktif" class="sum-card pick"></button></div>
-      </section>
+      <!-- Ringkasan: jumlah batch aktif dan jumlah pesanan -->
+      <div class="summary">
+        <a class="sum-card" href="budidaya.html">
+          <span class="sum-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-9"/><path d="M12 13c0-4 3-6 7-6 0 4-3 6-7 6z"/><path d="M12 16c0-3-2-5-6-5 0 3 2 5 6 5z"/></svg></span>
+          <span class="sum-txt"><span class="sum-label">Jumlah batch aktif</span><span class="sum-num" id="s-batch">-</span></span>
+        </a>
+        <a class="sum-card" href="pesanan.html">
+          <span class="sum-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.5L21 8H6"/><circle cx="10" cy="20" r="1.2"/><circle cx="17" cy="20" r="1.2"/></svg></span>
+          <span class="sum-txt"><span class="sum-label">Jumlah pesanan</span><span class="sum-num" id="s-pesanan">-</span></span>
+        </a>
+      </div>
 
-      <!-- 1.3.3 Jalur tanam: batch aktif per fase -->
+      <!-- Batch aktif per fase -->
       <section aria-labelledby="h-jalur">
         <h2 id="h-jalur" class="sec-title">Batch aktif per fase</h2>
+        <p class="sec-sub">Jumlah batch di tiap tahap budidaya.</p>
         <ol class="jalur" id="jalur"></ol>
       </section>
 
-      <!-- 1.3.4 Status budidaya -->
-      <section aria-labelledby="h-status">
-        <h2 id="h-status" class="sec-title">Status budidaya</h2>
-        <div class="legend" id="status-chips"></div>
-      </section>
-
-      <!-- Daftar batch -->
-      <section aria-live="polite" aria-labelledby="h-daftar">
-        <h2 id="h-daftar" class="sec-title">Daftar batch</h2>
-        <p class="list-info" id="list-info"></p>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Kode budidaya</th><th>Fase</th><th>Status</th></tr></thead>
-            <tbody id="tbody"></tbody>
-          </table>
-          <p class="empty" id="empty" hidden>Tidak ada batch pada pilihan ini.</p>
+      <!-- Produk dan stok -->
+      <section aria-labelledby="h-stok" aria-live="polite">
+        <div class="sec-head">
+          <h2 id="h-stok" class="sec-title">Produk &amp; stok</h2>
+          <a class="btn-kelola" href="produk.html"><span>Kelola produk</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></a>
         </div>
+        <div class="stok-scroll">
+          <table class="stok-table" id="stok-table" hidden>
+            <thead><tr><th scope="col">Nama produk</th><th scope="col" class="r">Jumlah stok</th></tr></thead>
+            <tbody id="stok-body"></tbody>
+          </table>
+        </div>
+        <p class="empty" id="stok-empty">Memuat data produk...</p>
       </section>
     </main>
   </div>

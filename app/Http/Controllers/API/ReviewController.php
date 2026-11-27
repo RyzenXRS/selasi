@@ -32,6 +32,26 @@ class ReviewController extends Controller
         );
     }
 
+    public function publik(Request $request): JsonResponse
+    {
+    $limit = min((int) $request->query('per_page', 10), 20);
+
+    $data = Ulasan::with('pembeli')
+        ->whereNotNull('komentar')
+        ->where('komentar', '!=', '')
+        ->orderBy('id_ulasan', 'desc')
+        ->limit($limit)
+        ->get()
+        ->map(fn ($r) => [
+            'nama_pembeli' => $r->pembeli->nama ?? $r->pembeli->name ?? 'Pembeli SelaSI',
+            'rating'       => (int) $r->rating,
+            'komentar'     => $r->komentar,
+            'tanggal'      => $r->tanggal_ulasan?->toIso8601String(),
+        ]);
+
+    return $this->successResponse($data, 'Ulasan terbaru berhasil diambil.');
+    }
+
     public function store(StoreReviewRequest $request, int $productId): JsonResponse
     {
         $buyer = $request->user();

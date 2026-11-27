@@ -12,11 +12,12 @@ function el(tag, text, cls) {
 }
 
 // ---------- Jadwal pengambilan (UC45) ----------
-// Tanggal dan jam pengambilan ditentukan Pembudidaya pada produk (UC22). Pembeli memilih dari jadwal produk di keranjangnya.
+// Tanggal dan jam pengambilan ditentukan Pembudidaya pada produk (UC22). Pembeli memilih tanggal dulu, lalu jam yang tersedia pada tanggal itu.
 // SEMENTARA, hanya untuk uji coba: kalau produk dari backend belum mengirim jadwal pengambilan, dipakai jadwal contoh
 // (besok dan lusa, pukul 09.00 dan 14.00). Ubah ke false begitu backend sudah mengirim jadwal dari Pembudidaya.
 const PAKAI_JADWAL_UJI = true;
 const MSG_JADWAL = "Jadwal pengambilan yang dipilih belum tersedia. Pilih tanggal dan jam sesuai jadwal yang tersedia.";
+const MSG_BENTROK = "Produk di keranjangmu tidak memiliki tanggal dan jam pengambilan yang sama. Pisahkan pesanan per produk atau hubungi penjual.";
 const METODE = [
   { nilai: "COD", judul: "COD", ket: "Bayar tunai saat mengambil pesanan" },
   { nilai: "QRIS", judul: "QRIS", ket: "Bayar lewat QRIS" },
@@ -35,26 +36,36 @@ function opsi(sel, teks, nilai, pilihan) {
   sel.appendChild(o);
 }
 
-// Kumpulkan jadwal dari produk di keranjang. Kalau data keranjang belum memuatnya, ambil dari data produk.
+// Kumpulkan jadwal dari produk di keranjang. Pembeli memilih satu tanggal dan jam untuk seluruh pesanan, jadi yang
+// ditawarkan hanya tanggal dan jam yang tersedia di SEMUA produk yang punya jadwal. Hasil: { peta, bentrok }.
 async function kumpulkanJadwal(items) {
-  let sumber = items.map((i) => ({ t: i.tanggalPengambilan, j: i.jamPengambilan, id: i.id_produk }));
-  if (sumber.some((s) => !s.t || !s.j)) {
-    try {
-      const m = new Map((await K.produk()).map((p) => [String(p.id), p]));
-      sumber = sumber.map((s) => { const p = m.get(String(s.id)) || {}; return { t: s.t || p.tanggalPengambilan, j: s.j || p.jamPengambilan }; });
-    } catch (_) { /* jadwal kosong */ }
-  }
+  await K.lengkapiItem(items); // melengkapi jadwal dari katalog kalau keranjang belum memuatnya
   const hariIni = iso(new Date());
-  const peta = new Map();
-  sumber.forEach((s) => {
-    if (!s.t || !s.j || s.t < hariIni) return; // hanya jadwal yang belum lewat
-    if (!peta.has(s.t)) peta.set(s.t, new Set());
-    peta.get(s.t).add(s.j);
-  });
-  if (!peta.size && PAKAI_JADWAL_UJI) {
+  const perProduk = items
+    .map((it) => {
+      const m = new Map();
+      (it.jadwal || []).forEach((x) => { if (x.tanggal >= hariIni) m.set(x.tanggal, new Set(x.jam)); }); // hanya yang belum lewat
+      return m;
+    })
+    .filter((m, k) => m.size || (items[k].jadwal || []).length); // produk tanpa jadwal sama sekali tidak membatasi
+  let peta = new Map();
+  let bentrok = false;
+  if (perProduk.length) {
+    perProduk[0].forEach((jamSet, tgl) => {
+      let jam = new Set(jamSet);
+      for (const m of perProduk.slice(1)) {
+        const lain = m.get(tgl);
+        if (!lain) { jam = new Set(); break; }
+        jam = new Set([...jam].filter((x) => lain.has(x)));
+      }
+      if (jam.size) peta.set(tgl, jam);
+    });
+    bentrok = !peta.size;
+  }
+  if (!peta.size && !bentrok && PAKAI_JADWAL_UJI) {
     [1, 2].forEach((n) => { const d = new Date(); d.setDate(d.getDate() + n); peta.set(iso(d), new Set(["09:00", "14:00"])); });
   }
-  return new Map([...peta.entries()].sort().map(([t, js]) => [t, [...js].sort()]));
+  return { peta: new Map([...peta.entries()].sort().map(([t, js]) => [t, [...js].sort()])), bentrok };
 }
 
 function isiJadwal() {
@@ -111,7 +122,7 @@ function isiRingkasan(items) {
     const url = K.fotoUrl(it.foto);
     if (url) { const img = el("img"); img.src = url; img.alt = it.nama; img.addEventListener("error", pasang); foto.appendChild(img); } else pasang();
     const info = el("div");
-    info.append(el("h3", it.nama), el("p", K.rupiah(it.harga) + " x " + K.angka(it.jumlah) + " kg"));
+    info.append(el("h3", it.nama), el("p", K.rupiah(it.harga) + " x " + K.angka(it.jumlah) + " " + it.satuan));
     row.append(foto, info, el("div", K.rupiah(it.harga * it.jumlah), "cart-sub"));
     return row;
   }));
@@ -152,8 +163,14 @@ $("btn-buat").addEventListener("click", async () => {
     const items = await K.daftar();
     if (!items.length) { $("kosong").hidden = false; return; }
     isiRingkasan(items);
-    jadwal = await kumpulkanJadwal(items);
+    const hasil = await kumpulkanJadwal(items);
+    jadwal = hasil.peta;
     isiJadwal();
+    if (hasil.bentrok) {
+      const h = $("jadwal-info");
+      h.textContent = MSG_BENTROK;
+      h.hidden = false;
+    }
     isiMetode();
     isiLokasi();
     $("form").hidden = false;

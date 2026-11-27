@@ -85,12 +85,17 @@ function showList() {
   rows.replaceChildren();
 
   panenList.forEach((p) => {
-    const tr = el("tr"), td = el("td");
-    const link = el("button", p.kode_panen, "link-kode");
-    link.type = "button";
-    link.addEventListener("click", () => showDetail(p.id_panen));
-    td.appendChild(link);
-    tr.appendChild(td);
+    // Seluruh baris bisa diklik (bukan hanya teks kode panen)
+    const tr = el("tr", undefined, "row-klik");
+    tr.tabIndex = 0; // bisa difokus pakai keyboard
+    tr.appendChild(el("td", p.kode_panen));
+
+    const buka = () => showDetail(p.id_panen);
+    tr.addEventListener("click", buka);
+    tr.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); buka(); }
+    });
+
     rows.appendChild(tr);
   });
 }

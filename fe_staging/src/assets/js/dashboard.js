@@ -1,20 +1,12 @@
 // ---------- Konstanta ----------
-const STATUS_LIST = ["Normal", "Perlu Diperhatikan", "Mendekati Perpindahan Fase", "Mendekati Panen", "Sudah Dipanen"];
 const STATUS_AKHIR = "Sudah Dipanen";
-const STATUS_CLASS = {
-  "Normal": "",
-  "Perlu Diperhatikan": "perlu",
-  "Mendekati Perpindahan Fase": "pindah",
-  "Mendekati Panen": "panen",
-  "Sudah Dipanen": "selesai",
-};
 
-// Fase master
+// Fase master (ikon sama dengan bagian "Kebun" di landing page)
 const FASE = {
-  1: { nama: "Semai",       urutan: 1, warna: "#8fbf4d" },
-  2: { nama: "Peremajaan",  urutan: 2, warna: "#3f9d6a" },
-  3: { nama: "Pendewasaan", urutan: 3, warna: "#2f6f3e" },
-  4: { nama: "Panen",       urutan: 4, warna: "#e0a526" },
+  1: { nama: "Semai",       urutan: 1, ikon: "🌱" },
+  2: { nama: "Peremajaan",  urutan: 2, ikon: "🪴" },
+  3: { nama: "Pendewasaan", urutan: 3, ikon: "🥬" },
+  4: { nama: "Panen",       urutan: 4, ikon: "🧺" },
 };
 
 // Aturan status (samakan dengan budidaya.js dan riwayat.js)
@@ -113,9 +105,44 @@ async function fetchBatches() {
   return raw.map(mapBatch);
 }
 
+// [BARU] Jumlah pesanan: memakai endpoint yang sama dengan pesanan.js
+async function fetchJumlahPesanan() {
+  if (USE_MOCK) return 0;
+  const path = (typeof ENDPOINTS !== "undefined" && ENDPOINTS.pesanan) || "/cultivator/orders";
+  const res = await apiFetch(path + "?per_page=100");
+  if (!res) return null; // 401 -> sudah logout otomatis
+  if (!res.ok) throw new Error("Gagal mengambil data pesanan");
+  const json = await res.json();
+  const list = Array.isArray(json) ? json : (json.data?.data || json.data || []);
+  // Kalau BE memakai pagination, pakai total dari BE; kalau tidak, hitung isi daftar
+  const total = json.meta?.total ?? json.data?.total ?? json.total;
+  return Number(total ?? list.length);
+}
+
+// [BARU] Produk dan stok: memakai endpoint yang sama dengan produk.js
+function mapProduk(p) {
+  return {
+    nama: p.nama_produk || p.name || "-",
+    stok: Number(p.jumlah_stok ?? p.stock ?? p.stok ?? 0),
+    satuan: p.satuan === "pcs" ? "pcs" : "kg", // kolom satuan menyusul dari BE; sementara semua dianggap kg
+  };
+}
+async function fetchProduk() {
+  if (USE_MOCK) {
+    try { return JSON.parse(localStorage.getItem("mock_produk") || "[]").map(mapProduk); }
+    catch (_) { return []; }
+  }
+  const path = (typeof ENDPOINTS !== "undefined" && ENDPOINTS.produk) || "/produk";
+  const res = await apiFetch(path + "?per_page=50");
+  if (!res) return [];
+  if (!res.ok) throw new Error("Gagal mengambil data produk");
+  const json = await res.json();
+  const items = Array.isArray(json.data) ? json.data : (json.data?.data || []);
+  return items.map(mapProduk);
+}
+
 // ---------- State ----------
 let batches = [];
-let filter = { type: "aktif" };
 
 const aktif = () => batches.filter((b) => b.status !== STATUS_AKHIR);
 const jumlahFase = (id) => {
@@ -124,97 +151,43 @@ const jumlahFase = (id) => {
   }
   return aktif().filter((b) => b.id_fase === id).length;
 };
-const countStatus = (st) => batches.filter((b) => b.status === st).length;
 
-// ---------- Ringkasan (kartu yang bisa dipilih) ----------
-function pick(btn, type, value) {
-  btn.type = "button";
-  btn.setAttribute("aria-pressed", filter.type === type && filter.value === value ? "true" : "false");
-  btn.addEventListener("click", () => { filter = { type, value }; render(); });
-}
+// ---------- Tampilan ----------
+const fmtAngka = (n, maxDesimal) => Number(n).toLocaleString("id-ID", { maximumFractionDigits: maxDesimal });
+const fmtStok = (p) => fmtAngka(p.stok, p.satuan === "pcs" ? 0 : 2) + " " + p.satuan;
 
-function renderCards() {
-  // Jumlah batch aktif
-  const a = $("s-aktif");
-  a.replaceChildren(el("span", "sum-label", "Jumlah batch aktif"), el("span", "sum-num", String(aktif().length)));
-  a.removeAttribute("aria-pressed");
-  pick(a, "aktif");
+// ada = false -> data belum/tidak berhasil dimuat, tampilkan "-"
+function renderBatch(ada) {
+  $("s-batch").textContent = ada ? String(aktif().length) : "-";
 
-  // Batch aktif per fase
   const jalur = $("jalur");
   jalur.replaceChildren();
   Object.entries(FASE).sort((x, y) => x[1].urutan - y[1].urutan).forEach(([id, f]) => {
-    const li = el("li", "step");
-    li.style.setProperty("--c", f.warna);
-    const btn = el("button", "step-btn");
-    btn.append(el("div", "dot", String(jumlahFase(Number(id)))), el("b", "", f.nama), el("span", "", jumlahFase(Number(id)) + " batch"));
-    pick(btn, "fase", Number(id));
-    li.appendChild(btn);
+    const n = ada ? jumlahFase(Number(id)) : null;
+    const li = el("li", "step" + (n > 0 ? " on" : ""));
+    const ikon = el("i", "", f.ikon);
+    ikon.setAttribute("aria-hidden", "true");
+    li.append(ikon, el("b", "", f.nama), el("span", "ct", (n === null ? "-" : n) + " batch"));
     jalur.appendChild(li);
   });
-
-  // Status budidaya
-  const chips = $("status-chips");
-  chips.replaceChildren();
-  STATUS_LIST.forEach((st) => {
-    const btn = el("button", "chip");
-    btn.append(el("b", "", String(countStatus(st))), document.createTextNode(st));
-    pick(btn, "status", st);
-    chips.appendChild(btn);
-  });
 }
 
-// ---------- Daftar batch ----------
-function currentList() {
-  if (filter.type === "fase") {
-    if (filter.value === 4) {
-      return batches.filter((b) => b.id_fase === 4 || b.hasPanen || b.status === STATUS_AKHIR);
-    }
-    return aktif().filter((b) => b.id_fase === filter.value);
-  }
-  if (filter.type === "status") return batches.filter((b) => b.status === filter.value);
-  return aktif();
-}
-function currentTitle() {
-  if (filter.type === "fase") {
-    if (filter.value === 4) return "Daftar batch yang sudah dipanen";
-    return "Batch aktif pada fase " + (FASE[filter.value]?.nama ?? "-");
-  }
-  if (filter.type === "status") return "Batch dengan status " + filter.value;
-  return "Semua batch aktif";
+function renderPesanan(n) {
+  $("s-pesanan").textContent = n === null || n === undefined || Number.isNaN(n) ? "-" : String(n);
 }
 
-function renderList() {
-  const list = currentList();
-  const tbody = $("tbody");
-  tbody.replaceChildren();
-  $("list-info").textContent = currentTitle() + " (" + list.length + ")";
-  $("empty").hidden = list.length > 0;
-
-  list.forEach((b) => {
+function renderStok(list, pesanKosong) {
+  const body = $("stok-body");
+  body.replaceChildren();
+  $("stok-table").hidden = list.length === 0;
+  const kosong = $("stok-empty");
+  kosong.hidden = list.length > 0;
+  kosong.textContent = pesanKosong || "Belum ada produk. Tambahkan lewat Manajemen Produk.";
+  list.forEach((p) => {
     const tr = el("tr");
-    // Seluruh baris bisa dipencet: tautan ada di kolom kode, lalu dilebarkan lewat CSS
-    const tdKode = el("td");
-    const a = el("a", "baris-link", b.kode_budidaya);
-    a.href = "budidaya.html?id=" + encodeURIComponent(b.id_budidaya);
-    tdKode.appendChild(a);
-    tr.appendChild(tdKode);
-    tr.appendChild(el("td", "", b.nama_fase));
-    const tdStatus = el("td");
-    tdStatus.appendChild(el("span", "badge " + (STATUS_CLASS[b.status] || ""), b.status));
-    tr.appendChild(tdStatus);
-    tbody.appendChild(tr);
+    tr.append(el("td", "", p.nama), el("td", "r", fmtStok(p)));
+    body.appendChild(tr);
   });
-}
-
-let sudahMuncul = false;
-function render() {
-  renderCards(); renderList();
-  // animasi masuk kartu hanya sekali, tidak diulang saat filter diganti
-  if (!sudahMuncul) {
-    sudahMuncul = true;
-    setTimeout(() => document.querySelector(".home")?.classList.add("sudah"), 1600);
-  }
 }
 
 // ---------- Mulai ----------
@@ -225,11 +198,23 @@ function render() {
   } catch (_) {}
   $("btn-logout").addEventListener("click", logout);
 
-  try {
-    batches = await fetchBatches();
-    render();
-  } catch (err) {
+  renderBatch(false);
+
+  // Tiga data diambil bersamaan, dan kegagalan satu data tidak mengganggu yang lain
+  const [rBatch, rPesanan, rProduk] = await Promise.allSettled([fetchBatches(), fetchJumlahPesanan(), fetchProduk()]);
+
+  if (rBatch.status === "fulfilled") {
+    batches = rBatch.value;
+    renderBatch(true);
+  } else {
     showAlert("Data budidaya belum bisa dimuat. Coba muat ulang halaman.");
   }
+
+  if (rPesanan.status === "fulfilled") renderPesanan(rPesanan.value);
+  else { console.warn("[DASHBOARD] Jumlah pesanan gagal dimuat:", rPesanan.reason); renderPesanan(null); }
+
+  if (rProduk.status === "fulfilled") renderStok(rProduk.value);
+  else { console.warn("[DASHBOARD] Stok produk gagal dimuat:", rProduk.reason); renderStok([], "Data stok produk belum bisa dimuat."); }
+
   window.addEventListener("pageshow", (e) => { if (e.persisted) location.reload(); });
 })();

@@ -54,6 +54,8 @@ const Pesanan = (function () {
       harga: Number(it.harga_satuan ?? it.harga ?? it.price ?? pr.harga ?? 0),
       jumlah: Number(it.jumlah ?? it.quantity ?? 0),
       foto: pr.foto_produk ?? it.foto_produk ?? it.foto ?? null,
+      satuan: K.bacaSatuan({ satuan: it.satuan ?? pr.satuan, unit: it.unit ?? pr.unit }),
+      adaSatuan: (it.satuan ?? pr.satuan ?? it.unit ?? pr.unit) != null, // false = BE belum mengirim satuan di pesanan
     };
   }
   function normPesanan(o) {
@@ -62,7 +64,7 @@ const Pesanan = (function () {
     let items = arr.map(normItem);
     // Daftar pesanan: BE mengirim ringkasan produk pertama di level pesanan
     if (!items.length && o.nama_produk) {
-      items = [{ nama: o.nama_produk, harga: Number(o.harga_produk ?? 0), jumlah: Number(o.jumlah_produk ?? 0), foto: o.foto_produk ?? null }];
+      items = [{ nama: o.nama_produk, harga: Number(o.harga_produk ?? 0), jumlah: Number(o.jumlah_produk ?? 0), foto: o.foto_produk ?? null, id_produk: o.id_produk ?? null, satuan: K.bacaSatuan(o), adaSatuan: o.satuan != null }];
     }
     const bayar = o.pembayaran ?? o.payment ?? null;
     return {
@@ -74,12 +76,30 @@ const Pesanan = (function () {
       statusPesananRaw: String(o.status_pesanan ?? o.order_status ?? "").toUpperCase(),
       statusPesanan: labelPesanan(o.status_pesanan ?? o.order_status),
       statusBayar: labelBayar(bayar?.status_pembayaran ?? bayar?.status ?? o.status_pembayaran),
+      // Jadwal pengambilan yang dipilih Pembeli saat checkout (UC45)
+      tanggalPengambilan: String(o.tanggal_pengambilan ?? "").slice(0, 10),
+      jamPengambilan: String(o.jam_pengambilan ?? "").slice(0, 5),
       linkBayar: bayar?.redirect_url ?? null,
       snapToken: bayar?.snap_token ?? null,
       items,
     };
   }
   const dapatDibatalkan = (p) => DAPAT_DIBATALKAN.includes(p.statusPesananRaw);
+
+  // Kalau BE belum mengirim satuan di data pesanan, satuan dilengkapi dari katalog produk (default kg).
+  async function lengkapiSatuan(daftarPesanan) {
+    const butuh = daftarPesanan.some((p) => p.items.some((i) => !i.adaSatuan && i.id_produk != null));
+    if (!butuh) return daftarPesanan;
+    try {
+      const m = new Map((await K.produk()).map((p) => [String(p.id), p]));
+      daftarPesanan.forEach((p) => p.items.forEach((i) => {
+        if (i.adaSatuan || i.id_produk == null) return;
+        const pr = m.get(String(i.id_produk));
+        if (pr) i.satuan = pr.satuan;
+      }));
+    } catch (_) { /* tetap kg */ }
+    return daftarPesanan;
+  }
 
   async function bacaHasil(res) {
     if (!res) return { ok: false, pesan: null }; // 401: sudah logout
@@ -98,14 +118,16 @@ const Pesanan = (function () {
     if (!res.ok) throw new Error("HTTP " + res.status);
     const j = await res.json();
     const a = Array.isArray(j) ? j : Array.isArray(j.data) ? j.data : Array.isArray(j.data?.data) ? j.data.data : j.data?.items ?? j.items ?? [];
-    return a.map(normPesanan);
+    return lengkapiSatuan(a.map(normPesanan));
   }
   async function detail(id) {
     const res = await apiFetch(PATH + "/" + encodeURIComponent(id));
     if (!res) return null;
     if (!res.ok) throw new Error(res.status === 404 ? "pesanan tidak ditemukan" : "HTTP " + res.status);
     const j = await res.json();
-    return normPesanan(j.data ?? j);
+    const p = normPesanan(j.data ?? j);
+    await lengkapiSatuan([p]);
+    return p;
   }
   // Kolom tanggal_pengambilan dan jam_pengambilan ikut dikirim; sampai backend menerimanya, field itu diabaikan.
   async function checkout(payload) {

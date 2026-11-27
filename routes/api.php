@@ -38,6 +38,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/products/{id}', [\App\Http\Controllers\API\ProductController::class, 'show']);
     Route::get('/produk',        [\App\Http\Controllers\API\ProductController::class, 'index']);
     Route::get('/produk/{id}',   [\App\Http\Controllers\API\ProductController::class, 'show']);
+    Route::get('/ulasan',         [\App\Http\Controllers\API\ReviewController::class, 'publik']);
 
     // ── Midtrans Payment Webhook Callback ────────────────────────
     Route::post('/midtrans/callback', [\App\Http\Controllers\API\MidtransController::class, 'callback']);

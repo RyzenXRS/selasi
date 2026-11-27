@@ -48,9 +48,7 @@
     const b = data.find((x) => String(x.id) === String(id));
     if (!b) return showList();
 
-    const { fase, berikut } = hitungFase(b);
-    const nx = selesai(b) ? null : berikut;
-    const sisa = nx ? Math.max(0, Math.round((toDate(nx.tanggal) - today()) / MS_HARI)) : null;
+    const { fase } = hitungFase(b);
 
     // Kepala: kode batch, status, ringkasan singkat
     const judul = el("h2", b.kode_pengelolaan, "dt-title");
@@ -75,16 +73,7 @@
       baris("Catatan", b.catatan, true)
     );
 
-    // Perpindahan fase: ringkasan + riwayat otomatis
-    const pindah = el("dl", undefined, "dt-list");
-    pindah.append(
-      baris("Fase berikutnya", nx ? nx.nama : "-"),
-      baris("Perkiraan waktu perpindahan", nx ? tgl(nx.tanggal) : "-"),
-      baris("Sisa waktu menuju perpindahan", sisa === null ? "-" : sisa + " hari"),
-      baris("Lokasi/meja tujuan", nx ? lokasiTujuan(b) : "-"),
-      baris("Status budidaya", b.status)
-    );
-
+    // Riwayat perpindahan fase (otomatis dari tanggal tanam)
     const garis = el("ol", undefined, "dt-line");
     fase.forEach((f) => {
       const li = el("li", undefined, f.selesai ? "" : "now");
@@ -115,7 +104,7 @@
     box.replaceChildren(
       head,
       bagian("Kondisi budidaya", kondisi),
-      bagian("Perpindahan fase", pindah, el("h4", "Riwayat perpindahan fase", "dt-sub"), garis),
+      bagian("Riwayat perpindahan fase", garis),
       bagian("Data panen", panen)
     );
 

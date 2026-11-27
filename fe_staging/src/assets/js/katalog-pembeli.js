@@ -12,14 +12,14 @@ function el(tag, text, cls) {
 const IKON_DAUN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-9"/><path d="M12 13c0-4 3-6 7-6 0 4-3 6-7 6z"/><path d="M12 16c0-3-2-5-6-5 0 3 2 5 6 5z"/></svg>';
 const SERVER_ERROR = "Tidak bisa terhubung ke server. Coba lagi nanti.";
 
-// Stepper jumlah: tombol (−) dan (+), tiap tekan 1 kg. Ketik manual tetap boleh,
+// Stepper jumlah: tombol (−) dan (+), tiap tekan 1 (kg atau pcs sesuai satuan produk). Ketik manual tetap boleh,
 // validasi akhir (stok, kosong, format) tetap dilakukan K.tambah (UC39).
-function buatStepper(idInput, stok, disabled) {
+function buatStepper(idInput, stok, disabled, satuan) {
   const wrap = el("div", undefined, "qty");
   const kurang = el("button", "−", "qty-btn");
-  kurang.type = "button"; kurang.setAttribute("aria-label", "Kurangi 1 kg");
+  kurang.type = "button"; kurang.setAttribute("aria-label", "Kurangi 1 " + satuan);
   const tambah = el("button", "+", "qty-btn");
-  tambah.type = "button"; tambah.setAttribute("aria-label", "Tambah 1 kg");
+  tambah.type = "button"; tambah.setAttribute("aria-label", "Tambah 1 " + satuan);
   const input = el("input");
   input.type = "number"; input.id = idInput; input.min = "1"; input.step = "1";
   input.value = "1"; input.inputMode = "numeric";
@@ -42,6 +42,7 @@ function buatStepper(idInput, stok, disabled) {
 
 function kartu(p, i) {
   const habis = p.stok <= 0;
+  const sat = p.satuan === "pcs" ? "pcs" : "kg";
   const card = el("article", undefined, "produk" + (habis ? " habis" : ""));
   card.style.setProperty("--i", String(Math.min(i, 8)));
 
@@ -69,9 +70,9 @@ function kartu(p, i) {
   isi.appendChild(el("h3", p.nama));
   if (p.deskripsi) isi.appendChild(el("p", p.deskripsi, "desk"));
   const harga = el("div", undefined, "harga");
-  harga.append(document.createTextNode(K.rupiah(p.harga) + " "), el("small", "/ kg"));
+  harga.append(document.createTextNode(K.rupiah(p.harga) + " "), el("small", "/ " + sat));
   isi.appendChild(harga);
-  isi.appendChild(el("div", habis ? "Stok habis" : "Stok " + K.angka(p.stok) + " kg", "stok"));
+  isi.appendChild(el("div", habis ? "Stok habis" : "Stok " + K.angka(p.stok) + " " + sat, "stok"));
 
   // UC13: bagian Rating dan Ulasan membuka halaman ulasan produk
   const rl = el("a", undefined, "rating-link");
@@ -84,14 +85,14 @@ function kartu(p, i) {
   }
   isi.appendChild(rl);
 
-  // Jumlah Produk (kg) + tombol Tambah ke Keranjang
+  // Jumlah Produk (kg atau pcs) + tombol Tambah ke Keranjang
   const form = el("form", undefined, "beli");
   form.noValidate = true;
   const kolom = el("div", undefined, "beli-jumlah");
-  const label = el("label", "Jumlah (kg)");
+  const label = el("label", "Jumlah (" + sat + ")");
   const idInput = "jumlah-" + String(p.id ?? i);
   label.htmlFor = idInput;
-  const { wrap, input } = buatStepper(idInput, Number(p.stok) || 0, habis);
+  const { wrap, input } = buatStepper(idInput, Number(p.stok) || 0, habis, sat);
   kolom.append(label, wrap);
   const btn = el("button", "Tambah ke Keranjang", "btn btn-beli");
   btn.type = "submit";

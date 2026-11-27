@@ -36,7 +36,7 @@ function baris(p, i) {
 
   const info = el("div");
   const lain = p.items.length > 1 ? " dan " + (p.items.length - 1) + " produk lain" : "";
-  info.append(el("p", p.nomor, "order-no"), el("h3", it.nama + lain), el("p", K.angka(it.jumlah) + " kg", "jml"));
+  info.append(el("p", p.nomor, "order-no"), el("h3", it.nama + lain), el("p", K.angka(it.jumlah) + " " + (it.satuan || "kg"), "jml"));
   // UC51: tulisan Beri Ulasan pada pesanan yang sudah selesai; setelah diulas berubah menjadi Sudah Diulas
   if (p.statusPesananRaw === "SELESAI") {
     if (Ulasan.semuaDiulas(p)) info.appendChild(el("span", "Sudah Diulas", "sudah-ulasan"));

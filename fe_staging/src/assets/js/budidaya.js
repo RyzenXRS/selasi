@@ -241,6 +241,7 @@ function getPengingatFase(b) {
 
 // ── Logika Riwayat Perpindahan Fase Otomatis (3 Fase Bertahap) ──
 // Semai: awal s/d 14 hari | Peremajaan: hari ke-15 s/d 21 | Pendewasaan: hari ke-22 s/d panen (45-55 hari)
+// Kolom "Lama" dibuat tetap: Semai = 14 hari, Peremajaan = 7 hari, Pendewasaan = 24 hari
 function getFaseOtomatisList(b) {
   if (!b || !b.tanggal_tanam) return [];
   const tanam = b.tanggal_tanam;
@@ -256,7 +257,7 @@ function getFaseOtomatisList(b) {
     nama_fase: "Semai",
     tanggal_mulai: tanam,
     tanggal_selesai: sudahLewatSemai ? tglSelesaiSemai : "",
-    lama: sudahLewatSemai ? "14 hari (awal s/d 14 hari)" : `${Math.max(1, umur)} hari (target 14 hari)`,
+    lama: "14 hari",
   });
 
   // 2. Fase Peremajaan (hari ke-15 s/d 21) — muncul bertahap jika umur >= 14
@@ -270,7 +271,7 @@ function getFaseOtomatisList(b) {
       nama_fase: "Peremajaan",
       tanggal_mulai: tglMulaiPeremajaan,
       tanggal_selesai: sudahLewatPeremajaan ? tglSelesaiPeremajaan : "",
-      lama: sudahLewatPeremajaan ? "Sampai 21 hari (hari ke-15 s/d 21)" : `Hari ke-${umur} (target sampai 21 hari)`,
+      lama: "7 hari",
     });
   }
 
@@ -280,20 +281,12 @@ function getFaseOtomatisList(b) {
     const hasPanen = panenList.find((p) => p.id_budidaya === b.id_budidaya) || (Array.isArray(b.panen) && b.panen.length ? b.panen[0] : null);
     const tglPanen = hasPanen?.tanggal_panen || (hasPanen?.harvest_date ? hasPanen.harvest_date.slice(0, 10) : "");
 
-    let lamaPendewasaan;
-    if (tglPanen) {
-      const hariPendewasaan = Math.max(1, selisih(toDate(tglMulaiPendewasaan), toDate(tglPanen)));
-      lamaPendewasaan = `${hariPendewasaan} hari (panen umur ${hariPendewasaan + 21} hari)`;
-    } else {
-      lamaPendewasaan = `Hari ke-${umur} (panen 45 - 55 hari menyesuaikan AI)`;
-    }
-
     list.push({
       urutan: 3,
       nama_fase: "Pendewasaan",
       tanggal_mulai: tglMulaiPendewasaan,
       tanggal_selesai: tglPanen ? tglPanen : "",
-      lama: lamaPendewasaan,
+      lama: "24 hari",
     });
   }
 
@@ -368,7 +361,17 @@ function setLoading(on) {
   show("loading", on);
 }
 
-// Halaman Daftar Batch Pengelolaan: hanya kode_pengelolaan
+// [BARU] Fase batch saat ini untuk kolom "Fase" di daftar
+// (aturan umur sama dengan "Fase saat ini" di halaman detail)
+function faseSaatIni(b) {
+  if (!b.tanggal_tanam) return "-";
+  const umur = daysBetween(b.tanggal_tanam);
+  if (umur < 14) return "Semai";
+  if (umur < 21) return "Peremajaan";
+  return sudahPanen(b) ? "Panen" : "Pendewasaan";
+}
+
+// Halaman Daftar Batch Pengelolaan: kode_pengelolaan dan fase
 function showList() {
   current = null;
   showOnly("list");
@@ -378,20 +381,22 @@ function showList() {
   const rows = $("rows");
   rows.replaceChildren();
   data.forEach((b) => {
-    const tr = el("tr");
-    const tdKode = el("td");
-    const link = el("button", b.kode_pengelolaan, "link-kode");
-    link.type = "button";
-    link.addEventListener("click", () => showDetail(b.id_budidaya));
-    tdKode.appendChild(link);
+    // Seluruh baris bisa diklik (bukan hanya teks kode pengelolaan)
+    const tr = el("tr", undefined, "row-klik");
+    tr.tabIndex = 0; // bisa difokus pakai keyboard
+    tr.appendChild(el("td", b.kode_pengelolaan));
 
-    const tdStatus = el("td");
-    const st = hitungStatus(b);
-    const badge = el("span", st, STATUS_CLASS[st] || "badge");
-    tdStatus.appendChild(badge);
+    // [UBAH] sebelumnya menampilkan badge status; sekarang fase batch
+    const tdFase = el("td");
+    tdFase.appendChild(el("span", faseSaatIni(b), "badge"));
+    tr.appendChild(tdFase);
 
-    tr.appendChild(tdKode);
-    tr.appendChild(tdStatus);
+    const buka = () => showDetail(b.id_budidaya);
+    tr.addEventListener("click", buka);
+    tr.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); buka(); }
+    });
+
     rows.appendChild(tr);
   });
 
@@ -420,9 +425,6 @@ function showDetail(id) {
   const st = hitungStatus(b);
 
   $("dt-kode").textContent = b.kode_pengelolaan;
-  const stEl = $("dt-status");
-  stEl.textContent = st;
-  stEl.className = STATUS_CLASS[st] || "badge";
 
   $("dt-tanam").textContent = fmtTanggal(b.tanggal_tanam);
   $("dt-umur").textContent = umur + " hari";
@@ -469,12 +471,6 @@ function showDetail(id) {
     mejaTujuan = isPanen ? "-" : "Meja Panen";
   }
 
-  $("dt-fase").textContent = namaFase;
-  $("dt-next").textContent = nextFase;
-  $("dt-perkiraan").textContent = fmtTanggal(perkiraanTgl);
-  $("dt-sisa").textContent = sisaHari + " hari";
-  $("dt-tujuan").textContent = mejaTujuan;
-  $("dt-status-text").textContent = st;
 
   $("dt-dasar").replaceChildren(
     el("li", phDiLuar(b)

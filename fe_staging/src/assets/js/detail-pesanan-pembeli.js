@@ -103,6 +103,14 @@ function kv(label, nilai, badge) {
   return d;
 }
 
+// Tanggal dan jam pengambilan yang dipilih saat checkout
+function jadwalTeks(p) {
+  if (!p.tanggalPengambilan) return "-";
+  const d = new Date(p.tanggalPengambilan + "T00:00:00");
+  const tgl = isNaN(d) ? p.tanggalPengambilan : d.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  return p.jamPengambilan ? tgl + ", pukul " + p.jamPengambilan.replace(":", ".") : tgl;
+}
+
 function render() {
   const p = pesanan;
   $("sub").textContent = p.nomor;
@@ -112,7 +120,8 @@ function render() {
     kv("Metode Pembayaran", p.metode),
     kv("Status Pembayaran", p.statusBayar, true),
     kv("Status Pesanan", p.statusPesanan, true),
-    kv("Total Pembayaran", K.rupiah(p.total))
+    kv("Total Pembayaran", K.rupiah(p.total)),
+    kv("Jadwal Pengambilan", jadwalTeks(p))
   );
 
   $("produk").replaceChildren(...p.items.map((it) => {
@@ -122,7 +131,7 @@ function render() {
     const url = K.fotoUrl(it.foto);
     if (url) { const img = el("img"); img.src = url; img.alt = it.nama; img.addEventListener("error", pasang); foto.appendChild(img); } else pasang();
     const info = el("div");
-    info.append(el("h3", it.nama), el("p", K.rupiah(it.harga) + " / kg  ·  " + K.angka(it.jumlah) + " kg"));
+    info.append(el("h3", it.nama), el("p", K.rupiah(it.harga) + " / " + it.satuan + "  ·  " + K.angka(it.jumlah) + " " + it.satuan));
     row.append(foto, info, el("div", K.rupiah(it.harga * it.jumlah), "cart-sub"));
     return row;
   }));

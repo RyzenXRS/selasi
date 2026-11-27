@@ -1,187 +1,165 @@
-/* Dashboard SelaSI: jalur tanam. Dipasang SETELAH dashboard.css */
-.home {
-  --h-forest: #2f5230;
-  --h-deep: #1f3a22;
-  --h-lime: #dde8b0;
-  --h-cream: #f7f9e4;
-  --h-ink: #24401f;
-  display: flex; flex-direction: column; gap: 32px;
-}
-.home .page-head { margin-bottom: 0; }
+/* Dashboard SelaSI: ringkasan, batch per fase, produk & stok.
+   Dipasang SETELAH dashboard.css. */
+
 [hidden] { display: none !important; }
-.sec-title { margin: 0 0 14px; font-size: 1.05rem; font-weight: 600; color: var(--h-ink); }
-.list-info { color: #58703f; font-size: .9rem; margin: -6px 0 12px; }
 
-/* Kartu ringkasan (bisa dipilih) */
-.summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 300px)); gap: 16px; }
-.sum-card {
-  font: inherit; text-align: left; cursor: pointer;
-  background: var(--h-cream); border: 1px solid #e3ebc6; border-radius: 20px;
-  padding: 18px 22px; color: var(--h-ink);
-}
-.sum-label { display: block; font-size: .9rem; font-weight: 500; color: #58703f; }
-.sum-num { display: block; font-size: 2.1rem; font-weight: 700; line-height: 1.25; }
-.sum-card[aria-pressed="true"] { background: var(--h-deep); border-color: var(--h-deep); }
-.sum-card[aria-pressed="true"] .sum-label { color: var(--h-lime); }
-.sum-card[aria-pressed="true"] .sum-num { color: #fff; }
-.pick:focus-visible { outline: 3px solid #90A955; outline-offset: 3px; }
+.home { display: flex; flex-direction: column; gap: 16px; }
+.home .page-head { margin-bottom: 8px; }
+.home .sec-title { margin: 0; font-size: 1.05rem; font-weight: 600; color: var(--forest); }
+.home .sec-sub { margin: 2px 0 0; font-size: .86rem; color: var(--grass); }
 
-/* Jalur tanam */
-.jalur { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; }
-.step { position: relative; padding: 0 12px 0 0; }
-.step::before {
-  content: ""; position: absolute; top: 27px; left: 56px; right: -4px; height: 4px;
-  background: repeating-linear-gradient(90deg, #b9c98c 0 8px, transparent 8px 14px);
-}
-.step:last-child::before { display: none; }
-.step-btn { display: block; width: 100%; font: inherit; text-align: left; background: none; border: 0; padding: 0; cursor: pointer; }
-.dot {
-  position: relative; z-index: 1; width: 56px; height: 56px; border-radius: 50%;
-  display: grid; place-items: center; color: #fff; font-size: 1.35rem; font-weight: 700;
-  background: var(--c); box-shadow: 0 0 0 6px color-mix(in srgb, var(--c) 22%, transparent);
-}
-.step-btn[aria-pressed="true"] .dot { box-shadow: 0 0 0 4px #fff, 0 0 0 7px var(--c); }
-.step b { display: block; margin-top: 12px; color: var(--h-ink); font-weight: 600; }
-.step span { font-size: .85rem; color: #58703f; }
-
-/* Status */
-.legend { display: flex; flex-wrap: wrap; gap: 10px; }
-.chip {
-  font: inherit; cursor: pointer; border: 0;
-  padding: 8px 16px; border-radius: 99px; font-size: .88rem;
-  background: var(--h-lime); color: var(--h-ink); font-weight: 500;
-}
-.chip b { margin-right: 6px; }
-.chip[aria-pressed="true"] { background: var(--h-deep); color: #fff; }
-
-@media (max-width: 900px) {
-  .jalur { grid-template-columns: repeat(2, 1fr); row-gap: 24px; }
-  .step::before { display: none; }
+/* ---------- Kartu bagian ---------- */
+.page.home > section {
+  background: rgba(250, 249, 246, .86);
+  border: 1px solid rgba(144, 169, 85, .28);
+  border-radius: 18px;
+  padding: 20px 24px 24px;
+  margin: 0;
+  box-shadow: 0 6px 18px rgba(49, 87, 44, .07);
 }
 
-/* ======== Perapian + animasi dashboard (ditaruh di bawah supaya menimpa aturan di atas) ======== */
-
-/* ---------- Perapian ---------- */
-.home { gap: 36px; }
-.home .sub { margin-top: 2px; }
-.home .sec-title { margin-bottom: 16px; }
-.home .list-info { margin: -8px 0 14px; }
-
-.home .sum-card,
-.home .chip,
-.home .dot {
-  transition: transform .2s ease, box-shadow .2s ease, background-color .2s ease, color .2s ease;
-}
-.home .sum-card { box-shadow: 0 4px 14px rgba(47, 82, 48, .07); }
-.home .sum-card:hover { transform: translateY(-3px); box-shadow: 0 10px 22px rgba(47, 82, 48, .15); }
-.home .sum-card:active { transform: translateY(-1px); }
-
-/* Jalur tanam: garis putus-putus tepat di tengah lingkaran, berhenti sebelum lingkaran berikutnya */
-.home .step { padding-right: 0; }
-.home .step::before { top: 26px; left: 70px; right: 14px; height: 4px; border-radius: 2px; }
-.home .step-btn { padding-bottom: 4px; border-radius: 12px; }
-.home .step-btn:hover .dot { transform: scale(1.08); }
-.home .step-btn:active .dot { transform: scale(.97); }
-.home .step-btn:focus-visible { outline: 3px solid #90A955; outline-offset: 6px; }
-.home .step b { margin-top: 14px; }
-
-/* Status budidaya */
-.home .legend { gap: 12px; }
-.home .chip { padding: 9px 18px; }
-.home .chip:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(47, 82, 48, .14); }
-.home .chip:active { transform: translateY(0); }
-.home .chip:focus-visible { outline: 3px solid #90A955; outline-offset: 3px; }
-
-/* ---------- Tabel: seluruh baris bisa dipencet ---------- */
-.home .table-wrap { border-radius: 16px; box-shadow: 0 4px 14px rgba(47, 82, 48, .06); }
-.home table { min-width: 480px; }
-.home th, .home td { padding: 14px 22px; }
-.home thead th { font-size: .85rem; letter-spacing: .01em; }
-.home tbody tr { position: relative; transition: background-color .15s ease; }
-.home tbody tr:hover,
-.home tbody tr:focus-within { background: #f3f7de; }
-
-/* tautan di kolom kode dilebarkan menutupi seluruh baris */
-.home td a.baris-link {
-  color: var(--h-ink, #24401f);
-  font-weight: 600;
+/* ---------- Ringkasan: jumlah batch aktif dan jumlah pesanan ---------- */
+.home .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.home .sum-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 48px 18px 22px;
   text-decoration: none;
+  color: var(--forest);
+  background: rgba(250, 249, 246, .86);
+  border: 1px solid rgba(144, 169, 85, .28);
+  border-radius: 18px;
+  box-shadow: 0 6px 18px rgba(49, 87, 44, .07);
+  transition: transform .2s ease, box-shadow .2s ease;
 }
-.home td a.baris-link:hover { color: var(--h-ink, #24401f); }
-.home td a.baris-link::after { content: ""; position: absolute; inset: 0; z-index: 1; cursor: pointer; }
-.home td a.baris-link:focus-visible { outline: none; }
-.home td a.baris-link:focus-visible::after {
-  outline: 3px solid #90A955; outline-offset: -3px; border-radius: 10px;
+.home .sum-card:hover { transform: translateY(-3px); box-shadow: 0 12px 24px rgba(49, 87, 44, .14); }
+.home .sum-card:active { transform: translateY(-1px); }
+.home .sum-card:focus-visible { outline: 3px solid var(--moss); outline-offset: 3px; }
+.home .sum-ico {
+  flex-shrink: 0;
+  width: 48px; height: 48px;
+  display: grid; place-items: center;
+  border-radius: 14px;
+  background: #E3EEB8;
+  color: var(--grass);
 }
-
-/* panah kecil di ujung kanan sebagai petunjuk baris bisa dipencet */
-.home tbody td:last-child { position: relative; padding-right: 52px; }
-.home tbody td:last-child::after {
-  content: ""; position: absolute; right: 24px; top: 50%;
+.home .sum-ico svg { width: 24px; height: 24px; }
+.home .sum-label { display: block; font-size: .88rem; font-weight: 500; color: #58703f; }
+.home .sum-num { display: block; font-size: 2rem; font-weight: 700; line-height: 1.15; }
+.home .sum-card::after {
+  content: "";
+  position: absolute; right: 22px; top: 50%;
   width: 8px; height: 8px;
-  border-right: 2px solid #90A955; border-top: 2px solid #90A955;
+  border-right: 2px solid var(--moss); border-top: 2px solid var(--moss);
   transform: translateY(-50%) rotate(45deg);
   transition: transform .2s ease, border-color .2s ease;
 }
-.home tbody tr:hover td:last-child::after,
-.home tbody tr:focus-within td:last-child::after {
-  transform: translate(4px, -50%) rotate(45deg);
-  border-color: #4F772D;
+.home .sum-card:hover::after { transform: translate(4px, -50%) rotate(45deg); border-color: var(--grass); }
+
+/* ---------- Batch aktif per fase (gaya sama dengan landing page) ---------- */
+.home .jalur {
+  display: flex;
+  flex-wrap: nowrap;
+  list-style: none;
+  max-width: 820px;
+  margin: 22px auto 4px;
+  padding: 0;
 }
+.home .step { position: relative; flex: 1 1 0; min-width: 0; text-align: center; }
+.home .step:not(:last-child)::after {
+  content: "";
+  position: absolute; top: 36px;
+  left: calc(50% + 48px); right: calc(-50% + 48px);
+  border-top: 3px dashed var(--moss);
+}
+.home .step i {
+  display: grid; place-items: center;
+  width: 72px; height: 72px;
+  margin: 0 auto 12px;
+  border-radius: 50%;
+  font-style: normal; font-size: 1.8rem;
+  background: #fff;
+  box-shadow: 0 8px 18px rgba(49, 87, 44, .16);
+}
+.home .step:nth-child(2) i { background: #f4f8d0; }
+.home .step:nth-child(3) i { background: #dde7c0; }
+/* fase yang berisi batch diberi cincin hijau */
+.home .step.on i { box-shadow: 0 0 0 3px var(--grass), 0 8px 18px rgba(49, 87, 44, .2); }
+.home .step b { display: block; font-size: 1rem; font-weight: 600; }
+.home .step .ct {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 14px;
+  border-radius: 999px;
+  font-size: .82rem;
+  background: #EEF3D8;
+  color: var(--grass);
+}
+.home .step.on .ct { background: var(--forest); color: var(--white); font-weight: 500; }
 
-/* ---------- Animasi ---------- */
+/* ---------- Produk & stok ---------- */
+.home .sec-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.home .btn-kelola {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 18px;
+  border-radius: 999px;
+  background: var(--forest);
+  color: var(--white);
+  font-size: .86rem; font-weight: 600;
+  text-decoration: none; white-space: nowrap;
+  transition: background .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+.home .btn-kelola svg { width: 16px; height: 16px; transition: transform .2s ease; }
+.home .btn-kelola:hover { background: var(--grass); box-shadow: 0 8px 18px rgba(49, 87, 44, .25); }
+.home .btn-kelola:hover svg { transform: translateX(3px); }
+.home .btn-kelola:active { transform: scale(.97); }
+.home .btn-kelola:focus-visible { outline: 3px solid var(--moss); outline-offset: 3px; }
+
+/* Wadah tabel membulat; header berupa pita hijau muda seperti tabel pengelolaan */
+.home .stok-scroll {
+  max-height: 340px; overflow: auto; margin-top: 14px;
+  background: rgba(255, 255, 255, .72);
+  border: 1px solid rgba(144, 169, 85, .35);
+  border-radius: 14px;
+}
+.home .stok-scroll:has(.stok-table[hidden]) { display: none; }
+.home .stok-table { width: 100%; min-width: 0; border-collapse: collapse; }
+.home .stok-table th,
+.home .stok-table td { padding: 14px 22px; text-align: left; font-size: .92rem; }
+.home .stok-table thead th {
+  position: sticky; top: 0;
+  background: #F4F8CB;
+  font-weight: 600; color: var(--forest);
+}
+.home .stok-table tbody tr + tr td { border-top: 1px solid rgba(144, 169, 85, .22); }
+.home .stok-table .r { text-align: right; font-weight: 600; white-space: nowrap; }
+.home .empty { margin: 12px 0 0; padding: 18px; text-align: center; color: var(--grass); }
+
+/* ---------- Animasi masuk (sekali saat halaman dibuka) ---------- */
 @keyframes dh-naik   { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
-@keyframes dh-muncul { from { opacity: 0; transform: scale(.6); } to { opacity: 1; transform: none; } }
-@keyframes dh-garis  { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-@keyframes dh-baris  { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes dh-muncul { from { opacity: 0; transform: scale(.7); } to { opacity: 1; transform: none; } }
 
-/* judul dan bagian halaman muncul berurutan */
 .home > .page-head { animation: dh-naik .5s ease both; }
-.home > section { animation: dh-naik .55s ease both; }
-.home > section:nth-of-type(1) { animation-delay: .08s; }
-.home > section:nth-of-type(2) { animation-delay: .16s; }
-.home > section:nth-of-type(3) { animation-delay: .24s; }
-.home > section:nth-of-type(4) { animation-delay: .32s; }
-
-/* lingkaran fase muncul bergantian, garis putus-putus memanjang menyusul (hanya saat halaman dibuka) */
-.home:not(.sudah) .step .dot { animation: dh-muncul .5s cubic-bezier(.3, 1.4, .5, 1) both; }
-.home:not(.sudah) .step::before { transform-origin: left center; animation: dh-garis .5s ease both; }
-.home:not(.sudah) .step:nth-child(1) .dot { animation-delay: .30s; }
-.home:not(.sudah) .step:nth-child(2) .dot { animation-delay: .50s; }
-.home:not(.sudah) .step:nth-child(3) .dot { animation-delay: .70s; }
-.home:not(.sudah) .step:nth-child(4) .dot { animation-delay: .90s; }
-.home:not(.sudah) .step:nth-child(1)::before { animation-delay: .45s; }
-.home:not(.sudah) .step:nth-child(2)::before { animation-delay: .65s; }
-.home:not(.sudah) .step:nth-child(3)::before { animation-delay: .85s; }
-
-/* chip status muncul satu per satu */
-.home:not(.sudah) .chip { animation: dh-naik .4s ease both; }
-.home:not(.sudah) .chip:nth-child(1) { animation-delay: .35s; }
-.home:not(.sudah) .chip:nth-child(2) { animation-delay: .43s; }
-.home:not(.sudah) .chip:nth-child(3) { animation-delay: .51s; }
-.home:not(.sudah) .chip:nth-child(4) { animation-delay: .59s; }
-.home:not(.sudah) .chip:nth-child(5) { animation-delay: .67s; }
-
-/* baris tabel muncul berurutan, juga saat filter diganti */
-.home tbody tr { animation: dh-baris .35s ease both; }
-.home tbody tr:nth-child(1)  { animation-delay: .04s; }
-.home tbody tr:nth-child(2)  { animation-delay: .08s; }
-.home tbody tr:nth-child(3)  { animation-delay: .12s; }
-.home tbody tr:nth-child(4)  { animation-delay: .16s; }
-.home tbody tr:nth-child(5)  { animation-delay: .20s; }
-.home tbody tr:nth-child(6)  { animation-delay: .24s; }
-.home tbody tr:nth-child(7)  { animation-delay: .28s; }
-.home tbody tr:nth-child(8)  { animation-delay: .32s; }
-.home tbody tr:nth-child(n+9) { animation-delay: .36s; }
+.home > .summary { animation: dh-naik .5s .06s ease both; }
+.home > section:nth-of-type(1) { animation: dh-naik .5s .14s ease both; }
+.home > section:nth-of-type(2) { animation: dh-naik .5s .22s ease both; }
+.home .step i { animation: dh-muncul .45s cubic-bezier(.3, 1.4, .5, 1) both; }
+.home .step:nth-child(1) i { animation-delay: .25s; }
+.home .step:nth-child(2) i { animation-delay: .38s; }
+.home .step:nth-child(3) i { animation-delay: .51s; }
+.home .step:nth-child(4) i { animation-delay: .64s; }
 
 /* ---------- Layar kecil ---------- */
-@media (max-width: 900px) {
-  .home .step::before { display: none; }
-}
 @media (max-width: 560px) {
-  .home th, .home td { padding: 12px 16px; }
-  .home tbody td:last-child { padding-right: 40px; }
-  .home tbody td:last-child::after { right: 16px; }
+  .page.home > section { padding: 16px 16px 20px; }
+  .home .stok-table th,
+  .home .stok-table td { padding: 12px 16px; }
+  .home .step i { width: 52px; height: 52px; font-size: 1.3rem; }
+  .home .step:not(:last-child)::after { top: 26px; left: calc(50% + 34px); right: calc(-50% + 34px); }
+  .home .step b { font-size: .8rem; }
+  .home .step .ct { font-size: .7rem; padding: 2px 8px; }
 }
 
 /* ---------- Kurangi gerakan ---------- */
@@ -190,6 +168,5 @@
     animation: none !important;
     transition: none !important;
   }
-  .home .sum-card:hover, .home .chip:hover,
-  .home .step-btn:hover .dot { transform: none; }
+  .home .sum-card:hover { transform: none; }
 }

@@ -21,8 +21,15 @@ const PESANAN_PATH = (typeof ENDPOINTS !== "undefined" && ENDPOINTS.pesanan) || 
 //   PATCH {PESANAN_PATH}/{id}/status        ubah status pesanan, body: { status_pesanan } (UC28)
 //   POST  {PESANAN_PATH}/{id}/konfirmasi-cod konfirmasi pembayaran COD (UC30) -- TEBAKAN
 
-// Pilihan di dropdown Edit Status
-const STATUS_LIST = ["Menunggu Pembayaran", "Diproses", "Dikirim", "Selesai", "Dibatalkan"];
+// [UBAH] Pilihan di dropdown Edit Status (UC28): hanya 3 status
+const STATUS_LIST = ["Sedang Disiapkan", "Siap Diambil", "Selesai"];
+// [BARU] Nilai yang DIKIRIM ke BE untuk tiap status. Samakan dengan enum/validasi di backend kalau formatnya beda
+// (misalnya "SEDANG_DISIAPKAN"). Label di layar tetap memakai STATUS_LIST.
+const STATUS_KE_BE = {
+  "Sedang Disiapkan": "Sedang Disiapkan",
+  "Siap Diambil": "Siap Diambil",
+  "Selesai": "Selesai",
+};
 const STATUS_SUDAH_BAYAR = "Sudah Dibayar";
 
 // ---------- Format ----------
@@ -52,8 +59,19 @@ const idOf = (p) => p.id_pesanan ?? p.id;
 
 // Warna label status. Nilai dari BE dicocokkan tanpa peduli huruf besar/kecil atau garis bawah.
 const norm = (s) => String(s || "").toLowerCase().replace(/_/g, " ").trim();
+
+// [BARU] Teks status yang tampil di layar: "SIAP_DIAMBIL" / "siap diambil" -> "Siap Diambil".
+// Status lama dari BE (misalnya MENUNGGU_PEMBAYARAN) juga dirapikan jadi "Menunggu Pembayaran".
+const labelStatus = (s) =>
+  s ? String(s).replace(/_/g, " ").toLowerCase().replace(/(^|\s)\S/g, (c) => c.toUpperCase()) : "-";
+
 function badgeClass(status) {
   switch (norm(status)) {
+    // [BARU] tiga status pesanan UC28
+    case "sedang disiapkan": return "badge perlu";
+    case "siap diambil":     return "badge panen";
+    case "selesai":          return "badge selesai";
+    // status lama (data lama di database)
     case "menunggu pembayaran":
     case "belum dibayar":
     case "pending":        return "badge perlu";
@@ -64,7 +82,7 @@ function badgeClass(status) {
     case "dibatalkan":
     case "cancelled":
     case "canceled":       return "badge batal";
-    default:               return "badge"; // Selesai, Sudah Dibayar, Lunas, dan lainnya
+    default:               return "badge"; // Sudah Dibayar, Lunas, dan lainnya
   }
 }
 
@@ -82,12 +100,12 @@ function contoh() {
     metode_pembayaran: metode, status_pembayaran: bayar, status_pesanan: status,
   });
   return [
-    baris(6, "ORD-20261003-006", 1,  "Maya Putri",     foto, "Selada Hijau Segar", 6, 15000, "COD",           "Belum Dibayar", "Diproses"),
-    baris(5, "ORD-20261003-005", 2,  "Rina Wulandari", foto, "Selada Hijau Segar", 3, 15000, "Transfer Bank", "Belum Dibayar", "Menunggu Pembayaran"),
-    baris(4, "ORD-20261003-004", 9,  "Budi Santoso",   foto, "Selada Hijau Segar", 8, 15000, "QRIS",          "Sudah Dibayar", "Diproses"),
-    baris(3, "ORD-20261002-003", 30, "Siti Aminah",    foto, "Selada Hijau Segar", 5, 15000, "E-Wallet",      "Sudah Dibayar", "Dikirim"),
+    baris(6, "ORD-20261003-006", 1,  "Maya Putri",     foto, "Selada Hijau Segar", 6, 15000, "COD",           "Belum Dibayar", "Sedang Disiapkan"),
+    baris(5, "ORD-20261003-005", 2,  "Rina Wulandari", foto, "Selada Hijau Segar", 3, 15000, "Transfer Bank", "Belum Dibayar", "Sedang Disiapkan"),
+    baris(4, "ORD-20261003-004", 9,  "Budi Santoso",   foto, "Selada Hijau Segar", 8, 15000, "QRIS",          "Sudah Dibayar", "Siap Diambil"),
+    baris(3, "ORD-20261002-003", 30, "Siti Aminah",    foto, "Selada Hijau Segar", 5, 15000, "E-Wallet",      "Sudah Dibayar", "Siap Diambil"),
     baris(2, "ORD-20261001-002", 60, "Agus Pratama",   foto, "Selada Hijau Segar", 2, 15000, "COD",           "Sudah Dibayar", "Selesai"),
-    baris(1, "ORD-20260930-001", 90, "Dewi Lestari",   foto, "Selada Hijau Segar", 4, 15000, "Transfer Bank", "Belum Dibayar", "Dibatalkan"),
+    baris(1, "ORD-20260930-001", 90, "Dewi Lestari",   foto, "Selada Hijau Segar", 4, 15000, "Transfer Bank", "Sudah Dibayar", "Selesai"),
   ];
 }
 
@@ -164,7 +182,7 @@ async function simpanStatus(id, status) {
   }
   const res = await apiFetch(PESANAN_PATH + "/" + encodeURIComponent(id) + "/status", {
     method: "PATCH",
-    body: JSON.stringify({ status_pesanan: status }),
+    body: JSON.stringify({ status_pesanan: STATUS_KE_BE[status] || status }), // [UBAH] lewat STATUS_KE_BE
   });
   if (!res) return null;
   let json = {};
@@ -233,7 +251,6 @@ function renderList() {
   }
   show("empty", false);
   show("list", true);
-  $("list-info").textContent = semua.length + " pesanan";
 
   const urut = semua.slice().sort((a, b) => String(b.tanggal_pesanan).localeCompare(String(a.tanggal_pesanan)));
   const rows = $("rows");
@@ -243,7 +260,7 @@ function renderList() {
     const tdFoto = el("td");
     tdFoto.appendChild(fotoNode(p, "thumb", "thumb-kosong"));
     const tdStatus = el("td");
-    tdStatus.appendChild(el("span", p.status_pesanan || "-", badgeClass(p.status_pesanan)));
+    tdStatus.appendChild(el("span", labelStatus(p.status_pesanan), badgeClass(p.status_pesanan)));
     const tdAksi = el("td");
     const btn = el("button", "Lihat Detail", "btn btn-ghost btn-sm");
     btn.type = "button";
@@ -288,7 +305,7 @@ function renderDetail() {
   show("cod-modal", false);
   $("dt-nomor").textContent = p.nomor_pesanan || "-";
   const b = $("dt-status-badge");
-  b.textContent = p.status_pesanan || "-";
+  b.textContent = labelStatus(p.status_pesanan);
   b.className = badgeClass(p.status_pesanan);
 
   const foto = $("dt-foto");
@@ -304,9 +321,9 @@ function renderDetail() {
   $("dt-metode").textContent = p.metode_pembayaran || "-";
 
   const bayar = $("dt-bayar");
-  bayar.replaceChildren(el("span", p.status_pembayaran || "-", badgeClass(p.status_pembayaran)));
+  bayar.replaceChildren(el("span", labelStatus(p.status_pembayaran), badgeClass(p.status_pembayaran)));
   const st = $("dt-status");
-  st.replaceChildren(el("span", p.status_pesanan || "-", badgeClass(p.status_pesanan)));
+  st.replaceChildren(el("span", labelStatus(p.status_pesanan), badgeClass(p.status_pesanan)));
 
   // UC30: pre-condition tombol COD
   $("btn-cod").hidden = !(isCod(p) && belumDibayar(p));
@@ -320,16 +337,26 @@ function bukaEdit() {
   show("ed-alert", false);
   showOnly("edit");
 
-  $("ed-info").textContent = "Pesanan " + (aktif.nomor_pesanan || "") + " saat ini berstatus " + (aktif.status_pesanan || "-") + ".";
+  const sekarang = labelStatus(aktif.status_pesanan);
+  $("ed-info").textContent = "Pesanan " + (aktif.nomor_pesanan || "") + " saat ini berstatus " + sekarang + ".";
+
+  // [UBAH] dropdown hanya berisi 3 status. Kalau status pesanan masih status lama, tampil "Pilih status baru"
   const sel = $("ed-status");
   sel.replaceChildren();
-  const pilihan = STATUS_LIST.includes(aktif.status_pesanan) ? STATUS_LIST : [aktif.status_pesanan, ...STATUS_LIST];
-  pilihan.filter(Boolean).forEach((s) => {
+  const statusLama = !STATUS_LIST.includes(sekarang);
+  if (statusLama) {
+    const o = el("option", "Pilih status baru");
+    o.value = "";
+    o.disabled = true;
+    o.selected = true;
+    sel.appendChild(o);
+  }
+  STATUS_LIST.forEach((s) => {
     const o = el("option", s);
     o.value = s;
     sel.appendChild(o);
   });
-  sel.value = aktif.status_pesanan;
+  if (!statusLama) sel.value = sekarang;
   $("ed-title").focus();
 }
 
@@ -345,7 +372,7 @@ $("v-edit").addEventListener("submit", async (e) => {
   const baru = $("ed-status").value;
 
   if (!baru) return showAlert("ed-alert", "Pilih status pesanan terlebih dahulu.");
-  if (baru === aktif.status_pesanan) return showAlert("ed-alert", "Pilih status yang berbeda dari status saat ini.");
+  if (norm(baru) === norm(aktif.status_pesanan)) return showAlert("ed-alert", "Pilih status yang berbeda dari status saat ini.");
 
   const btn = $("btn-save");
   btn.disabled = true;

@@ -37,15 +37,15 @@ function baris(it, i) {
   // Nama Produk dan Harga Produk
   const info = el("div", undefined, "cart-info");
   info.append(el("h3", it.nama));
-  const harga = el("p", K.rupiah(it.harga) + " / kg", "cart-harga");
+  const harga = el("p", K.rupiah(it.harga) + " / " + it.satuan, "cart-harga");
   info.append(harga);
 
-  // Jumlah Produk (kg): tombol Kurang (-) dan Tambah (+)
+  // Jumlah Produk (kg atau pcs): tombol Kurang (-) dan Tambah (+)
   const qty = el("div", undefined, "qty");
   qty.setAttribute("role", "group");
-  qty.setAttribute("aria-label", "Jumlah " + it.nama + " (kg)");
+  qty.setAttribute("aria-label", "Jumlah " + it.nama + " (" + it.satuan + ")");
   const kurang = el("button", "−", "qty-btn"); kurang.type = "button"; kurang.setAttribute("aria-label", "Kurangi jumlah " + it.nama);
-  const nilai = el("span", K.angka(it.jumlah) + " kg", "qty-nilai"); nilai.setAttribute("aria-live", "polite");
+  const nilai = el("span", K.angka(it.jumlah) + " " + it.satuan, "qty-nilai"); nilai.setAttribute("aria-live", "polite");
   const tambah = el("button", "+", "qty-btn"); tambah.type = "button"; tambah.setAttribute("aria-label", "Tambah jumlah " + it.nama);
   qty.append(kurang, nilai, tambah);
 
@@ -65,7 +65,7 @@ function baris(it, i) {
       const r = await K.ubah(it, baru);
       if (!r.ok) { if (r.pesan) K.toast(r.pesan, "error"); return; }
       it.jumlah = baru;
-      nilai.textContent = K.angka(it.jumlah) + " kg";
+      nilai.textContent = K.angka(it.jumlah) + " " + it.satuan;
       sub.textContent = K.rupiah(it.harga * it.jumlah);
       sub.classList.remove("ubah"); void sub.offsetWidth; sub.classList.add("ubah");
       perbaruiTotal();

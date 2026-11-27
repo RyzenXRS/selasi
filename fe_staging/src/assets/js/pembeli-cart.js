@@ -27,6 +27,9 @@ const Keranjang = (function () {
   // BE memakai jumlah bilangan bulat (validasi 'integer', min 1). Ubah ke false kalau BE sudah menerima desimal.
   const HANYA_BULAT = true;
 
+  // Satuan produk: "kg" atau "pcs". Produk lama (tanpa field satuan) dianggap kg.
+  const bacaSatuan = (o) => (String(o?.satuan ?? o?.unit ?? "").trim().toLowerCase() === "pcs" ? "pcs" : "kg");
+
   // Pesan sesuai skenario UC39, UC40, UC41
   const MSG = {
     tambahOk: "Produk berhasil ditambahkan ke keranjang.",
@@ -35,6 +38,7 @@ const Keranjang = (function () {
     konfirmasiHapus: "Apakah Anda yakin ingin menghapus produk ini dari keranjang?",
     hapusOk: "Produk berhasil dihapus dari keranjang.",
     bukanBulat: "Jumlah produk harus berupa bilangan bulat (kg)", // tidak ada di skenario; BE hanya menerima kg bulat
+    bukanBulatPcs: "Jumlah produk dengan satuan pcs harus berupa bilangan bulat", // satuan pcs selalu bulat
     jumlahTidakValid: "Jumlah produk harus lebih dari 0", // tidak ada di skenario; dipakai kalau kolom jumlah kosong atau bukan angka
   };
 
@@ -48,6 +52,30 @@ const Keranjang = (function () {
     if (/^(https?:|data:|blob:|\.\.\/|\/)/.test(p)) return p;
     return STORAGE_BASE_URL + String(p).replace(/^\/+/, "");
   };
+
+  // ---------- Jadwal pengambilan per produk ----------
+  // Bentuk: [{ tanggal: "2026-11-27", jam: ["08:00", "10:00"] }, ...]. Kalau BE hanya mengirim satu tanggal dan jam
+  // (tanggal_pengambilan + jam_pengambilan), dipakai sebagai jadwal tunggal.
+  function bacaJadwal(o) {
+    const mentah = o?.jadwal_pengambilan ?? o?.jadwal ?? null;
+    const peta = new Map();
+    const tambahJadwal = (t, j) => {
+      t = String(t || "").slice(0, 10); j = String(j || "").slice(0, 5);
+      if (!t || !j) return;
+      if (!peta.has(t)) peta.set(t, new Set());
+      peta.get(t).add(j);
+    };
+    let arr = mentah;
+    if (typeof arr === "string") { try { arr = JSON.parse(arr); } catch (_) { arr = null; } }
+    if (Array.isArray(arr)) {
+      arr.forEach((x) => {
+        const jam = Array.isArray(x?.jam) ? x.jam : Array.isArray(x?.jam_pengambilan) ? x.jam_pengambilan : [];
+        jam.forEach((j) => tambahJadwal(x?.tanggal ?? x?.tanggal_pengambilan, j));
+      });
+    }
+    if (!peta.size) tambahJadwal(o?.tanggal_pengambilan, o?.jam_pengambilan);
+    return [...peta.entries()].sort().map(([tanggal, js]) => ({ tanggal, jam: [...js].sort() }));
+  }
 
   // ---------- Menyamakan bentuk data dari BE ----------
   function normProduk(p) {
@@ -63,6 +91,8 @@ const Keranjang = (function () {
       // Jadwal pengambilan yang diisi Pembudidaya pada produk (UC22), dipakai di Checkout (UC45)
       tanggalPengambilan: String(p.tanggal_pengambilan ?? "").slice(0, 10),
       jamPengambilan: String(p.jam_pengambilan ?? "").slice(0, 5),
+      satuan: bacaSatuan(p),
+      jadwal: bacaJadwal(p),
     };
   }
   function normItem(it) {
@@ -78,6 +108,9 @@ const Keranjang = (function () {
       foto: it.foto_produk ?? pr.foto_produk ?? pr.foto ?? null,
       tanggalPengambilan: String(it.tanggal_pengambilan ?? pr.tanggal_pengambilan ?? "").slice(0, 10),
       jamPengambilan: String(it.jam_pengambilan ?? pr.jam_pengambilan ?? "").slice(0, 5),
+      satuan: bacaSatuan({ satuan: it.satuan ?? pr.satuan, unit: it.unit ?? pr.unit }),
+      adaSatuan: (it.satuan ?? pr.satuan ?? it.unit ?? pr.unit) != null, // false = BE belum mengirim satuan di keranjang
+      jadwal: bacaJadwal({ jadwal_pengambilan: it.jadwal_pengambilan ?? pr.jadwal_pengambilan, jadwal: it.jadwal ?? pr.jadwal, tanggal_pengambilan: it.tanggal_pengambilan ?? pr.tanggal_pengambilan, jam_pengambilan: it.jam_pengambilan ?? pr.jam_pengambilan }),
     };
   }
   const daftarDari = (json) => (Array.isArray(json) ? json : json.data?.items ?? json.data ?? json.items ?? []);
@@ -92,6 +125,7 @@ const Keranjang = (function () {
       { id_produk: 4, nama_produk: "Selada Merah",    harga_produk: 20000, stok: 12, foto_produk: null, deskripsi: "Warna cantik untuk hidangan istimewa." },
       { id_produk: 5, nama_produk: "Butterhead",      harga_produk: 22000, stok: 0,  foto_produk: foto, deskripsi: "Lembut dan manis, sedang tidak tersedia." },
       { id_produk: 6, nama_produk: "Selada Air",      harga_produk: 14000, stok: 30, foto_produk: null, deskripsi: "Segar dengan sedikit rasa pedas." },
+      { id_produk: 7, nama_produk: "Bibit Selada",    harga_produk: 5000,  stok: 60, foto_produk: null, deskripsi: "Bibit siap tanam.", satuan: "pcs" },
     ];
   }
 
@@ -108,6 +142,27 @@ const Keranjang = (function () {
     return daftarDari(await res.json()).map(normProduk);
   }
 
+  // Katalog untuk melengkapi satuan dan jadwal item (kalau BE belum mengirimnya di keranjang). Disimpan 30 detik.
+  let katalogCache = null, katalogWaktu = 0;
+  async function katalogRingan() {
+    if (katalogCache && Date.now() - katalogWaktu < 30000) return katalogCache;
+    katalogCache = await produk(); katalogWaktu = Date.now();
+    return katalogCache;
+  }
+  async function lengkapiItem(items) {
+    if (!items.some((i) => !i.adaSatuan || !i.jadwal.length)) return items;
+    try {
+      const m = new Map((await katalogRingan()).map((p) => [String(p.id), p]));
+      items.forEach((i) => {
+        const p = m.get(String(i.id_produk));
+        if (!p) return;
+        if (!i.adaSatuan) i.satuan = p.satuan;
+        if (!i.jadwal.length) i.jadwal = p.jadwal;
+      });
+    } catch (_) { /* pakai data yang ada */ }
+    return items;
+  }
+
   // ---------- Keranjang ----------
   async function daftar() {
     if (LOKAL) {
@@ -117,13 +172,13 @@ const Keranjang = (function () {
       try { katalog = await produk(); } catch (_) { /* pakai data yang tersimpan */ }
       return baris.map((c) => {
         const p = katalog.find((x) => String(x.id) === String(c.id_produk)) || c.snap || {};
-        return { id: c.id, id_produk: c.id_produk, nama: p.nama || "Produk", harga: p.harga ?? 0, jumlah: c.jumlah, stok: p.stok ?? null, foto: p.foto ?? null };
+        return { id: c.id, id_produk: c.id_produk, nama: p.nama || "Produk", harga: p.harga ?? 0, jumlah: c.jumlah, stok: p.stok ?? null, foto: p.foto ?? null, satuan: p.satuan === "pcs" ? "pcs" : "kg", adaSatuan: true, jadwal: p.jadwal || [] };
       });
     }
     const res = await apiFetch(PATH);
     if (!res) return [];
     if (!res.ok) throw new Error("HTTP " + res.status);
-    return daftarDari(await res.json()).map(normItem);
+    return lengkapiItem(daftarDari(await res.json()).map(normItem));
   }
 
   const gagal = (pesan) => ({ ok: false, pesan });
@@ -145,6 +200,7 @@ const Keranjang = (function () {
   async function tambah(p, jumlah) {
     const j = Number(String(jumlah).trim().replace(",", "."));
     if (!Number.isFinite(j) || j <= 0) return gagal(MSG.jumlahTidakValid);
+    if (p.satuan === "pcs" && !Number.isInteger(j)) return gagal(MSG.bukanBulatPcs);
     if (HANYA_BULAT && !Number.isInteger(j)) return gagal(MSG.bukanBulat);
     if (p.stok <= 0) return gagal(MSG.lebih);
 
@@ -162,8 +218,8 @@ const Keranjang = (function () {
       await sleep(250);
       const isi = bacaLokal();
       const baris = isi.find((c) => String(c.id_produk) === String(p.id));
-      if (baris) { baris.jumlah = bulat2(baris.jumlah + j); baris.snap = { nama: p.nama, harga: p.harga, foto: p.foto, stok: p.stok }; }
-      else isi.push({ id: Date.now(), id_produk: p.id, jumlah: bulat2(j), snap: { nama: p.nama, harga: p.harga, foto: p.foto, stok: p.stok } });
+      if (baris) { baris.jumlah = bulat2(baris.jumlah + j); baris.snap = { nama: p.nama, harga: p.harga, foto: p.foto, stok: p.stok, satuan: p.satuan, jadwal: p.jadwal }; }
+      else isi.push({ id: Date.now(), id_produk: p.id, jumlah: bulat2(j), snap: { nama: p.nama, harga: p.harga, foto: p.foto, stok: p.stok, satuan: p.satuan, jadwal: p.jadwal } });
       tulisLokal(isi);
     } else {
       const r = await hasilBE(await apiFetch(PATH, { method: "POST", body: JSON.stringify({ id_produk: p.id, jumlah: j }) }));
@@ -176,6 +232,7 @@ const Keranjang = (function () {
   // UC40: ubah jumlah (tombol + dan -); jumlah baru dihitung oleh pemanggil
   async function ubah(item, baru) {
     if (!(baru >= 1)) return gagal(MSG.kurang);
+    if (item.satuan === "pcs" && !Number.isInteger(baru)) return gagal(MSG.bukanBulatPcs);
     if (HANYA_BULAT && !Number.isInteger(baru)) return gagal(MSG.bukanBulat);
     if (item.stok !== null && baru > item.stok) return gagal(MSG.lebih);
     if (LOKAL) {
@@ -235,5 +292,5 @@ const Keranjang = (function () {
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", segarkanBadge);
   else segarkanBadge();
 
-  return { MOCK, LOKAL, MSG, rupiah, angka, fotoUrl, produk, daftar, tambah, ubah, hapus, toast, segarkanBadge };
+  return { MOCK, LOKAL, MSG, rupiah, angka, fotoUrl, bacaSatuan, bacaJadwal, lengkapiItem, produk, daftar, tambah, ubah, hapus, toast, segarkanBadge };
 })();

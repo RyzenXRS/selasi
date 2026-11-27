@@ -24,7 +24,7 @@
     </a>
     <div class="links">
       <a href="#beranda">Beranda</a><a href="#keunggulan">Keunggulan</a><a href="#cara-pesan">Cara Pesan</a><a
-        href="#kebun">Kebun</a>
+        href="#kebun">Kebun</a><a href="#ulasan">Ulasan</a>
     </div>
     <div class="actions">
       <a class="btn btn-line btn-sm hide-sm" href="html/register.html">Daftar</a>
@@ -122,6 +122,20 @@
       </ol>
     </section>
 
+    <!-- Ulasan pembeli: kartu geser ke samping. Tersembunyi sampai ada ulasan dari API. -->
+    <section class="reviews reveal" id="ulasan" aria-labelledby="h-ulasan" hidden>
+      <div class="reviews-head">
+        <span class="tag">Kata pembeli</span>
+        <h2 id="h-ulasan">Ulasan dari pembeli SelaSI</h2>
+        <p class="sec-lead">Geser ke samping untuk membaca pengalaman pembeli lainnya.</p>
+      </div>
+      <div class="rv-wrap">
+        <button type="button" class="rv-nav" id="rv-prev" aria-label="Ulasan sebelumnya">&#8249;</button>
+        <div class="rv-track" id="rv-track" tabindex="0" role="region" aria-label="Daftar ulasan pembeli"></div>
+        <button type="button" class="rv-nav" id="rv-next" aria-label="Ulasan berikutnya">&#8250;</button>
+      </div>
+    </section>
+
     <section class="grower reveal" aria-labelledby="h-grower">
       <div class="grower-copy">
         <span class="tag">Untuk Pembudidaya</span>
@@ -154,7 +168,7 @@
       </div>
       <nav aria-label="Jelajahi">
         <h3>Jelajahi</h3><a href="#beranda">Beranda</a><a href="#keunggulan">Keunggulan</a><a href="#cara-pesan">Cara
-          Pesan</a><a href="#kebun">Kebun</a>
+          Pesan</a><a href="#kebun">Kebun</a><a href="#ulasan">Ulasan</a>
       </nav>
       <nav aria-label="Akun">
         <h3>Akun</h3><a href="html/register.html">Daftar Pembeli</a><a href="html/login-pembeli.html">Login</a>
@@ -163,6 +177,8 @@
     <div class="foot-bar"><span>&copy; 2026 SelaSI. Sistem informasi budidaya selada.</span></div>
   </footer>
 
+  <!-- config.js hanya dibaca untuk API_BASE_URL (alamat BE). Tidak ada yang diubah di file itu. -->
+  <script src="assets/js/config.js"></script>
   <script>
     // Menu Login: tutup saat klik di luar atau tekan Esc
     document.addEventListener("click", function (e) {
@@ -199,6 +215,129 @@
       el.style.animationDelay = (Array.prototype.indexOf.call(el.parentNode.children, el) % 6) * 110 + "ms";
       io ? io.observe(el) : el.classList.add("in");
     });
+
+    // Ulasan pembeli: ambil dari BE (endpoint publik), tampil sebagai kartu yang digeser ke samping.
+    // Kalau API gagal / belum ada ulasan, seksi ini tetap tersembunyi.
+    (function () {
+      var sec = document.getElementById("ulasan");
+      var track = document.getElementById("rv-track");
+      var prev = document.getElementById("rv-prev");
+      var next = document.getElementById("rv-next");
+      if (!sec || !track || typeof API_BASE_URL === "undefined") return;
+
+      // Ganti path ini kalau route BE untuk ulasan publik berbeda
+      var PATH = (typeof ENDPOINTS !== "undefined" && ENDPOINTS.ulasan) ? ENDPOINTS.ulasan : "/ulasan";
+
+      function pick() {
+        for (var i = 0; i < arguments.length; i++) {
+          var v = arguments[i];
+          if (v !== undefined && v !== null && String(v).trim() !== "") return v;
+        }
+        return "";
+      }
+
+      function kartu(u) {
+        var rating = Math.max(0, Math.min(5, Math.round(Number(pick(u.rating, u.bintang, u.nilai)) || 0)));
+        var teks = String(pick(u.komentar, u.ulasan, u.teks_ulasan, u.teks, u.isi_ulasan, u.review));
+        var nama = String(pick(
+          u.nama_pembeli, u.nama,
+          u.pembeli && (u.pembeli.nama || u.pembeli.name),
+          u.user && (u.user.nama || u.user.name),
+          "Pembeli SelaSI"
+        ));
+        var produk = String(pick(u.nama_produk, u.produk && (u.produk.nama || u.produk.nama_produk), ""));
+        var tglRaw = pick(u.tanggal, u.created_at, u.tanggal_ulasan);
+        var tgl = "";
+        if (tglRaw) {
+          var d = new Date(tglRaw);
+          if (!isNaN(d)) tgl = d.toLocaleDateString("id-ID", { dateStyle: "medium" });
+        }
+
+        var card = document.createElement("article");
+        card.className = "rv-card";
+
+        var top = document.createElement("div");
+        top.className = "rv-top";
+        var av = document.createElement("span");
+        av.className = "rv-av";
+        av.setAttribute("aria-hidden", "true");
+        av.textContent = nama.trim().charAt(0).toUpperCase() || "S";
+        var who = document.createElement("div");
+        var b = document.createElement("b");
+        b.textContent = nama;
+        who.appendChild(b);
+        if (produk) {
+          var sm = document.createElement("small");
+          sm.textContent = produk;
+          who.appendChild(sm);
+        }
+        top.append(av, who);
+
+        var stars = document.createElement("p");
+        stars.className = "rv-stars";
+        stars.setAttribute("aria-label", "Rating " + rating + " dari 5");
+        stars.textContent = "★".repeat(rating) + "☆".repeat(5 - rating);
+
+        var p = document.createElement("p");
+        p.className = "rv-text";
+        p.textContent = teks;
+
+        card.append(top, stars, p);
+        if (tgl) {
+          var t = document.createElement("span");
+          t.className = "rv-date";
+          t.textContent = tgl;
+          card.appendChild(t);
+        }
+        return card;
+      }
+
+      function updateNav() {
+        var max = track.scrollWidth - track.clientWidth;
+        var bisaGeser = max > 4;
+        prev.hidden = next.hidden = !bisaGeser;
+        prev.disabled = track.scrollLeft <= 4;
+        next.disabled = track.scrollLeft >= max - 4;
+      }
+
+      function geser(dir) {
+        var c = track.querySelector(".rv-card");
+        var lebar = (c ? c.offsetWidth : 300) + 18;
+        track.scrollBy({ left: dir * lebar, behavior: "smooth" });
+      }
+
+      async function muat() {
+        try {
+          var res = await fetch(API_BASE_URL + PATH + "?per_page=10", { headers: { Accept: "application/json" } });
+          if (!res.ok) return;
+          // buang teks peringatan PHP (kalau ada) sebelum JSON, sama seperti apiFetch
+          var raw = await res.text();
+          var awal = raw.search(/[\[{]/);
+          var json = JSON.parse(awal >= 0 ? raw.slice(awal) : raw);
+          var list = Array.isArray(json) ? json : (Array.isArray(json.data) ? json.data : ((json.data && json.data.data) || []));
+          list = list.filter(function (u) {
+            return String(pick(u.komentar, u.ulasan, u.teks_ulasan, u.teks, u.isi_ulasan, u.review)).trim() !== "";
+          }).slice(0, 10);
+          if (!list.length) return;
+          list.forEach(function (u) { track.appendChild(kartu(u)); });
+          sec.hidden = false;
+          updateNav();
+        } catch (e) {
+          console.warn("[ULASAN] Gagal memuat ulasan:", e);
+        }
+      }
+
+      prev.addEventListener("click", function () { geser(-1); });
+      next.addEventListener("click", function () { geser(1); });
+      track.addEventListener("scroll", updateNav, { passive: true });
+      window.addEventListener("resize", updateNav);
+      track.addEventListener("keydown", function (e) {
+        if (e.key === "ArrowRight") { e.preventDefault(); geser(1); }
+        if (e.key === "ArrowLeft") { e.preventDefault(); geser(-1); }
+      });
+
+      muat();
+    })();
   </script>
 </body>
 

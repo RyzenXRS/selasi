@@ -69,10 +69,12 @@ button.btn-checkout:disabled { opacity:.55; cursor:not-allowed; }
 /* Detail pesanan */
 .detail-head { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
 .detail-head h2 { margin:0; }
-.kv { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:12px; margin:0; }
-.kv div { padding:12px 14px; border-radius:14px; background:#f7f9e4; }
-.kv dt { font-size:.74rem; color:#5d7549; margin-bottom:2px; }
-.kv dd { margin:0; font-weight:600; color:#1f3a22; }
+/* Informasi pesanan: satu daftar rapi (label kiri, nilai kanan), tanpa kartu per baris */
+.kv { display:block; margin:0; }
+.kv div { display:flex; justify-content:space-between; align-items:center; gap:16px; padding:13px 2px; border-bottom:1px solid #eef3d8; }
+.kv div:last-child { border-bottom:0; padding-bottom:2px; }
+.kv dt { margin:0; font-size:.88rem; color:#5d7549; }
+.kv dd { margin:0; font-weight:600; color:#1f3a22; text-align:right; overflow-wrap:anywhere; }
 .aksi-detail { display:flex; gap:10px; flex-wrap:wrap; margin-top:4px; }
 .btn-outline { display:inline-flex; align-items:center; justify-content:center; height:42px; padding:0 22px; border-radius:999px; border:2px solid #2f5230; background:#fff; color:#2f5230; font:inherit; font-weight:600; font-size:.9rem; text-decoration:none; cursor:pointer; transition:background .15s, color .15s; }
 .btn-outline:hover { background:#2f5230; color:#ECF39E; }
@@ -80,8 +82,12 @@ button.btn-checkout:disabled { opacity:.55; cursor:not-allowed; }
 .btn-outline.bahaya:hover { background:#b3321b; color:#fff; }
 .btn-isi { background:#2f5230; color:#ECF39E; }
 .btn-isi:hover { background:#244024; }
-.kembali { display:inline-block; margin-bottom:10px; color:#2f5230; font-weight:600; font-size:.88rem; text-decoration:none; }
-.kembali:hover { text-decoration:underline; }
+/* Tombol kembali (panah + teks) */
+.kembali { display:inline-flex; align-items:center; gap:8px; height:38px; padding:0 18px; margin-bottom:14px; border:2px solid #2f5230; border-radius:999px; background:#fff; color:#2f5230; font-weight:600; font-size:.88rem; text-decoration:none;
+  transition:background .15s, color .15s, transform .12s var(--ease); }
+.kembali:hover { background:#2f5230; color:#ECF39E; }
+.kembali:active { transform:scale(.96); }
+.kembali:focus-visible { outline:3px solid #8fbf4d; outline-offset:2px; }
 
 @media (max-width: 700px) {
   .order-item { grid-template-columns:64px 1fr auto; gap:10px 14px; }
@@ -89,7 +95,7 @@ button.btn-checkout:disabled { opacity:.55; cursor:not-allowed; }
   .order-item > .order-total { grid-column:1 / 3; grid-row:2; text-align:left; }
   .order-item > .badge-s { grid-column:3; grid-row:1; justify-self:end; }
   .order-item > .btn-detail { grid-column:3; grid-row:2; justify-self:end; }
-  .opts, .kv { grid-template-columns:1fr; }
+  .opts { grid-template-columns:1fr; }
   .co-aksi { width:100%; }
   .co-aksi .btn-checkout { flex:1; }
 }

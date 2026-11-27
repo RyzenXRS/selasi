@@ -95,7 +95,6 @@ class CultivationService
             'jumlah_panen'   => $data['jumlah_panen'] ?? $data['quantity'] ?? 0,
             'berat_panen'    => $berat,
             'kualitas'       => $kualitas,
-            'catatan'        => $data['catatan'] ?? $data['notes'] ?? null,
             'created_at'     => Carbon::now(),
         ]);
     }

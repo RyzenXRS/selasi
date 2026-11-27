@@ -225,14 +225,19 @@ if (views.login) {
     const password = $("login-password").value;
     const gagal = (m) => showAlert("alert-login", m, "error");
 
-    if (!email || !password) return gagal("Lengkapi Data");
-    if (!isEmail(email)) return gagal("Format pengisian Email tidak sesuai");
-    if (!passwordOk(password)) return gagal("Format pengisian Password tidak sesuai");
+    // Pesan sesuai UC34
+    if (!email || !password) return gagal("Lengkapi Keseluruhan Data");
+    if (!isEmail(email)) return gagal("Pengisian Email tidak sesuai");
+    if (password.length > 50) return gagal("Password yang diinputkan tidak sesuai"); // tidak ada aturan minimal karakter saat login
 
     await withButton($("btn-login"), "Memproses...", "Masuk", async () => {
       try {
         const r = await post(EP.login, { email, password });
-        if (!r.ok) return gagal("Email atau Password salah");
+        if (!r.ok) {
+          // Kalau BE menyebut kesalahan khusus di field password, pakai pesan password
+          const galatPassword = r.data && r.data.errors && r.data.errors.password && !r.data.errors.email;
+          return gagal(galatPassword ? "Password yang diinputkan tidak sesuai" : "Email atau Password salah");
+        }
 
         const sesi = bacaSesi(r.data);
         if (!sesi.token) return gagal("Respons login dari server tidak berisi token.");

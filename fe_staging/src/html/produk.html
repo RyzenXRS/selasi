@@ -61,8 +61,10 @@
         <div class="form-grid">
           <div class="field span-2"><label for="f-nama">Nama produk</label><input type="text" id="f-nama" maxlength="50" placeholder="Contoh: Selada Hijau Segar"></div>
           <div class="field span-2"><label for="f-deskripsi">Deskripsi</label><textarea id="f-deskripsi" placeholder="Ceritakan kualitas dan keunggulan produk"></textarea></div>
-          <div class="field"><label for="f-stok">Stok (kg)</label><input type="number" id="f-stok" min="0" step="0.01" placeholder="Contoh: 12.50"></div>
-          <div class="field"><label for="f-harga">Harga (Rp)</label><input type="number" id="f-harga" min="0" step="0.01" placeholder="Contoh: 15000"></div>
+          <div class="field"><label for="f-satuan">Satuan</label>
+            <select id="f-satuan"><option value="kg">kg</option><option value="pcs">pcs</option></select></div>
+          <div class="field"><label for="f-stok" id="lbl-stok">Stok (kg)</label><input type="number" id="f-stok" min="0" step="0.01" placeholder="Contoh: 12.50"></div>
+          <div class="field span-2"><label for="f-harga" id="lbl-harga">Harga per kg (Rp)</label><input type="number" id="f-harga" min="0" step="0.01" placeholder="Contoh: 15000"></div>
           <div class="field span-2">
             <label for="f-foto">Foto produk</label>
             <input type="file" id="f-foto" accept="image/*">
@@ -70,8 +72,12 @@
             <img id="f-preview" class="preview" alt="Pratinjau foto produk" hidden>
             <button type="button" class="btn btn-danger btn-sm" id="f-hapus-foto" hidden>Hapus foto</button>
           </div>
-          <div class="field"><label for="f-tanggal">Tanggal Pengambilan</label><input type="date" id="f-tanggal"></div>
-          <div class="field"><label for="f-jam">Jam Pengambilan</label><input type="time" id="f-jam"></div>
+          <div class="field span-2" id="f-jadwal-field">
+            <span class="jd-judul">Jadwal Pengambilan</span>
+            <p class="help">Tambahkan tanggal pengambilan, lalu pilih jam yang tersedia pada tanggal itu. Pembeli memilih dari jadwal ini.</p>
+            <div id="jadwal-list"></div>
+            <button type="button" class="btn btn-ghost btn-sm" id="btn-tambah-tanggal">+ Tambah Tanggal</button>
+          </div>
         </div>
         <div class="actions">
           <button type="submit" class="btn" id="btn-save">Simpan</button>
