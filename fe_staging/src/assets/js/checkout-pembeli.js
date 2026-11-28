@@ -25,6 +25,11 @@ const METODE = [
 const IKON_DAUN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-9"/><path d="M12 13c0-4 3-6 7-6 0 4-3 6-7 6z"/><path d="M12 16c0-3-2-5-6-5 0 3 2 5 6 5z"/></svg>';
 
 const pilih = { tanggal: "", jam: "", metode: "" };
+
+// Produk yang dicentang di Halaman Keranjang. Kalau Checkout dibuka tanpa pilihan, semua isi keranjang dipakai.
+const KEY_PILIH = "keranjang_dipilih";
+let idDipilih = null;
+try { const s = JSON.parse(sessionStorage.getItem(KEY_PILIH)); if (Array.isArray(s)) idDipilih = s.map(String); } catch (_) {}
 const iso = (d) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
 
 let jadwal = new Map(); // "YYYY-MM-DD" -> ["HH:MM", ...]
@@ -130,6 +135,7 @@ function isiRingkasan(items) {
 }
 
 let sedangBuat = false;
+let itemDipilih = [];
 $("btn-buat").addEventListener("click", async () => {
   if (sedangBuat) return;
   if (!pilih.tanggal || !pilih.jam || !pilih.metode) { K.toast(P.MSG.dataTidakLengkap, "error"); return; }
@@ -138,9 +144,13 @@ $("btn-buat").addEventListener("click", async () => {
   $("btn-buat").disabled = true;
   let berhasil = false;
   try {
-    const r = await P.checkout({ metode_pembayaran: pilih.metode, tanggal_pengambilan: pilih.tanggal, jam_pengambilan: pilih.jam });
+    const payload = { metode_pembayaran: pilih.metode, tanggal_pengambilan: pilih.tanggal, jam_pengambilan: pilih.jam };
+    // Produk yang dicentang di keranjang (BE perlu memakai daftar ini supaya hanya produk terpilih yang dipesan)
+    if (idDipilih) payload.id_item_keranjang = itemDipilih.map((it) => it.id);
+    const r = await P.checkout(payload);
     if (!r.ok) { if (r.pesan) K.toast(r.pesan, "error"); return; }
     berhasil = true;
+    try { sessionStorage.removeItem(KEY_PILIH); } catch (_) {}
     K.toast(r.pesan, "success");
     K.segarkanBadge();
     setTimeout(() => { location.href = r.id ? "detail-pesanan-pembeli.html?id=" + encodeURIComponent(r.id) : "pesanan-pembeli.html"; }, 1300);
@@ -160,8 +170,10 @@ $("btn-buat").addEventListener("click", async () => {
     return;
   }
   try {
-    const items = await K.daftar();
+    let items = await K.daftar();
+    if (idDipilih) items = items.filter((it) => idDipilih.includes(String(it.id)));
     if (!items.length) { $("kosong").hidden = false; return; }
+    itemDipilih = items;
     isiRingkasan(items);
     const hasil = await kumpulkanJadwal(items);
     jadwal = hasil.peta;

@@ -38,10 +38,18 @@ const rupiah = (v) => {
   if (Number.isNaN(n)) return "-";
   return "Rp " + n.toLocaleString("id-ID", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 };
-const kg = (v) => {
+// Jumlah dengan satuan produk (kg atau pcs); satuan kosong dianggap kg
+const jumlahTeks = (v, satuan) => {
   const n = Number(v);
-  return Number.isNaN(n) ? "-" : n.toLocaleString("id-ID", { maximumFractionDigits: 2 }) + " kg";
+  return Number.isNaN(n) ? "-" : n.toLocaleString("id-ID", { maximumFractionDigits: 2 }) + " " + (String(satuan || "").toLowerCase() === "pcs" ? "pcs" : "kg");
 };
+// Tanggal dan jam pengambilan yang dipilih pembeli (UC27)
+function fmtTglAmbil(v) {
+  if (!v) return "-";
+  const d = new Date(String(v).slice(0, 10) + "T00:00:00");
+  return isNaN(d) ? String(v) : d.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+}
+const fmtJamAmbil = (v) => (v ? String(v).slice(0, 5).replace(":", ".") + " WIB" : "-");
 function fmtTanggal(v) {
   if (!v) return "-";
   const d = new Date(String(v).replace(" ", "T"));
@@ -98,6 +106,7 @@ function contoh() {
     id_pesanan: id, nomor_pesanan: no, tanggal_pesanan: t(jam), nama_pembeli: pembeli, foto_produk,
     nama_produk: produk, jumlah_produk: jml, harga_produk: harga, total_pembayaran: (jml * harga).toFixed(2),
     metode_pembayaran: metode, status_pembayaran: bayar, status_pesanan: status,
+    tanggal_pengambilan: new Date(Date.now() + 86400000 * (1 + (id % 3))).toISOString().slice(0, 10), jam_pengambilan: id % 2 ? "09:00" : "14:00",
   });
   return [
     baris(6, "ORD-20261003-006", 1,  "Maya Putri",     foto, "Selada Hijau Segar", 6, 15000, "COD",           "Belum Dibayar", "Sedang Disiapkan"),
@@ -130,6 +139,9 @@ function mapOrderToPesanan(p) {
     metode_pembayaran: p.metode_pembayaran || "-",
     status_pembayaran: bayar,
     status_pesanan: p.status_pesanan || "-",
+    satuan: item.satuan || p.satuan || "kg",
+    tanggal_pengambilan: String(p.tanggal_pengambilan ?? "").slice(0, 10),
+    jam_pengambilan: String(p.jam_pengambilan ?? "").slice(0, 5),
   };
 }
 
@@ -315,10 +327,12 @@ function renderDetail() {
   $("dt-tgl").textContent = fmtTanggal(p.tanggal_pesanan);
   $("dt-pembeli").textContent = p.nama_pembeli || "-";
   $("dt-produk").textContent = p.nama_produk || "-";
-  $("dt-jumlah").textContent = kg(p.jumlah_produk);
+  $("dt-jumlah").textContent = jumlahTeks(p.jumlah_produk, p.satuan);
   $("dt-harga").textContent = rupiah(p.harga_produk);
   $("dt-total").textContent = rupiah(p.total_pembayaran);
   $("dt-metode").textContent = p.metode_pembayaran || "-";
+  $("dt-tgl-ambil").textContent = fmtTglAmbil(p.tanggal_pengambilan);
+  $("dt-jam-ambil").textContent = fmtJamAmbil(p.jam_pengambilan);
 
   const bayar = $("dt-bayar");
   bayar.replaceChildren(el("span", labelStatus(p.status_pembayaran), badgeClass(p.status_pembayaran)));

@@ -178,7 +178,7 @@ select:focus-visible { outline: 3px solid #8fbf4d; outline-offset: 2px; }
 
 .facts {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr)); /* 12 info = 6 pasang, tidak ada kartu sendirian */
   gap: 14px;
   margin: 0;
 }
@@ -199,6 +199,8 @@ select:focus-visible { outline: 3px solid #8fbf4d; outline-offset: 2px; }
 .facts div:nth-child(8)  { animation-delay: .21s; }
 .facts div:nth-child(9)  { animation-delay: .24s; }
 .facts div:nth-child(10) { animation-delay: .27s; }
+.facts div:nth-child(11) { animation-delay: .30s; }
+.facts div:nth-child(12) { animation-delay: .33s; }
 .facts dt { font-size: .78rem; color: #5d7549; }
 .facts dd { margin: 2px 0 0; font-weight: 500; color: #1f3a22; overflow-wrap: anywhere; }
 .facts .total dd { font-size: 1.15rem; font-weight: 700; color: #2f5230; }
@@ -246,6 +248,9 @@ select:focus-visible { outline: 3px solid #8fbf4d; outline-offset: 2px; }
   animation: modal-pop var(--dur-base) var(--ease-out);
 }
 
+@media (max-width: 560px) {
+  .facts { grid-template-columns: 1fr; }
+}
 @media (max-width: 800px) {
   .detail-grid { grid-template-columns: 1fr; }
   .foto-besar, .foto-kosong { width: 100%; max-width: 260px; }

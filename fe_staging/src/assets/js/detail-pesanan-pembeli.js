@@ -23,6 +23,48 @@ const SNAP_SRC = "https://app.sandbox.midtrans.com/snap/snap.js"; // ganti ke ap
 const JEDA_CEK = 4000;                    // cek status pembayaran tiap 4 detik selama menunggu
 const MSG_BAYAR_OK = "Pembayaran berhasil."; // UC42
 
+// ---------- Pembatalan pesanan QRIS yang sudah dibayar (UC49, alur alternatif) ----------
+// Pembeli diarahkan ke WhatsApp Pembudidaya untuk mengajukan pengembalian dana.
+// ISI nomor WhatsApp Pembudidaya (boleh 08xx atau 62xx). Atau tambahkan  whatsapp: "08..."  di FARM_LOCATION pada config.js.
+const WA_PEMBUDIDAYA = "089502728417";
+const nomorWa = () => {
+  let n = String((typeof FARM_LOCATION !== "undefined" && FARM_LOCATION.whatsapp) || WA_PEMBUDIDAYA || "").replace(/\D/g, "");
+  if (n.startsWith("0")) n = "62" + n.slice(1);
+  return n;
+};
+const qrisSudahBayar = (p) => String(p.metode).toUpperCase() === "QRIS" && p.statusBayar === "Berhasil" && p.statusPesananRaw !== "DIBATALKAN";
+function templateRefund(p) {
+  const produk = p.items.map((it) => it.nama + " (" + K.angka(it.jumlah) + " " + it.satuan + ")").join(", ");
+  return "Halo, saya ingin mengajukan pengembalian dana untuk pesanan " + p.nomor + ".\n\n" +
+    "Produk: " + produk + "\n" +
+    "Total pembayaran: " + K.rupiah(p.total) + "\n" +
+    "Metode pembayaran: QRIS (sudah dibayar)\n\n" +
+    "Mohon bantuannya untuk memproses pengembalian dana. Terima kasih.";
+}
+let refundTampil = false;
+function tampilRefund() {
+  let panel = $("panel-refund");
+  if (!refundTampil) { if (panel) panel.hidden = true; return; }
+  if (!panel) {
+    panel = el("section", undefined, "panel");
+    panel.id = "panel-refund";
+    $("aksi").before(panel);
+  }
+  const wa = nomorWa();
+  const p = pesanan;
+  panel.hidden = false;
+  panel.replaceChildren(el("h2", "Pengajuan Pengembalian Dana"),
+    el("p", "Pembayaran QRIS untuk pesanan ini sudah berhasil, jadi pembatalan dilakukan lewat pengajuan pengembalian dana ke Pembudidaya. Pesan pengajuan sudah kami siapkan di WhatsApp.", "hint"));
+  if (wa) {
+    const a = el("a", "Ajukan Pengembalian Dana via WhatsApp", "btn-outline btn-isi");
+    a.href = "https://wa.me/" + wa + "?text=" + encodeURIComponent(templateRefund(p));
+    a.target = "_blank"; a.rel = "noopener";
+    panel.appendChild(a);
+  } else {
+    panel.appendChild(el("p", "Nomor WhatsApp Pembudidaya belum tersedia. Hubungi Pembudidaya secara langsung.", "hint"));
+  }
+}
+
 const menungguQris = (p) => String(p.metode).toUpperCase() === "QRIS" && p.statusBayar === "Menunggu Pembayaran" && p.statusPesananRaw !== "DIBATALKAN";
 const bisaEmbed = (p) => menungguQris(p) && !!MIDTRANS_CLIENT_KEY && !!p.snapToken;
 let sudahEmbed = false, timerCek = null;
@@ -154,6 +196,7 @@ function render() {
   }
   $("aksi").replaceChildren(...aksi);
   $("isi").hidden = false;
+  tampilRefund();
   tampilQris();
 }
 
@@ -167,6 +210,16 @@ $("m-iya").addEventListener("click", async () => {
   const btn = $("m-iya");
   btn.disabled = true;
   try {
+    // Periksa status pembayaran terbaru. QRIS yang sudah dibayar tidak dibatalkan langsung, tetapi lewat pengajuan dana ke Pembudidaya.
+    const terbaru = await P.detail(idPesanan);
+    if (terbaru && qrisSudahBayar(terbaru)) {
+      pesanan = terbaru;
+      refundTampil = true;
+      tutupDialog();
+      render();
+      $("panel-refund").scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
     const r = await P.batal(idPesanan);
     tutupDialog();
     if (!r.ok) { if (r.pesan) K.toast(r.pesan, "error"); return; }
