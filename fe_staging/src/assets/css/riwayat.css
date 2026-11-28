@@ -1,0 +1,103 @@
+/* Animasi halaman Riwayat (riwayat.html). Hanya tampilan, tidak menyentuh logika atau API. */
+
+@keyframes rUp{from{opacity:0;transform:translateY(14px)}}
+@keyframes rFade{from{opacity:0}}
+@keyframes rPulse{0%,100%{box-shadow:0 0 0 0 rgba(79,119,45,.45)}50%{box-shadow:0 0 0 6px rgba(79,119,45,0)}}
+
+.page-head{animation:rUp .45s ease-out backwards}
+.r-tools,.r-tabs{animation:rUp .45s .06s ease-out backwards}
+.alert{animation:rUp .3s ease-out backwards}
+
+/* Kartu batch muncul bertahap, naik sedikit saat disorot */
+.r-card{animation:rUp .4s ease-out backwards;transition:transform .2s,box-shadow .2s,border-color .2s}
+.r-card:nth-child(1){animation-delay:.05s}.r-card:nth-child(2){animation-delay:.12s}
+.r-card:nth-child(3){animation-delay:.19s}.r-card:nth-child(4){animation-delay:.26s}
+.r-card:nth-child(n+5){animation-delay:.3s}
+.r-card:hover{transform:translateY(-4px);box-shadow:0 14px 28px rgba(47,82,48,.14);border-color:#b9cf86}
+
+/* Tombol dan filter */
+.r-detail,.r-chip,.btn{transition:background .2s,color .2s,border-color .2s,transform .15s}
+.r-detail:hover,.r-chip:hover,.btn:hover{transform:translateY(-2px)}
+.r-detail:active,.r-chip:active,.btn:active{transform:scale(.97)}
+.r-tab{transition:color .2s,border-color .2s}
+
+/* Detail batch dan transaksi */
+.panel{animation:rUp .45s ease-out backwards}
+.facts div{transition:background .2s,transform .2s}
+.facts div:hover{background:#eef3d0;transform:translateY(-2px)}
+
+/* Baris tabel muncul bertahap */
+tbody tr{animation:rFade .4s ease-out backwards}
+tbody tr:nth-child(2){animation-delay:.06s}tbody tr:nth-child(3){animation-delay:.12s}
+tbody tr:nth-child(4){animation-delay:.18s}tbody tr:nth-child(n+5){animation-delay:.24s}
+tbody tr td{transition:background .2s}
+tbody tr:hover td{background:#f4f8d9}
+
+/* Titik berdenyut di badge "Berjalan" */
+.r-badge.run{display:inline-flex;align-items:center;gap:7px}
+.r-badge.run::before{content:"";width:7px;height:7px;border-radius:50%;background:#4F772D;animation:rPulse 1.8s ease-in-out infinite}
+
+/* Hormati pengguna yang mematikan animasi */
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+/* ===== Detail batch (UC17) ===== */
+#detail.dt{padding:28px 32px;border-radius:12px;border:1px solid #dfe7c4}
+.dt-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding-bottom:20px;border-bottom:1px solid #e3ebc6}
+.dt-title{margin:0 0 4px;font-size:1.4rem;color:#14240f;outline:none}
+.dt-meta{margin:0;font-size:.9rem;color:#6c7c5f}
+.dt-side{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.dt-sec{padding:24px 0;border-bottom:1px solid #e3ebc6}
+.dt-sec:last-child{border-bottom:0;padding-bottom:0}
+.dt-sec h3{margin:0 0 12px;font-size:1.02rem;font-weight:600;color:#2f5230}
+.dt-sub{margin:26px 0 14px;font-size:.92rem;font-weight:600;color:#1f3a22}
+
+.dt-list{margin:0;display:block}
+.dt-row{display:grid;grid-template-columns:210px 1fr;gap:16px;align-items:baseline;margin:0 -10px;padding:13px 10px;border-bottom:1px solid #eaeed6;border-radius:6px;transition:background .2s}
+.dt-row:last-child{border-bottom:0}
+.dt-row:hover{background:#f6f9e6}
+.dt-row dt{font-size:.84rem;font-weight:400;color:#6c7c5f}
+.dt-row dd{margin:0;font-size:.98rem;font-weight:500;line-height:1.55;color:#14240f;overflow-wrap:anywhere}
+
+.dt-line{list-style:none;margin:0;padding:0}
+.dt-line li{position:relative;padding:0 0 22px 28px}
+.dt-line li:last-child{padding-bottom:0}
+.dt-line li::before{content:"";position:absolute;left:0;top:5px;width:11px;height:11px;box-sizing:border-box;border-radius:50%;background:#4F772D}
+.dt-line li.now::before{background:#fff;border:2px solid #4F772D}
+.dt-line li:not(:last-child)::after{content:"";position:absolute;left:5px;top:20px;bottom:-2px;width:1px;background:#cfdca6}
+.dt-line .t{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.dt-line .t b{font-size:1rem;font-weight:600;color:#14240f}
+.dt-line .t span{font-size:.86rem;font-weight:600;color:#4F772D}
+.dt-line p{margin:3px 0 0;font-size:.88rem;color:#6c7c5f}
+
+.dt-figs{margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:18px 28px}
+.dt-figs dt{margin-bottom:3px;font-size:.82rem;color:#6c7c5f}
+.dt-figs dd{margin:0;font-size:1.02rem;font-weight:600;color:#14240f}
+.dt-none{margin:0;font-size:.92rem;color:#5d7549}
+
+@media(max-width:760px){
+  #detail.dt{padding:22px 18px}
+  .dt-head{flex-direction:column}
+  .dt-row{grid-template-columns:1fr;gap:2px}
+}
+
+/* Animasi detail batch */
+.dt-sec{animation:rUp .45s ease-out backwards}
+.dt-sec:nth-of-type(1){animation-delay:.05s}.dt-sec:nth-of-type(2){animation-delay:.14s}.dt-sec:nth-of-type(3){animation-delay:.23s}
+.dt-row{animation:rFade .4s ease-out backwards}
+.dt-row:nth-child(1){animation-delay:.10s}.dt-row:nth-child(2){animation-delay:.16s}.dt-row:nth-child(3){animation-delay:.22s}
+.dt-row:nth-child(4){animation-delay:.28s}.dt-row:nth-child(5){animation-delay:.34s}.dt-row:nth-child(6){animation-delay:.40s}
+.dt-line li{animation:rUp .45s ease-out backwards}
+.dt-line li:nth-child(1){animation-delay:.25s}.dt-line li:nth-child(2){animation-delay:.38s}.dt-line li:nth-child(3){animation-delay:.51s}
+.dt-line li.now::before{animation:rPulse 1.8s ease-in-out infinite}
+.dt-figs>div{animation:rUp .4s ease-out backwards}
+.dt-figs>div:nth-child(2){animation-delay:.07s}.dt-figs>div:nth-child(3){animation-delay:.14s}.dt-figs>div:nth-child(4){animation-delay:.21s}.dt-figs>div:nth-child(5){animation-delay:.28s}
+
+/* Riwayat Transaksi: seluruh baris bisa diklik, nomor pesanan tampil sebagai teks biasa */
+#tx-rows tr{cursor:pointer}
+#tx-wrap .link-nomor{font-weight:inherit;color:inherit;text-decoration:none;cursor:pointer}
+#tx-wrap .link-nomor:hover{color:inherit}
+
+/* Detail transaksi: baris total pembayaran ditonjolkan */
+.dt-row.total{margin-top:6px;padding-top:16px;border-top:2px solid #cfdca6;border-bottom:0}
+.dt-row.total dt{font-size:.92rem;font-weight:600;color:#14240f}
+.dt-row.total dd{font-size:1.3rem;font-weight:700;color:#14240f}

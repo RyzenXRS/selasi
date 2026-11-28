@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Login | SelaSI</title>
+  <meta http-equiv="refresh" content="0;url=login-pembeli.html">
+  <script>window.location.replace("login-pembeli.html" + window.location.search + window.location.hash);</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -66,7 +68,7 @@
       <h1>Masukkan kode</h1>
       <p class="sub" id="code-hint"></p>
       <div id="alert-code" class="alert" role="alert" hidden></div>
-      <div class="field"><label for="code-input">Kode verifikasi</label><input type="text" id="code-input" class="code" maxlength="6" autocomplete="one-time-code" required></div>
+      <div class="field"><label for="code-input">Kode OTP (6 digit)</label><input type="text" id="code-input" class="code" maxlength="6" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" required></div>
       <button type="submit" class="btn" id="btn-code">Periksa kode</button>
       <div class="links"><a href="#" data-back>Kembali ke login</a></div>
     </form>

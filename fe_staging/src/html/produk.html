@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Manajemen Produk | SelaSI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/dashboard.css">
+  <link rel="stylesheet" href="../assets/css/produk.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <span class="brand">SelaSI</span>
+      <nav class="nav" aria-label="Menu utama">
+        <a href="dashboard.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Dashboard</span></a>
+        <a href="budidaya.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-9"/><path d="M12 13c0-4 3-6 7-6 0 4-3 6-7 6z"/><path d="M12 16c0-3-2-5-6-5 0 3 2 5 6 5z"/></svg><span>Data Budidaya</span></a>
+        <a aria-current="page" href="produk.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l1 13H5z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg><span>Manajemen Produk</span></a>
+        <a href="panen.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18l-2 11H5z"/><path d="M8 9l4-6 4 6"/></svg><span>Data Panen</span></a>
+        <a href="pesanan.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.5L21 8H6"/><circle cx="10" cy="20" r="1.2"/><circle cx="17" cy="20" r="1.2"/></svg><span>Penjualan dan Transaksi</span></a>
+        <a href="prediksi-panen.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg><span>AI Prediksi Panen</span></a>
+        <a href="prediksi-permintaan.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg><span>Prediksi Permintaan Pasar</span></a>
+        <a href="riwayat.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 8v4l3 2"/></svg><span>Riwayat</span></a>
+        <a href="todo.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg><span>To-Do List</span></a>
+        <a href="profil.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg><span>Akun Saya</span></a>
+      </nav>
+      <div class="sidebar-foot">
+        <span id="user-email" class="user-email"></span>
+        <button type="button" class="btn-logout" id="btn-logout"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg><span>Keluar</span></button>
+      </div>
+    </aside>
+
+    <main class="page">
+      <div class="page-head">
+        <h1>Manajemen Produk</h1>
+        <p class="sub">Kelola produk selada yang akan dijual.</p>
+      </div>
+
+      <div id="alert" class="alert" role="alert" hidden></div>
+      <div id="notice" class="alert success" role="status" tabindex="-1" hidden></div>
+
+      <!-- Halaman Manajemen Produk -->
+      <section id="list-view">
+        <div class="bar-top">
+          <p class="info" id="list-info"></p>
+          <button type="button" class="btn" id="btn-add" aria-label="Tambah produk">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+            <span>Tambah Produk</span>
+          </button>
+        </div>
+        <div class="grid" id="grid"></div>
+        <p class="empty" id="empty" hidden>Belum ada produk. Tekan Tambah Produk untuk mulai.</p>
+      </section>
+
+      <!-- Form Input Produk (UC22) -->
+      <form id="form" class="panel" novalidate hidden>
+        <h2 class="panel-title" id="form-title">Tambah produk</h2>
+        <div id="form-alert" class="alert" role="alert" hidden></div>
+        <div class="form-grid">
+          <div class="field span-2"><label for="f-nama">Nama produk</label><input type="text" id="f-nama" maxlength="50" placeholder="Contoh: Selada Hijau Segar"></div>
+          <div class="field span-2"><label for="f-deskripsi">Deskripsi</label><textarea id="f-deskripsi" placeholder="Ceritakan kualitas dan keunggulan produk"></textarea></div>
+          <div class="field"><label for="f-satuan">Satuan</label>
+            <select id="f-satuan"><option value="kg">kg</option><option value="pcs">pcs</option></select></div>
+          <div class="field"><label for="f-stok" id="lbl-stok">Stok (kg)</label><input type="number" id="f-stok" min="0" step="0.01" placeholder="Contoh: 12.50"></div>
+          <div class="field span-2"><label for="f-harga" id="lbl-harga">Harga per kg (Rp)</label><input type="number" id="f-harga" min="0" step="0.01" placeholder="Contoh: 15000"></div>
+          <div class="field span-2">
+            <label for="f-foto">Foto produk</label>
+            <input type="file" id="f-foto" accept="image/*">
+            <p class="help" id="f-foto-help">Pilih file gambar.</p>
+            <img id="f-preview" class="preview" alt="Pratinjau foto produk" hidden>
+            <button type="button" class="btn btn-danger btn-sm" id="f-hapus-foto" hidden>Hapus foto</button>
+          </div>
+          <div class="field span-2" id="f-jadwal-field">
+            <span class="jd-judul">Jadwal Pengambilan</span>
+            <p class="help">Tambahkan tanggal pengambilan, lalu pilih jam yang tersedia pada tanggal itu. Pembeli memilih dari jadwal ini.</p>
+            <div id="jadwal-list"></div>
+            <button type="button" class="btn btn-ghost btn-sm" id="btn-tambah-tanggal">+ Tambah Tanggal</button>
+          </div>
+        </div>
+        <div class="actions">
+          <button type="submit" class="btn" id="btn-save">Simpan</button>
+          <button type="button" class="btn btn-ghost" id="btn-cancel">Batal</button>
+        </div>
+      </form>
+    </main>
+  </div>
+
+  <!-- Pop up konfirmasi penghapusan (UC24) -->
+  <div class="modal" id="modal" hidden>
+    <div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="m-judul" aria-describedby="m-teks">
+      <h2 id="m-judul">Hapus produk?</h2>
+      <p id="m-teks"></p>
+      <div class="actions">
+        <button type="button" class="btn btn-danger" id="m-ya">Konfirmasi</button>
+        <button type="button" class="btn btn-ghost" id="m-batal">Batal</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    window.addEventListener("error", function (e) {
+      var a = document.getElementById("alert");
+      if (a) { a.textContent = "Error: " + e.message + " (" + String(e.filename || "").split("/").pop() + " baris " + e.lineno + ")"; a.hidden = false; }
+    });
+  </script>
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/lonceng.js"></script>
+  <script src="../assets/js/avatar-profil.js"></script>
+  <script src="../assets/js/guard.js"></script>
+  <script src="../assets/js/produk.js"></script>
+</body>
+</html>

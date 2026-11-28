@@ -1,196 +1,344 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SelaSI | Sistem Informasi Budidaya Selada</title>
+  <title>SelaSI | Selada Hidroponik Segar dari Kebun Jember</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root { --forest:#2f5230; --deep:#1f3a22; --mid:#3f7a35; --leaf:#8fbf4d; --lime:#dde8b0; --cream:#f7f9e4; }
-    * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-    body { margin: 0; font-family: "Poppins", system-ui, sans-serif; color: var(--deep); background: var(--cream); }
-    a { color: inherit; }
-    :focus-visible { outline: 3px solid var(--leaf); outline-offset: 3px; }
-
-    /* ===== Hero layar penuh: panel hijau bergelombang + foto ===== */
-    .stage { position: relative; min-height: 100vh; min-height: max(100dvh, 600px); display: flex; flex-direction: column; background: var(--deep); }
-    .nav { position: absolute; z-index: 5; top: 0; left: 0; display: flex; align-items: center; gap: 64px; padding: 28px 5vw; }
-    .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #fff; font-weight: 600; font-size: 1.35rem; letter-spacing: .04em; }
-    .logo svg { width: 32px; height: 32px; color: #dff0a8; }
-    .logo b { font-weight: 600; } .logo b span { color: #dff0a8; }
-    .links { display: flex; gap: 30px; }
-    .links a { text-decoration: none; color: #fff; font-size: .9rem; font-weight: 500; padding: 4px 0; border-bottom: 2px solid transparent; }
-    .links a:hover { border-bottom-color: #dff0a8; }
-
-    .hero { position: relative; flex: 1; min-height: 560px; }
-    .photo { position: absolute; top: 0; right: 0; bottom: 0; width: 72%; background: url("assets/img/selada2.jpeg") center 58% / cover no-repeat, var(--forest); }
-    .panel { position: absolute; top: 0; left: 0; bottom: 0; width: 66%; display: flex; align-items: center; overflow: hidden; }
-    .panel .wave { position: absolute; inset: 0; width: 100%; height: 100%; }
-    .panel .leaves { position: absolute; left: 0; bottom: 0; width: 190px; height: 190px; opacity: .9; }
-    .copy { position: relative; z-index: 1; padding: 50px 0 0 5vw; max-width: 40vw; }
-    .eyebrow { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 18px; font-size: .78rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: #cfe3a8; }
-    .eyebrow svg { width: 18px; height: 18px; color: var(--leaf); }
-    h1 { margin: 0 0 16px; font-size: clamp(1.9rem, 3.3vw, 3rem); line-height: 1.12; color: #fff; }
-    h1 em { font-style: normal; color: #dff0a8; }
-    .lead { margin: 0 0 28px; font-size: .96rem; line-height: 1.7; color: #d6e7b3; }
-    .btn { display: inline-block; padding: 13px 32px; border-radius: 999px; font: inherit; font-weight: 600; font-size: .92rem; text-decoration: none; cursor: pointer; transition: filter .15s, background .15s; }
-    .btn-gold { background: #e0b23a; color: var(--deep); box-shadow: 0 10px 20px rgba(0,0,0,.25); }
-    .btn-gold:hover { filter: brightness(1.08); }
-    .btn-main { background: linear-gradient(90deg, var(--forest), var(--mid)); color: #fff; box-shadow: 0 10px 20px rgba(47,82,48,.35); }
-    .btn-main:hover { filter: brightness(1.12); }
-
-    /* ===== Bagian bawah ===== */
-    section.block { padding: 84px 8vw; }
-    .sec-eyebrow { display: block; margin-bottom: 8px; font-size: .78rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--mid); }
-    h2 { margin: 0 0 14px; font-size: clamp(1.5rem, 2.6vw, 2.1rem); color: var(--forest); }
-    .sec-lead { max-width: 60ch; margin: 0 0 40px; line-height: 1.75; color: #4a6638; }
-
-    .about { display: grid; grid-template-columns: 1.2fr 1fr; gap: 48px; align-items: center; }
-    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-    .stat { padding: 22px; border-radius: 20px; background: #fff; border: 1px solid #e3ebc6; }
-    .stat b { display: block; font-size: 2rem; color: var(--forest); line-height: 1.1; }
-    .stat span { font-size: .84rem; color: #5d7549; }
-    .stat:nth-child(2) { background: var(--forest); border-color: var(--forest); }
-    .stat:nth-child(2) b { color: #dff0a8; }
-    .stat:nth-child(2) span { color: #cfe3a8; }
-
-    .features { background: #fff; border-radius: 40px 40px 0 0; }
-    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
-    .card { padding: 26px; border-radius: 22px; background: var(--cream); border: 1px solid #e3ebc6; transition: transform .2s, box-shadow .2s; }
-    .card:hover { transform: translateY(-4px); box-shadow: 0 16px 30px rgba(47,82,48,.14); }
-    .card .ic { width: 52px; height: 52px; margin-bottom: 16px; border-radius: 16px; background: var(--forest); color: #dff0a8; display: grid; place-items: center; }
-    .card .ic svg { width: 26px; height: 26px; }
-    .card h3 { margin: 0 0 8px; font-size: 1.05rem; color: var(--forest); }
-    .card p { margin: 0; font-size: .88rem; line-height: 1.65; color: #4a6638; }
-
-    .timeline { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; position: relative; }
-    .timeline::before { content: ""; position: absolute; left: 8%; right: 8%; top: 28px; height: 4px; border-radius: 4px; background: linear-gradient(90deg, #8fbf4d, #3f7a35, #2f5230, #e0a526); }
-    .step { position: relative; text-align: center; }
-    .step .dot { position: relative; z-index: 1; width: 60px; height: 60px; margin: 0 auto 16px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 1.1rem; color: #fff; border: 5px solid var(--cream); }
-    .step:nth-child(1) .dot { background: #8fbf4d; } .step:nth-child(2) .dot { background: #3f9d6a; }
-    .step:nth-child(3) .dot { background: #2f6f3e; } .step:nth-child(4) .dot { background: #e0a526; }
-    .step h3 { margin: 0 0 4px; font-size: 1.02rem; color: var(--forest); }
-    .step p { margin: 0; font-size: .84rem; color: #5d7549; }
-
-    .final { margin: 0 8vw 70px; padding: 54px 40px; border-radius: 32px; text-align: center; color: #fff;
-      background: linear-gradient(135deg, var(--deep), var(--mid)); position: relative; overflow: hidden; }
-    .final h2 { color: #fff; }
-    .final p { margin: 0 auto 26px; max-width: 48ch; color: #e1efc2; line-height: 1.7; }
-    .final .btn-main { background: var(--lime); color: var(--deep); box-shadow: 0 10px 20px rgba(0,0,0,.25); }
-    footer { padding: 0 8vw 34px; text-align: center; font-size: .82rem; color: #6b7f55; }
-
-    /* ===== Layar kecil ===== */
-    @media (max-width: 900px) {
-      .links { display: none; }
-      .nav { padding: 16px 22px; }
-      .logo { text-shadow: 0 2px 10px rgba(0,0,0,.55); }
-      .hero { display: flex; flex-direction: column; min-height: 0; }
-      .photo { position: relative; width: 100%; height: 280px; }
-      .panel { position: relative; width: 100%; margin-top: -28px; padding: 36px 24px 40px; background: var(--deep); border-radius: 28px 28px 0 0; }
-      .panel .wave, .panel .leaves { display: none; }
-      .copy { padding: 0; max-width: none; }
-      .about { grid-template-columns: 1fr; }
-      .timeline { grid-template-columns: 1fr 1fr; row-gap: 30px; }
-      .timeline::before { display: none; }
-    }
-    @media (max-width: 760px) {
-      section.block { padding: 60px 22px; }
-      .final { margin: 0 14px 50px; padding: 40px 22px; }
-    }
-    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .card { transition: none; } }
-  </style>
+  <link rel="stylesheet" href="assets/css/landing.css">
 </head>
-<body>
-  <header class="stage" id="beranda">
-    <nav class="nav" aria-label="Menu utama">
-      <a class="logo" href="#beranda" aria-label="SelaSI, halaman utama">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-9"/><path d="M12 13c0-4 3-6 7-6 0 4-3 6-7 6z"/><path d="M12 16c0-3-2-5-6-5 0 3 2 5 6 5z"/></svg>
-        <b>Sela<span>SI</span></b>
-      </a>
-      <div class="links">
-        <a href="#beranda">Beranda</a>
-        <a href="#tentang">Tentang</a>
-        <a href="#fitur">Fitur</a>
-        <a href="#fase">Fase Tanam</a>
-      </div>
-    </nav>
 
-    <div class="hero">
-      <div class="photo" role="img" aria-label="Kebun selada hidroponik"></div>
-      <div class="panel">
-        <svg class="wave" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-          <path fill="#1f3a22" d="M0 0 H80 C88 16 72 36 77 56 C81 74 88 88 83 100 H0 Z"/>
-          <path fill="none" stroke="#8fbf4d" stroke-width="2" opacity=".4" vector-effect="non-scaling-stroke" d="M80 0 C88 16 72 36 77 56 C81 74 88 88 83 100"/>
-        </svg>
-        <svg class="leaves" viewBox="0 0 200 200" aria-hidden="true">
-          <path d="M30 195C18 135 50 82 112 60c8 60-24 110-82 135z" fill="#3f7a35"/>
-          <path d="M62 198c8-56 48-88 110-88 0 50-40 80-110 88z" fill="#8fbf4d" opacity=".85"/>
-        </svg>
-        <div class="copy">
-          <span class="eyebrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-9"/><path d="M12 13c0-4 3-6 7-6 0 4-3 6-7 6z"/><path d="M12 16c0-3-2-5-6-5 0 3 2 5 6 5z"/></svg> Budidaya selada hidroponik</span>
-          <h1>Kebun selada, <em>rapi</em> dalam satu layar.</h1>
-          <p class="lead">Catat setiap batch, pantau fase tanam, dan dapatkan pengingat saat waktunya pindah fase atau panen.</p>
-          <a class="btn btn-gold" href="html/login.html">Login &rarr;</a>
-        </div>
+<body>
+  <nav class="nav" aria-label="Menu utama">
+    <a class="logo" href="#beranda" aria-label="SelaSI, halaman utama">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+        stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 21v-9" />
+        <path d="M12 13c0-4 3-6 7-6 0 4-3 6-7 6z" />
+        <path d="M12 16c0-3-2-5-6-5 0 3 2 5 6 5z" />
+      </svg>
+      <span class="logo-text">Sela<span>SI</span></span>
+    </a>
+    <div class="links">
+      <a href="#beranda">Beranda</a><a href="#keunggulan">Keunggulan</a><a href="#cara-pesan">Cara Pesan</a><a
+        href="#kebun">Kebun</a><a href="#ulasan">Ulasan</a>
+    </div>
+    <div class="actions">
+      <a class="btn btn-line btn-sm hide-sm" href="html/register.html">Daftar</a>
+      <a class="btn btn-main btn-sm" href="html/login-pembeli.html">Login</a>
+    </div>
+  </nav>
+
+  <header class="hero" id="beranda">
+
+    <div class="copy">
+      <span class="eyebrow">🥬 Selada hidroponik Jember</span>
+      <h1 aria-label="Sudah makan sayur hijau hari ini?"><span class="w" style="--i:0">Sudah</span> <span class="w"
+          style="--i:1">makan</span> <span class="w" style="--i:2">sayur</span> <em class="w hl"
+          style="--i:3">hijau</em> <span class="w" style="--i:4">hari</span> <span class="w" style="--i:5">ini?</span>
+      </h1>
+      <p class="lead">Kalau belum, SelaSI siap membantu. Pesannya mudah dan statusnya bisa kamu pantau sendiri.</p>
+      <div class="cta">
+        <a class="btn btn-main" href="html/register.html">Daftar sebagai Pembeli</a>
+        <a class="btn btn-line" href="#cara-pesan">Lihat cara pesan</a>
       </div>
     </div>
+
   </header>
 
   <main>
-    <section class="block" id="tentang">
-      <div class="about">
-        <div>
-          <span class="sec-eyebrow">Tentang SelaSI</span>
-          <h2>Dari semai sampai panen, semuanya tercatat.</h2>
-          <p class="sec-lead" style="margin-bottom:0">SelaSI adalah sistem informasi untuk pembudidaya selada hidroponik. Setiap batch punya catatan sendiri: kapan ditanam, sedang di fase apa, bagaimana kondisinya, hingga berapa hasil panennya. Tidak ada lagi catatan yang tercecer.</p>
-        </div>
-        <div class="stats">
-          <div class="stat"><b>4</b><span>Fase tanam yang dipantau</span></div>
-          <div class="stat"><b>1</b><span>Tempat untuk semua batch</span></div>
-          <div class="stat"><b>Otomatis</b><span>Pengingat pindah fase</span></div>
-          <div class="stat"><b>Harian</b><span>To-do kegiatan kebun</span></div>
-        </div>
-      </div>
-    </section>
-
-    <section class="block features" id="fitur">
-      <span class="sec-eyebrow">Fitur</span>
-      <h2>Yang bisa kamu lakukan</h2>
-      <p class="sec-lead">Fitur dibuat sederhana, sesuai kebutuhan sehari-hari di kebun.</p>
+    <section class="block why" id="keunggulan">
+      <span class="tag reveal">Kenapa SelaSI</span>
+      <h2 class="reveal">Selada yang jelas asal-usulnya</h2>
+      <p class="sec-lead reveal">Kamu membeli dari kebun yang mencatat setiap batch tanamnya, dari semai sampai panen.
+      </p>
       <div class="cards">
-        <article class="card"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-9"/><path d="M12 13c0-4 3-6 7-6 0 4-3 6-7 6z"/><path d="M12 16c0-3-2-5-6-5 0 3 2 5 6 5z"/></svg></div>
-          <h3>Data budidaya</h3><p>Catat batch lengkap dengan tanggal tanam, jumlah, lokasi, pH, serta kondisi tanaman, air, dan instalasi.</p></article>
-        <article class="card"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
-          <h3>Fase dan pengingat</h3><p>Lihat riwayat perpindahan fase dan dapatkan pengingat saat batch mendekati waktu pindah fase.</p></article>
-        <article class="card"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20h14"/><path d="M7 20V10M12 20V4M17 20v-7"/></svg></div>
-          <h3>Catatan panen</h3><p>Simpan jumlah, berat, dan kualitas panen. Status batch ikut berubah saat semua tanaman sudah dipanen.</p></article>
-        <article class="card"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg></div>
-          <h3>To-do harian</h3><p>Susun kegiatan kebun per hari, kaitkan dengan batch, lalu centang kalau sudah selesai.</p></article>
+        <article class="card reveal">
+          <div class="ic">🥬</div>
+          <h3>Segar dari kebun</h3>
+          <p>Dipanen dari batch yang sudah siap panen, bukan stok lama.</p>
+        </article>
+        <article class="card reveal">
+          <div class="ic">💧</div>
+          <h3>Ditanam hidroponik</h3>
+          <p>Tumbuh dengan sistem air bernutrisi, bersih dan terkontrol.</p>
+        </article>
+        <article class="card reveal">
+          <div class="ic">📋</div>
+          <h3>Terpantau tiap fase</h3>
+          <p>Pembudidaya mencatat fase tanam sehingga kualitas lebih terjaga.</p>
+        </article>
+        <article class="card reveal">
+          <div class="ic">📱</div>
+          <h3>Pesan dari mana saja</h3>
+          <p>Buat pesanan dan lihat riwayatnya kapan pun lewat akunmu.</p>
+        </article>
       </div>
     </section>
 
-    <section class="block" id="fase" style="background:var(--cream)">
-      <span class="sec-eyebrow">Fase tanam</span>
-      <h2>Perjalanan satu batch</h2>
-      <p class="sec-lead">Empat fase yang dilalui setiap batch selada. Lamanya adalah perkiraan yang dipakai sistem untuk pengingat.</p>
-      <div class="timeline">
-        <div class="step"><div class="dot">1</div><h3>Semai</h3><p>sekitar 7 hari</p></div>
-        <div class="step"><div class="dot">2</div><h3>Pembibitan</h3><p>sekitar 14 hari</p></div>
-        <div class="step"><div class="dot">3</div><h3>Pembesaran</h3><p>sekitar 21 hari</p></div>
-        <div class="step"><div class="dot">4</div><h3>Panen</h3><p>sekitar 7 hari</p></div>
+    <section class="block" id="cara-pesan">
+      <span class="tag reveal">Cara pesan</span>
+      <h2 class="reveal">Empat langkah, selesai</h2>
+      <p class="sec-lead reveal">Dari daftar akun sampai selada sampai di tanganmu.</p>
+      <div class="steps">
+        <div class="step reveal">
+          <div class="dot">1</div>
+          <h3>Daftar</h3>
+          <p>Buat akun Pembeli dengan email dan nomor telepon.</p>
+        </div>
+        <div class="step reveal">
+          <div class="dot">2</div>
+          <h3>Pilih produk</h3>
+          <p>Lihat katalog selada yang tersedia.</p>
+        </div>
+        <div class="step reveal">
+          <div class="dot">3</div>
+          <h3>Buat pesanan</h3>
+          <p>Tentukan jumlah, lalu kirim pesananmu.</p>
+        </div>
+        <div class="step reveal">
+          <div class="dot">4</div>
+          <h3>Terima selada</h3>
+          <p>Pantau status sampai pesananmu diterima.</p>
+        </div>
       </div>
     </section>
 
-    <section class="final" aria-labelledby="h-final">
-      <h2 id="h-final">Siap merapikan kebunmu?</h2>
-      <p>Masuk dengan akun pembudidaya dan mulai catat batch pertamamu.</p>
-      <a class="btn btn-main" href="html/login.html">Login</a>
+    <section class="farm reveal" id="kebun" aria-labelledby="h-kebun">
+      <div class="farm-head">
+        <span class="tag">Dari mana asalnya</span>
+        <h2 id="h-kebun">Kebun Sepasang Petani</h2>
+        <p class="sec-lead">Selada kami tumbuh melalui empat fase sebelum sampai ke kamu.</p>
+      </div>
+
+      <ol class="phases" aria-label="Empat fase tanam">
+        <li><i>🌱</i><b>Semai</b><small>± 7 hari</small></li>
+        <li><i>🪴</i><b>Peremajaan</b><small>± 14 hari</small></li>
+        <li><i>🥬</i><b>Pendewasaan</b><small>± 21 hari</small></li>
+        <li><i>🧺</i><b>Panen</b><small>± 7 hari</small></li>
+      </ol>
+    </section>
+
+    <!-- Ulasan pembeli: kartu geser ke samping. Tersembunyi sampai ada ulasan dari API. -->
+    <section class="reviews reveal" id="ulasan" aria-labelledby="h-ulasan" hidden>
+      <div class="reviews-head">
+        <span class="tag">Kata pembeli</span>
+        <h2 id="h-ulasan">Ulasan dari pembeli SelaSI</h2>
+        <p class="sec-lead">Geser ke samping untuk membaca pengalaman pembeli lainnya.</p>
+      </div>
+      <div class="rv-wrap">
+        <button type="button" class="rv-nav" id="rv-prev" aria-label="Ulasan sebelumnya">&#8249;</button>
+        <div class="rv-track" id="rv-track" tabindex="0" role="region" aria-label="Daftar ulasan pembeli"></div>
+        <button type="button" class="rv-nav" id="rv-next" aria-label="Ulasan berikutnya">&#8250;</button>
+      </div>
+    </section>
+
+    <section class="grower reveal" aria-labelledby="h-grower">
+      <div class="grower-copy">
+        <span class="tag">Untuk Pembudidaya</span>
+        <h2 id="h-grower">Ingin mengelola budidaya?</h2>
+        <p>Pembudidaya bisa mencatat batch, memantau fase tanam, mencatat panen, dan menerima pesanan lewat SelaSI.</p>
+        <ul class="gchips">
+          <li>📋 Catat batch</li>
+          <li>⏱️ Pantau fase</li>
+          <li>🧺 Catat panen</li>
+          <li>📦 Terima pesanan</li>
+        </ul>
+        <a class="btn" href="html/login-pembeli.html">Login</a>
+      </div>
     </section>
   </main>
 
-  <footer>SelaSI &middot; Sistem informasi budidaya selada</footer>
+  <footer class="foot">
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <a class="logo" href="#beranda" aria-label="SelaSI, kembali ke atas">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 21v-9" />
+            <path d="M12 13c0-4 3-6 7-6 0 4-3 6-7 6z" />
+            <path d="M12 16c0-3-2-5-6-5 0 3 2 5 6 5z" />
+          </svg>
+          <span class="logo-text">Sela<span>SI</span></span>
+        </a>
+        <p>Selada hidroponik segar dari Kebun Sepasang Petani, Jember.</p>
+      </div>
+      <nav aria-label="Jelajahi">
+        <h3>Jelajahi</h3><a href="#beranda">Beranda</a><a href="#keunggulan">Keunggulan</a><a href="#cara-pesan">Cara
+          Pesan</a><a href="#kebun">Kebun</a><a href="#ulasan">Ulasan</a>
+      </nav>
+      <nav aria-label="Akun">
+        <h3>Akun</h3><a href="html/register.html">Daftar Pembeli</a><a href="html/login-pembeli.html">Login</a>
+      </nav>
+    </div>
+    <div class="foot-bar"><span>&copy; 2026 SelaSI. Sistem informasi budidaya selada.</span></div>
+  </footer>
+
+  <!-- config.js hanya dibaca untuk API_BASE_URL (alamat BE). Tidak ada yang diubah di file itu. -->
+  <script src="assets/js/config.js"></script>
+  <script>
+    // Menu Login: tutup saat klik di luar atau tekan Esc
+    document.addEventListener("click", function (e) {
+      document.querySelectorAll("details.menu[open]").forEach(function (d) { if (!d.contains(e.target)) d.removeAttribute("open"); });
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") document.querySelectorAll("details.menu[open]").forEach(function (d) { d.removeAttribute("open"); });
+    });
+    // Efek kursor: daun kecil di jejak gerakan
+    (function () {
+      if (window.matchMedia("(hover:none),(pointer:coarse),(prefers-reduced-motion:reduce)").matches) return;
+      var lx = -999, ly = -999;
+      var cols = ["#4f772d", "#90a955", "#b6c95a"];
+      var leaf = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 20C4 9 10 4 20 4c0 10-5 16-16 16z"/></svg>';
+      document.addEventListener("mousemove", function (e) {
+        var dx = e.clientX - lx, dy = e.clientY - ly;
+        if (dx * dx + dy * dy < 2200) return;
+        lx = e.clientX; ly = e.clientY;
+        var p = document.createElement("span");
+        p.className = "cur-p"; p.innerHTML = leaf;
+        p.style.color = cols[Math.floor(Math.random() * cols.length)];
+        p.style.setProperty("--x", lx + "px"); p.style.setProperty("--y", ly + "px");
+        p.style.setProperty("--dx", (Math.random() * 40 - 20) + "px");
+        p.style.setProperty("--r", (Math.random() * 180 - 90) + "deg");
+        document.body.appendChild(p);
+        p.addEventListener("animationend", function () { p.remove(); });
+      });
+    })();
+    // Animasi muncul saat di-scroll
+    var io = "IntersectionObserver" in window ? new IntersectionObserver(function (es) {
+      es.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); } });
+    }, { threshold: .15 }) : null;
+    document.querySelectorAll(".reveal").forEach(function (el, i) {
+      el.style.animationDelay = (Array.prototype.indexOf.call(el.parentNode.children, el) % 6) * 110 + "ms";
+      io ? io.observe(el) : el.classList.add("in");
+    });
+
+    // Ulasan pembeli: ambil dari BE (endpoint publik), tampil sebagai kartu yang digeser ke samping.
+    // Kalau API gagal / belum ada ulasan, seksi ini tetap tersembunyi.
+    (function () {
+      var sec = document.getElementById("ulasan");
+      var track = document.getElementById("rv-track");
+      var prev = document.getElementById("rv-prev");
+      var next = document.getElementById("rv-next");
+      if (!sec || !track || typeof API_BASE_URL === "undefined") return;
+
+      // Ganti path ini kalau route BE untuk ulasan publik berbeda
+      var PATH = (typeof ENDPOINTS !== "undefined" && ENDPOINTS.ulasan) ? ENDPOINTS.ulasan : "/ulasan";
+
+      function pick() {
+        for (var i = 0; i < arguments.length; i++) {
+          var v = arguments[i];
+          if (v !== undefined && v !== null && String(v).trim() !== "") return v;
+        }
+        return "";
+      }
+
+      function kartu(u) {
+        var rating = Math.max(0, Math.min(5, Math.round(Number(pick(u.rating, u.bintang, u.nilai)) || 0)));
+        var teks = String(pick(u.komentar, u.ulasan, u.teks_ulasan, u.teks, u.isi_ulasan, u.review));
+        var nama = String(pick(
+          u.nama_pembeli, u.nama,
+          u.pembeli && (u.pembeli.nama || u.pembeli.name),
+          u.user && (u.user.nama || u.user.name),
+          "Pembeli SelaSI"
+        ));
+        var produk = String(pick(u.nama_produk, u.produk && (u.produk.nama || u.produk.nama_produk), ""));
+        var tglRaw = pick(u.tanggal, u.created_at, u.tanggal_ulasan);
+        var tgl = "";
+        if (tglRaw) {
+          var d = new Date(tglRaw);
+          if (!isNaN(d)) tgl = d.toLocaleDateString("id-ID", { dateStyle: "medium" });
+        }
+
+        var card = document.createElement("article");
+        card.className = "rv-card";
+
+        var top = document.createElement("div");
+        top.className = "rv-top";
+        var av = document.createElement("span");
+        av.className = "rv-av";
+        av.setAttribute("aria-hidden", "true");
+        av.textContent = nama.trim().charAt(0).toUpperCase() || "S";
+        var who = document.createElement("div");
+        var b = document.createElement("b");
+        b.textContent = nama;
+        who.appendChild(b);
+        if (produk) {
+          var sm = document.createElement("small");
+          sm.textContent = produk;
+          who.appendChild(sm);
+        }
+        top.append(av, who);
+
+        var stars = document.createElement("p");
+        stars.className = "rv-stars";
+        stars.setAttribute("aria-label", "Rating " + rating + " dari 5");
+        stars.textContent = "★".repeat(rating) + "☆".repeat(5 - rating);
+
+        var p = document.createElement("p");
+        p.className = "rv-text";
+        p.textContent = teks;
+
+        card.append(top, stars, p);
+        if (tgl) {
+          var t = document.createElement("span");
+          t.className = "rv-date";
+          t.textContent = tgl;
+          card.appendChild(t);
+        }
+        return card;
+      }
+
+      function updateNav() {
+        var max = track.scrollWidth - track.clientWidth;
+        var bisaGeser = max > 4;
+        prev.hidden = next.hidden = !bisaGeser;
+        prev.disabled = track.scrollLeft <= 4;
+        next.disabled = track.scrollLeft >= max - 4;
+      }
+
+      function geser(dir) {
+        var c = track.querySelector(".rv-card");
+        var lebar = (c ? c.offsetWidth : 300) + 18;
+        track.scrollBy({ left: dir * lebar, behavior: "smooth" });
+      }
+
+      async function muat() {
+        try {
+          var res = await fetch(API_BASE_URL + PATH + "?per_page=10", { headers: { Accept: "application/json" } });
+          if (!res.ok) return;
+          // buang teks peringatan PHP (kalau ada) sebelum JSON, sama seperti apiFetch
+          var raw = await res.text();
+          var awal = raw.search(/[\[{]/);
+          var json = JSON.parse(awal >= 0 ? raw.slice(awal) : raw);
+          var list = Array.isArray(json) ? json : (Array.isArray(json.data) ? json.data : ((json.data && json.data.data) || []));
+          list = list.filter(function (u) {
+            return String(pick(u.komentar, u.ulasan, u.teks_ulasan, u.teks, u.isi_ulasan, u.review)).trim() !== "";
+          }).slice(0, 10);
+          if (!list.length) return;
+          list.forEach(function (u) { track.appendChild(kartu(u)); });
+          sec.hidden = false;
+          updateNav();
+        } catch (e) {
+          console.warn("[ULASAN] Gagal memuat ulasan:", e);
+        }
+      }
+
+      prev.addEventListener("click", function () { geser(-1); });
+      next.addEventListener("click", function () { geser(1); });
+      track.addEventListener("scroll", updateNav, { passive: true });
+      window.addEventListener("resize", updateNav);
+      track.addEventListener("keydown", function (e) {
+        if (e.key === "ArrowRight") { e.preventDefault(); geser(1); }
+        if (e.key === "ArrowLeft") { e.preventDefault(); geser(-1); }
+      });
+
+      muat();
+    })();
+  </script>
 </body>
+
 </html>

@@ -1,33 +1,29 @@
 // ---------- Konstanta ----------
-const STATUS_LIST = ["Normal", "Perlu Diperhatikan", "Mendekati Perpindahan Fase", "Mendekati Panen", "Sudah Dipanen"];
 const STATUS_AKHIR = "Sudah Dipanen";
-const STATUS_CLASS = {
-  "Normal": "",
-  "Perlu Diperhatikan": "perlu",
-  "Mendekati Perpindahan Fase": "pindah",
-  "Mendekati Panen": "panen",
-  "Sudah Dipanen": "selesai",
-};
 
-// Fase master (akan diperbarui dari API kalau tersedia)
+// Fase master (ikon sama dengan bagian "Kebun" di landing page)
 const FASE = {
-  1: { nama: "Semai",       urutan: 1, warna: "#8fbf4d" },
-  2: { nama: "Peremajaan",  urutan: 2, warna: "#3f9d6a" },
-  3: { nama: "Pendewasaan", urutan: 3, warna: "#2f6f3e" },
-  4: { nama: "Panen",       urutan: 4, warna: "#e0a526" },
+  1: { nama: "Semai",       urutan: 1, ikon: "🌱" },
+  2: { nama: "Peremajaan",  urutan: 2, ikon: "🪴" },
+  3: { nama: "Pendewasaan", urutan: 3, ikon: "🥬" },
+  4: { nama: "Panen",       urutan: 4, ikon: "🧺" },
 };
 
-// Aturan status (sama dengan budidaya.js)
+// Aturan status (samakan dengan budidaya.js dan riwayat.js)
 const PH_MIN = 5.5, PH_MAX = 6.5;
 const BATAS_HARI_PINDAH = 2;
 const MS_HARI = 86400000;
 const toDate = (s) => new Date(s + "T00:00:00");
 const today = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
 const daysBetween = (s) => Math.max(0, Math.round((today() - toDate(s)) / MS_HARI));
-const addDays = (s, n) => { const d = toDate(s); d.setDate(d.getDate() + n); return d; };
 
-// Semai: 14 hari, Peremajaan: hari ke-15 s.d 21 (7 hari), Pendewasaan: hari ke-22 s.d panen (29 hari, panen 45-55 hari)
-const FASE_DURASI = { 1: 14, 2: 7, 3: 29, 4: 5 };
+// Umur tanaman (hari sejak tanam) saat fase berakhir
+const UMUR_SEMAI = 14;        // pindah di hari ke-15
+const UMUR_PEREMAJAAN = 21;   // pindah di hari ke-22
+// Pendewasaan sampai panen: 45-55 hari, nilai pastinya dari fitur AI
+const UMUR_PANEN_DEFAULT = 50, UMUR_PANEN_MIN = 45, UMUR_PANEN_MAX = 55;
+const umurPanen = (ai) => Math.min(UMUR_PANEN_MAX, Math.max(UMUR_PANEN_MIN, Number(ai) || UMUR_PANEN_DEFAULT));
+const batasUmur = (idFase, ai) => ({ 1: UMUR_SEMAI, 2: UMUR_PEREMAJAAN, 3: umurPanen(ai) })[idFase] ?? null;
 
 // ---------- Helper ----------
 const $ = (id) => document.getElementById(id);
@@ -42,28 +38,46 @@ function el(tag, className, text) {
 // ---------- Mapping data batch dari BE ----------
 // BE mengirim CultivationBatchResource dengan perpindahan_fase (PhaseHistoryResource[])
 function mapBatch(b) {
+  const tanam = b.tanggal_tanam || b.seed_date;
+  const hasPanen = Array.isArray(b.panen) && b.panen.length > 0;
+  const umurHari = tanam ? daysBetween(tanam) : 0;
+
+  // Fase otomatis sesuai umur dan panen
+  let idFase = 1;
+  if (hasPanen) {
+    idFase = 4; // Panen
+  } else if (umurHari <= UMUR_SEMAI) {
+    idFase = 1; // 0 - 14 hari: Semai
+  } else if (umurHari <= UMUR_PEREMAJAAN) {
+    idFase = 2; // 15 - 21 hari: Peremajaan
+  } else {
+    idFase = 3; // > 21 hari: Pendewasaan
+  }
+
+  // Jika ada perpindahan_fase tercatat lebih tinggi, gunakan yang lebih tinggi
   const faseArr = b.perpindahan_fase || [];
-  // Urutkan fase berdasarkan tanggal_mulai, ambil fase terakhir
   const sorted = [...faseArr].sort((a, c) => (a.tanggal_mulai || "").localeCompare(c.tanggal_mulai || ""));
   const terakhir = sorted[sorted.length - 1];
-  const idFase = terakhir ? terakhir.id_fase : (b.fase_saat_ini?.id_fase || 1);
+  if (!hasPanen && terakhir && terakhir.id_fase > idFase) {
+    idFase = terakhir.id_fase;
+  }
+
   const info = FASE[idFase] || FASE[1];
 
   // Hitung status berdasarkan data
-  const hasPanen = Array.isArray(b.panen) && b.panen.length > 0;
   const ph = b.nilai_ph;
   const phDiLuar = ph !== null && ph !== undefined && ph !== "" && (Number(ph) < PH_MIN || Number(ph) > PH_MAX);
-  const durasi = FASE_DURASI[idFase] || 7;
-  const hariDiFase = terakhir ? daysBetween(terakhir.tanggal_mulai) : 0;
-  const bukanTerakhir = info.urutan < 4;
-  const sisaHari = Math.max(0, durasi - hariDiFase);
-  const faseNext = bukanTerakhir ? FASE[idFase + 1] : null;
 
   let status = "Normal";
-  if (hasPanen) status = "Sudah Dipanen";
-  else if (phDiLuar) status = "Perlu Diperhatikan";
-  else if (!faseNext) status = "Mendekati Panen";
-  else if (sisaHari <= BATAS_HARI_PINDAH) status = faseNext.urutan === 4 ? "Mendekati Panen" : "Mendekati Perpindahan Fase";
+  if (hasPanen) {
+    status = "Sudah Dipanen";
+  } else if (phDiLuar) {
+    status = "Perlu Diperhatikan";
+  } else if (idFase === 3 && umurHari >= 43) {
+    status = "Mendekati Panen";
+  } else if ((idFase === 1 && umurHari >= 12) || (idFase === 2 && umurHari >= 19)) {
+    status = "Mendekati Perpindahan Fase";
+  }
 
   return {
     id_budidaya: b.id_pengelolaan || b.id,
@@ -72,6 +86,7 @@ function mapBatch(b) {
     id_fase: idFase,
     nama_fase: info.nama,
     urutan_fase: info.urutan,
+    hasPanen,
   };
 }
 
@@ -90,88 +105,90 @@ async function fetchBatches() {
   return raw.map(mapBatch);
 }
 
-// ---------- State ----------
-let batches = [];
-let filter = { type: "aktif" };
-
-const aktif = () => batches.filter((b) => b.status !== STATUS_AKHIR);
-const jumlahFase = (id) => aktif().filter((b) => b.id_fase === id).length;
-const countStatus = (st) => batches.filter((b) => b.status === st).length;
-
-// ---------- Ringkasan (kartu yang bisa dipilih) ----------
-function pick(btn, type, value) {
-  btn.type = "button";
-  btn.setAttribute("aria-pressed", filter.type === type && filter.value === value ? "true" : "false");
-  btn.addEventListener("click", () => { filter = { type, value }; render(); });
+// [BARU] Jumlah pesanan: memakai endpoint yang sama dengan pesanan.js
+async function fetchJumlahPesanan() {
+  if (USE_MOCK) return 0;
+  const path = (typeof ENDPOINTS !== "undefined" && ENDPOINTS.pesanan) || "/cultivator/orders";
+  const res = await apiFetch(path + "?per_page=100");
+  if (!res) return null; // 401 -> sudah logout otomatis
+  if (!res.ok) throw new Error("Gagal mengambil data pesanan");
+  const json = await res.json();
+  const list = Array.isArray(json) ? json : (json.data?.data || json.data || []);
+  // Kalau BE memakai pagination, pakai total dari BE; kalau tidak, hitung isi daftar
+  const total = json.meta?.total ?? json.data?.total ?? json.total;
+  return Number(total ?? list.length);
 }
 
-function renderCards() {
-  // Jumlah batch aktif
-  const a = $("s-aktif");
-  a.replaceChildren(el("span", "sum-label", "Jumlah batch aktif"), el("span", "sum-num", String(aktif().length)));
-  a.removeAttribute("aria-pressed");
-  pick(a, "aktif");
+// [BARU] Produk dan stok: memakai endpoint yang sama dengan produk.js
+function mapProduk(p) {
+  return {
+    nama: p.nama_produk || p.name || "-",
+    stok: Number(p.jumlah_stok ?? p.stock ?? p.stok ?? 0),
+    satuan: p.satuan === "pcs" ? "pcs" : "kg", // kolom satuan menyusul dari BE; sementara semua dianggap kg
+  };
+}
+async function fetchProduk() {
+  if (USE_MOCK) {
+    try { return JSON.parse(localStorage.getItem("mock_produk") || "[]").map(mapProduk); }
+    catch (_) { return []; }
+  }
+  const path = (typeof ENDPOINTS !== "undefined" && ENDPOINTS.produk) || "/produk";
+  const res = await apiFetch(path + "?per_page=50");
+  if (!res) return [];
+  if (!res.ok) throw new Error("Gagal mengambil data produk");
+  const json = await res.json();
+  const items = Array.isArray(json.data) ? json.data : (json.data?.data || []);
+  return items.map(mapProduk);
+}
 
-  // Batch aktif per fase
+// ---------- State ----------
+let batches = [];
+
+const aktif = () => batches.filter((b) => b.status !== STATUS_AKHIR);
+const jumlahFase = (id) => {
+  if (id === 4) {
+    return batches.filter((b) => b.id_fase === 4 || b.hasPanen || b.status === STATUS_AKHIR).length;
+  }
+  return aktif().filter((b) => b.id_fase === id).length;
+};
+
+// ---------- Tampilan ----------
+const fmtAngka = (n, maxDesimal) => Number(n).toLocaleString("id-ID", { maximumFractionDigits: maxDesimal });
+const fmtStok = (p) => fmtAngka(p.stok, p.satuan === "pcs" ? 0 : 2) + " " + p.satuan;
+
+// ada = false -> data belum/tidak berhasil dimuat, tampilkan "-"
+function renderBatch(ada) {
+  $("s-batch").textContent = ada ? String(aktif().length) : "-";
+
   const jalur = $("jalur");
   jalur.replaceChildren();
   Object.entries(FASE).sort((x, y) => x[1].urutan - y[1].urutan).forEach(([id, f]) => {
-    const li = el("li", "step");
-    li.style.setProperty("--c", f.warna);
-    const btn = el("button", "step-btn");
-    btn.append(el("div", "dot", String(jumlahFase(Number(id)))), el("b", "", f.nama), el("span", "", jumlahFase(Number(id)) + " batch"));
-    pick(btn, "fase", Number(id));
-    li.appendChild(btn);
+    const n = ada ? jumlahFase(Number(id)) : null;
+    const li = el("li", "step" + (n > 0 ? " on" : ""));
+    const ikon = el("i", "", f.ikon);
+    ikon.setAttribute("aria-hidden", "true");
+    li.append(ikon, el("b", "", f.nama), el("span", "ct", (n === null ? "-" : n) + " batch"));
     jalur.appendChild(li);
   });
-
-  // Status budidaya
-  const chips = $("status-chips");
-  chips.replaceChildren();
-  STATUS_LIST.forEach((st) => {
-    const btn = el("button", "chip");
-    btn.append(el("b", "", String(countStatus(st))), document.createTextNode(st));
-    pick(btn, "status", st);
-    chips.appendChild(btn);
-  });
 }
 
-// ---------- Daftar batch ----------
-function currentList() {
-  if (filter.type === "fase") return aktif().filter((b) => b.id_fase === filter.value);
-  if (filter.type === "status") return batches.filter((b) => b.status === filter.value);
-  return aktif();
-}
-function currentTitle() {
-  if (filter.type === "fase") return "Batch aktif pada fase " + (FASE[filter.value]?.nama ?? "-");
-  if (filter.type === "status") return "Batch dengan status " + filter.value;
-  return "Semua batch aktif";
+function renderPesanan(n) {
+  $("s-pesanan").textContent = n === null || n === undefined || Number.isNaN(n) ? "-" : String(n);
 }
 
-function renderList() {
-  const list = currentList();
-  const tbody = $("tbody");
-  tbody.replaceChildren();
-  $("list-info").textContent = currentTitle() + " (" + list.length + ")";
-  $("empty").hidden = list.length > 0;
-
-  list.forEach((b) => {
+function renderStok(list, pesanKosong) {
+  const body = $("stok-body");
+  body.replaceChildren();
+  $("stok-table").hidden = list.length === 0;
+  const kosong = $("stok-empty");
+  kosong.hidden = list.length > 0;
+  kosong.textContent = pesanKosong || "Belum ada produk. Tambahkan lewat Manajemen Produk.";
+  list.forEach((p) => {
     const tr = el("tr");
-    tr.appendChild(el("td", "", b.kode_budidaya));
-    tr.appendChild(el("td", "", b.nama_fase));
-    const tdStatus = el("td");
-    tdStatus.appendChild(el("span", "badge " + (STATUS_CLASS[b.status] || ""), b.status));
-    tr.appendChild(tdStatus);
-    const tdAksi = el("td");
-    const a = el("a", "", "Lihat detail");
-    a.href = "budidaya.html?id=" + encodeURIComponent(b.id_budidaya);
-    tdAksi.appendChild(a);
-    tr.appendChild(tdAksi);
-    tbody.appendChild(tr);
+    tr.append(el("td", "", p.nama), el("td", "r", fmtStok(p)));
+    body.appendChild(tr);
   });
 }
-
-function render() { renderCards(); renderList(); }
 
 // ---------- Mulai ----------
 (async function init() {
@@ -181,11 +198,23 @@ function render() { renderCards(); renderList(); }
   } catch (_) {}
   $("btn-logout").addEventListener("click", logout);
 
-  try {
-    batches = await fetchBatches();
-    render();
-  } catch (err) {
+  renderBatch(false);
+
+  // Tiga data diambil bersamaan, dan kegagalan satu data tidak mengganggu yang lain
+  const [rBatch, rPesanan, rProduk] = await Promise.allSettled([fetchBatches(), fetchJumlahPesanan(), fetchProduk()]);
+
+  if (rBatch.status === "fulfilled") {
+    batches = rBatch.value;
+    renderBatch(true);
+  } else {
     showAlert("Data budidaya belum bisa dimuat. Coba muat ulang halaman.");
   }
+
+  if (rPesanan.status === "fulfilled") renderPesanan(rPesanan.value);
+  else { console.warn("[DASHBOARD] Jumlah pesanan gagal dimuat:", rPesanan.reason); renderPesanan(null); }
+
+  if (rProduk.status === "fulfilled") renderStok(rProduk.value);
+  else { console.warn("[DASHBOARD] Stok produk gagal dimuat:", rProduk.reason); renderStok([], "Data stok produk belum bisa dimuat."); }
+
   window.addEventListener("pageshow", (e) => { if (e.persisted) location.reload(); });
 })();

@@ -1,0 +1,194 @@
+// Halaman Checkout Pembeli: ringkasan pesanan, jadwal pengambilan (UC45), metode pembayaran (UC44), dan Buat Pesanan (UC43).
+// Memakai pembeli-cart.js dan pembeli-pesanan.js.
+
+const $ = (id) => document.getElementById(id);
+const K = Keranjang;
+const P = Pesanan;
+function el(tag, text, cls) {
+  const e = document.createElement(tag);
+  if (text !== undefined) e.textContent = text;
+  if (cls) e.className = cls;
+  return e;
+}
+
+// ---------- Jadwal pengambilan (UC45) ----------
+// Tanggal dan jam pengambilan ditentukan Pembudidaya pada produk (UC22). Pembeli memilih tanggal dulu, lalu jam yang tersedia pada tanggal itu.
+// SEMENTARA, hanya untuk uji coba: kalau produk dari backend belum mengirim jadwal pengambilan, dipakai jadwal contoh
+// (besok dan lusa, pukul 09.00 dan 14.00). Ubah ke false begitu backend sudah mengirim jadwal dari Pembudidaya.
+const PAKAI_JADWAL_UJI = true;
+const MSG_JADWAL = "Jadwal pengambilan yang dipilih belum tersedia. Pilih tanggal dan jam sesuai jadwal yang tersedia.";
+const MSG_BENTROK = "Produk di keranjangmu tidak memiliki tanggal dan jam pengambilan yang sama. Pisahkan pesanan per produk atau hubungi penjual.";
+const METODE = [
+  { nilai: "COD", judul: "COD", ket: "Bayar tunai saat mengambil pesanan" },
+  { nilai: "QRIS", judul: "QRIS", ket: "Bayar lewat QRIS" },
+];
+const IKON_DAUN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-9"/><path d="M12 13c0-4 3-6 7-6 0 4-3 6-7 6z"/><path d="M12 16c0-3-2-5-6-5 0 3 2 5 6 5z"/></svg>';
+
+const pilih = { tanggal: "", jam: "", metode: "" };
+
+// Produk yang dicentang di Halaman Keranjang. Kalau Checkout dibuka tanpa pilihan, semua isi keranjang dipakai.
+const KEY_PILIH = "keranjang_dipilih";
+let idDipilih = null;
+try { const s = JSON.parse(sessionStorage.getItem(KEY_PILIH)); if (Array.isArray(s)) idDipilih = s.map(String); } catch (_) {}
+const iso = (d) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+
+let jadwal = new Map(); // "YYYY-MM-DD" -> ["HH:MM", ...]
+const teksTanggal = (t) => new Date(t + "T00:00:00").toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+const teksJam = (j) => j.replace(":", ".");
+function opsi(sel, teks, nilai, pilihan) {
+  const o = el("option", teks); o.value = nilai;
+  if (pilihan) { o.selected = true; o.disabled = true; o.hidden = true; }
+  sel.appendChild(o);
+}
+
+// Kumpulkan jadwal dari produk di keranjang. Pembeli memilih satu tanggal dan jam untuk seluruh pesanan, jadi yang
+// ditawarkan hanya tanggal dan jam yang tersedia di SEMUA produk yang punya jadwal. Hasil: { peta, bentrok }.
+async function kumpulkanJadwal(items) {
+  await K.lengkapiItem(items); // melengkapi jadwal dari katalog kalau keranjang belum memuatnya
+  const hariIni = iso(new Date());
+  const perProduk = items
+    .map((it) => {
+      const m = new Map();
+      (it.jadwal || []).forEach((x) => { if (x.tanggal >= hariIni) m.set(x.tanggal, new Set(x.jam)); }); // hanya yang belum lewat
+      return m;
+    })
+    .filter((m, k) => m.size || (items[k].jadwal || []).length); // produk tanpa jadwal sama sekali tidak membatasi
+  let peta = new Map();
+  let bentrok = false;
+  if (perProduk.length) {
+    perProduk[0].forEach((jamSet, tgl) => {
+      let jam = new Set(jamSet);
+      for (const m of perProduk.slice(1)) {
+        const lain = m.get(tgl);
+        if (!lain) { jam = new Set(); break; }
+        jam = new Set([...jam].filter((x) => lain.has(x)));
+      }
+      if (jam.size) peta.set(tgl, jam);
+    });
+    bentrok = !peta.size;
+  }
+  if (!peta.size && !bentrok && PAKAI_JADWAL_UJI) {
+    [1, 2].forEach((n) => { const d = new Date(); d.setDate(d.getDate() + n); peta.set(iso(d), new Set(["09:00", "14:00"])); });
+  }
+  return { peta: new Map([...peta.entries()].sort().map(([t, js]) => [t, [...js].sort()])), bentrok };
+}
+
+function isiJadwal() {
+  const t = $("tanggal"), j = $("jam");
+  t.replaceChildren(); j.replaceChildren();
+  if (!jadwal.size) {
+    opsi(t, "Belum ada jadwal", "", true); opsi(j, "Belum ada jadwal", "", true);
+    t.disabled = true; j.disabled = true;
+    return;
+  }
+  opsi(t, "Pilih tanggal", "", true);
+  jadwal.forEach((_, tgl) => opsi(t, teksTanggal(tgl), tgl));
+  opsi(j, "Pilih jam", "", true);
+  j.disabled = true;
+  t.addEventListener("change", () => {
+    pilih.tanggal = t.value; pilih.jam = "";
+    j.replaceChildren(); j.disabled = false;
+    const daftarJam = jadwal.get(t.value) || [];
+    opsi(j, "Pilih jam", "", true);
+    daftarJam.forEach((x) => opsi(j, teksJam(x), x));
+    if (daftarJam.length === 1) { j.value = daftarJam[0]; pilih.jam = daftarJam[0]; }
+  });
+  j.addEventListener("change", () => (pilih.jam = j.value));
+}
+
+function isiMetode() {
+  $("metode").replaceChildren(...METODE.map((m) => {
+    const lb = el("label", undefined, "opt");
+    const r = el("input"); r.type = "radio"; r.name = "metode"; r.value = m.nilai;
+    r.addEventListener("change", () => (pilih.metode = m.nilai));
+    const s = el("span", m.judul);
+    s.appendChild(el("small", m.ket));
+    lb.append(r, s);
+    return lb;
+  }));
+}
+
+function isiLokasi() {
+  if (typeof FARM_LOCATION === "undefined") return;
+  const f = FARM_LOCATION;
+  $("lokasi-nama").textContent = "Lokasi pengambilan: " + f.nama;
+  $("lokasi-alamat").textContent = f.alamat;
+  // Menekan alamat membuka lokasi di Google Maps
+  const kueri = f.latitude != null && f.longitude != null ? f.latitude + "," + f.longitude : f.plusCode || f.alamat;
+  $("lokasi").href = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(kueri);
+  $("lokasi").hidden = false;
+}
+
+function isiRingkasan(items) {
+  $("ringkas").replaceChildren(...items.map((it) => {
+    const row = el("div", undefined, "sum-item");
+    const foto = el("div", undefined, "cart-foto");
+    const pasang = () => { foto.replaceChildren(); const k = el("div", undefined, "kosong"); k.innerHTML = IKON_DAUN; foto.appendChild(k); };
+    const url = K.fotoUrl(it.foto);
+    if (url) { const img = el("img"); img.src = url; img.alt = it.nama; img.addEventListener("error", pasang); foto.appendChild(img); } else pasang();
+    const info = el("div");
+    info.append(el("h3", it.nama), el("p", K.rupiah(it.harga) + " x " + K.angka(it.jumlah) + " " + it.satuan));
+    row.append(foto, info, el("div", K.rupiah(it.harga * it.jumlah), "cart-sub"));
+    return row;
+  }));
+  $("total").textContent = K.rupiah(items.reduce((s, it) => s + it.harga * it.jumlah, 0));
+}
+
+let sedangBuat = false;
+let itemDipilih = [];
+$("btn-buat").addEventListener("click", async () => {
+  if (sedangBuat) return;
+  if (!pilih.tanggal || !pilih.jam || !pilih.metode) { K.toast(P.MSG.dataTidakLengkap, "error"); return; }
+  if (!(jadwal.get(pilih.tanggal) || []).includes(pilih.jam)) { K.toast(MSG_JADWAL, "error"); return; }
+  sedangBuat = true;
+  $("btn-buat").disabled = true;
+  let berhasil = false;
+  try {
+    const payload = { metode_pembayaran: pilih.metode, tanggal_pengambilan: pilih.tanggal, jam_pengambilan: pilih.jam };
+    // Produk yang dicentang di keranjang (BE perlu memakai daftar ini supaya hanya produk terpilih yang dipesan)
+    if (idDipilih) payload.id_item_keranjang = itemDipilih.map((it) => it.id);
+    const r = await P.checkout(payload);
+    if (!r.ok) { if (r.pesan) K.toast(r.pesan, "error"); return; }
+    berhasil = true;
+    try { sessionStorage.removeItem(KEY_PILIH); } catch (_) {}
+    K.toast(r.pesan, "success");
+    K.segarkanBadge();
+    setTimeout(() => { location.href = r.id ? "detail-pesanan-pembeli.html?id=" + encodeURIComponent(r.id) : "pesanan-pembeli.html"; }, 1300);
+  } catch (err) {
+    K.toast(P.MSG.server, "error");
+  } finally {
+    if (!berhasil) { sedangBuat = false; $("btn-buat").disabled = false; }
+  }
+});
+
+(async function init() {
+  if (K.LOKAL) {
+    // Keranjang masih di browser, sedangkan checkout membaca keranjang di backend
+    const a = $("alert");
+    a.textContent = 'Checkout memakai keranjang di backend. Tambahkan  keranjang: "/keranjang"  di ENDPOINTS pada config.js.';
+    a.hidden = false;
+    return;
+  }
+  try {
+    let items = await K.daftar();
+    if (idDipilih) items = items.filter((it) => idDipilih.includes(String(it.id)));
+    if (!items.length) { $("kosong").hidden = false; return; }
+    itemDipilih = items;
+    isiRingkasan(items);
+    const hasil = await kumpulkanJadwal(items);
+    jadwal = hasil.peta;
+    isiJadwal();
+    if (hasil.bentrok) {
+      const h = $("jadwal-info");
+      h.textContent = MSG_BENTROK;
+      h.hidden = false;
+    }
+    isiMetode();
+    isiLokasi();
+    $("form").hidden = false;
+  } catch (err) {
+    const a = $("alert");
+    a.textContent = "Halaman checkout belum bisa dimuat (" + err.message + "). Coba muat ulang halaman.";
+    a.hidden = false;
+  }
+})();

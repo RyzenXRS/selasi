@@ -25,23 +25,24 @@ class PrediksiController extends Controller
         $prediksi = PrediksiPanen::where('id_pengelolaan', $batch->id_pengelolaan)->latest()->first();
 
         if (!$prediksi) {
-            // Kalkulasi cerdas berbasis umur tanam selada hidroponik (siklus 45-55 hari)
+            // Kalkulasi cerdas berbasis umur tanam selada hidroponik (siklus panen 45-55 hari, menyesuaikan pasar)
             $hariTanam = Carbon::parse($batch->tanggal_tanam)->diffInDays(Carbon::now());
-            $targetHari = 48; // Umur panen ideal 45-55 hari
-            $sisaHari = max(0, $targetHari - $hariTanam);
+            $umurPanenMin = 45;
+            $umurPanenMax = 55;
+            $umurMendekati = 38;
 
             $statusKesiapan = PrediksiPanen::STATUS_BELUM_SIAP;
-            if ($hariTanam >= 45) {
+            if ($hariTanam >= $umurPanenMin) {
                 $statusKesiapan = PrediksiPanen::STATUS_SIAP;
-            } elseif ($hariTanam >= 38) {
+            } elseif ($hariTanam >= $umurMendekati) {
                 $statusKesiapan = PrediksiPanen::STATUS_MENDEKATI_SIAP;
             }
 
             $prediksi = PrediksiPanen::create([
                 'id_pengelolaan'            => $batch->id_pengelolaan,
                 'status_kesiapan'           => $statusKesiapan,
-                'perkiraan_tanggal_mulai'   => Carbon::parse($batch->tanggal_tanam)->addDays(45)->toDateString(),
-                'perkiraan_tanggal_selesai' => Carbon::parse($batch->tanggal_tanam)->addDays(55)->toDateString(),
+                'perkiraan_tanggal_mulai'   => Carbon::parse($batch->tanggal_tanam)->addDays($umurPanenMin)->toDateString(),
+                'perkiraan_tanggal_selesai' => Carbon::parse($batch->tanggal_tanam)->addDays($umurPanenMax)->toDateString(),
                 'nilai_prediksi'            => round($batch->jumlah_tanaman * 0.20, 2), // ~200g per tanaman
                 'created_at'                => Carbon::now(),
             ]);

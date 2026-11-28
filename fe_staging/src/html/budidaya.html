@@ -8,53 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../assets/css/dashboard.css">
-  <style>
-    [hidden]{display:none!important}
-    .alert{padding:12px 16px;border-radius:12px;margin:0 0 16px;background:#fde8e3;color:#b3321b;font-size:.92rem;line-height:1.5}
-    .alert.success{background:#e3f3d2;color:#25611f}
-    .list-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}
-    .list-info{margin:0;color:#4d6a3a;font-weight:500}
-    .btn{display:inline-block;position:relative;z-index:1;padding:10px 20px;border:0;border-radius:999px;background:#2f5230;color:#fff;font:inherit;font-weight:600;font-size:.92rem;cursor:pointer}
-    .btn:hover{background:#1f3a22}
-    .btn-danger{background:#b3321b}.btn-danger:hover{background:#8f2814}
-    .btn-ghost{background:transparent;color:#2f5230;box-shadow:inset 0 0 0 2px #2f5230}.btn-ghost:hover{background:#dde8b0}
-    .btn:disabled{opacity:.5;cursor:not-allowed}
-    .btn:focus-visible,.link-kode:focus-visible{outline:3px solid #8fbf4d;outline-offset:2px}
-    .table-wrap{background:#fff;border:1px solid #e3ebc6;border-radius:18px;overflow-x:auto}
-    table{width:100%;border-collapse:collapse;font-size:.92rem}
-    th,td{padding:14px 18px;text-align:left;border-bottom:1px solid #eef3d8}
-    th{background:#f7f9e4;color:#2f5230;font-weight:600}
-    tr:last-child td{border-bottom:0}
-    .link-kode{border:0;background:none;padding:0;font:inherit;font-weight:600;color:#2f5230;text-decoration:underline;cursor:pointer;text-align:left}
-    .link-hapus{color:#b3321b}
-    .empty{margin:0;padding:24px;text-align:center;color:#5d7549}
-    .badge{display:inline-block;padding:4px 12px;border-radius:99px;font-size:.8rem;font-weight:600;background:#dde8b0;color:#2f5230}
-    .badge.perlu{background:#fdeab8;color:#7a5200}.badge.panen{background:#f6d58a;color:#5e3f00}.badge.selesai{background:#e4e4e4;color:#444}
-    .reminder{margin:0 0 18px;padding:16px 20px;border-radius:16px;background:#fff6d6;border:1px solid #f0d98a;color:#5e4500}
-    .reminder h2{margin:0 0 8px;font-size:1rem}.reminder ul{margin:0;padding-left:20px;line-height:1.7}
-    .panel{background:#fff;border:1px solid #e3ebc6;border-radius:20px;padding:26px}
-    .panel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:18px}
-    .panel-title{margin:0 0 8px;font-size:1.3rem;color:#2f5230}
-    .actions{display:flex;gap:10px;flex-wrap:wrap}
-    .confirm{margin:14px 0 0;padding:16px 20px;border-radius:14px;background:#fde8e3;color:#7a2210}
-    .confirm p{margin:0 0 12px}
-    .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin:0}
-    .facts div{padding:12px 16px;border-radius:12px;background:#f7f9e4}
-    .facts .wide{grid-column:1/-1}
-    .facts dt{font-size:.78rem;color:#5d7549}.facts dd{margin:2px 0 0;font-weight:500;color:#1f3a22;overflow-wrap:anywhere}
-    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
-    .field label{display:block;margin:0 0 6px;font-size:.84rem;font-weight:600;color:#2f5230}
-    .field input,.field select,.field textarea{width:100%;padding:11px 14px;border:2px solid #d5e2b3;border-radius:12px;background:#fff;font:inherit;font-size:.92rem;color:#1f3a22}
-    .field textarea{min-height:76px;resize:vertical}
-    .field input:focus-visible,.field select:focus-visible,.field textarea:focus-visible{outline:none;border-color:#2f5230}
-    .span-2{grid-column:1/-1}
-    .sub-title{margin:26px 0 10px;font-size:1.05rem;color:#2f5230}
-    .dasar{margin:0;padding:14px 20px 14px 36px;border-radius:12px;background:#f7f9e4;line-height:1.8;font-size:.92rem;color:#1f3a22}
-    .move{margin-top:20px;padding:20px;border-radius:16px;background:#f7f9e4}
-    .move .sub-title{margin-top:0}
-    .row-actions{display:flex;gap:14px}
-    @media(max-width:800px){.form-grid{grid-template-columns:1fr}}
-  </style>
+  <link rel="stylesheet" href="../assets/css/budidaya.css">
 </head>
 <body>
   <div class="app">
@@ -63,7 +17,12 @@
       <nav class="nav" aria-label="Menu utama">
         <a href="dashboard.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Dashboard</span></a>
         <a aria-current="page" href="budidaya.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-9"/><path d="M12 13c0-4 3-6 7-6 0 4-3 6-7 6z"/><path d="M12 16c0-3-2-5-6-5 0 3 2 5 6 5z"/></svg><span>Data Budidaya</span></a>
+        <a href="produk.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l1 13H5z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg><span>Manajemen Produk</span></a>
         <a href="panen.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18l-2 11H5z"/><path d="M8 9l4-6 4 6"/></svg><span>Data Panen</span></a>
+        <a href="pesanan.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.5L21 8H6"/><circle cx="10" cy="20" r="1.2"/><circle cx="17" cy="20" r="1.2"/></svg><span>Penjualan dan Transaksi</span></a>
+        <a href="prediksi-panen.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg><span>AI Prediksi Panen</span></a>
+        <a href="prediksi-permintaan.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg><span>Prediksi Permintaan Pasar</span></a>
+        <a href="riwayat.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 8v4l3 2"/></svg><span>Riwayat</span></a>
         <a href="todo.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg><span>To-Do List</span></a>
         <a href="profil.html"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg><span>Akun Saya</span></a>
       </nav>
@@ -83,7 +42,7 @@
       <div id="notice" class="alert success" role="status" tabindex="-1" hidden></div>
       <div id="loading" style="padding:24px;text-align:center;color:#5d7549;font-weight:500" hidden>Memuat data...</div>
 
-      <!-- Daftar batch (UC6/UC7/UC8/UC9 langkah 2: hanya kode_pengelolaan) -->
+      <!-- Daftar batch (UC6/UC7/UC8/UC9 langkah 2: kode_pengelolaan dan fase) -->
       <section id="list" hidden>
         <div id="reminder" class="reminder" hidden>
           <h2>Pengingat perpindahan fase</h2>
@@ -95,7 +54,12 @@
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Kode pengelolaan</th></tr></thead>
+            <thead>
+              <tr>
+                <th>Kode pengelolaan</th>
+                <th>Fase</th>
+              </tr>
+            </thead>
             <tbody id="rows"></tbody>
           </table>
           <p class="empty" id="empty" hidden>Belum ada batch. Tekan Tambah Budidaya untuk mulai.</p>
@@ -107,10 +71,9 @@
         <div class="panel-head">
           <div>
             <h2 id="dt-kode" class="panel-title"></h2>
-            <span id="dt-status" class="badge"></span>
           </div>
           <div class="actions">
-            <button type="button" class="btn" id="btn-move">Tambah Perpindahan Fase</button>
+            <button type="button" class="btn" id="btn-move" hidden>Tambah Perpindahan Fase</button>
             <button type="button" class="btn" id="btn-edit">Ubah Data</button>
             <button type="button" class="btn btn-danger" id="btn-delete">Hapus</button>
             <button type="button" class="btn btn-ghost" id="btn-back">Kembali</button>
@@ -132,28 +95,22 @@
           <div><dt>Jumlah tanaman</dt><dd id="dt-jumlah"></dd></div>
           <div><dt>Lokasi</dt><dd id="dt-lokasi"></dd></div>
           <div><dt>Nilai pH</dt><dd id="dt-ph"></dd></div>
-          <div><dt>Suhu Lingkungan</dt><dd id="dt-suhu">-</dd></div>
+          <div><dt>Suhu Lingkungan</dt><dd id="dt-suhu"></dd></div>
           <div class="wide"><dt>Kondisi tanaman</dt><dd id="dt-kondisi"></dd></div>
-          <div class="wide"><dt>Kondisi air dan nutrisi</dt><dd id="dt-air"></dd></div>
+          <div class="wide"><dt>Nilai PPM</dt><dd id="dt-air"></dd></div>
           <div class="wide"><dt>Kondisi instalasi</dt><dd id="dt-instalasi"></dd></div>
           <div class="wide"><dt>Kondisi lingkungan</dt><dd id="dt-lingkungan"></dd></div>
           <div class="wide"><dt>Catatan</dt><dd id="dt-catatan"></dd></div>
-          <div><dt>Fase saat ini</dt><dd id="dt-fase"></dd></div>
-          <div><dt>Fase berikutnya</dt><dd id="dt-next"></dd></div>
-          <div><dt>Perkiraan waktu perpindahan</dt><dd id="dt-perkiraan"></dd></div>
-          <div><dt>Sisa waktu menuju perpindahan</dt><dd id="dt-sisa"></dd></div>
-          <div><dt>Lokasi/meja tujuan</dt><dd id="dt-tujuan"></dd></div>
-          <div><dt>Status budidaya</dt><dd id="dt-status-text"></dd></div>
         </dl>
 
-        <h3 class="sub-title">Dasar status</h3>
-        <ul class="dasar" id="dt-dasar"></ul>
+        <h3 class="sub-title" hidden>Dasar status</h3>
+        <ul class="dasar" id="dt-dasar" hidden></ul>
 
         <h3 class="sub-title">Riwayat perpindahan fase</h3>
         <div id="h-alert" class="alert" role="alert" hidden></div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Urutan</th><th>Fase</th><th>Mulai</th><th>Selesai</th><th>Lama</th><th>Catatan</th><th>Aksi</th></tr></thead>
+            <thead><tr><th>Urutan</th><th>Fase</th><th>Mulai</th><th>Selesai</th><th>Lama</th></tr></thead>
             <tbody id="hist-rows"></tbody>
           </table>
         </div>
@@ -191,25 +148,23 @@
           <div class="field">
             <label for="f-kode">Kode pengelolaan</label>
             <div style="display:flex;gap:8px">
-              <input type="text" id="f-kode" maxlength="50" placeholder="Contoh: SLD-001" required>
-              <button type="button" class="btn btn-ghost" id="btn-auto-kode" style="white-space:nowrap;padding:8px 12px;font-size:0.82rem" title="Buat kode otomatis">🔄 Otomatis</button>
+              <input type="text" id="f-kode" maxlength="50" required placeholder="Contoh: BATCH-2026-001">
+              <button type="button" class="btn btn-ghost" id="btn-auto-kode" style="padding:6px 12px;white-space:nowrap;font-size:.82rem" title="Buat kode batch otomatis">Otomatis</button>
             </div>
-            <small style="color:#5d7549;font-size:.76rem;margin-top:3px;display:block">Format: SLD-001 atau BATCH-001 (bisa otomatis)</small>
           </div>
           <div class="field"><label for="f-tanam">Tanggal tanam</label><input type="date" id="f-tanam" required></div>
           <div class="field"><label for="f-jumlah">Jumlah tanaman</label><input type="number" id="f-jumlah" min="1" step="1" required></div>
-          <div class="field"><label for="f-lokasi">Lokasi</label><input type="text" id="f-lokasi" maxlength="100" placeholder="Contoh: Meja Persemaian 1" required></div>
+          <div class="field"><label for="f-lokasi">Lokasi</label><input type="text" id="f-lokasi" maxlength="100" placeholder="Contoh: Meja Semai - Sepasang Petani Farm" required></div>
           <div class="field"><label for="f-ph">Nilai pH</label><input type="number" id="f-ph" min="0" max="14" step="0.01" placeholder="Contoh: 6.00" required></div>
           <div class="field">
             <label for="f-suhu">Suhu Lingkungan (°C)</label>
             <div style="display:flex;gap:8px">
-              <input type="number" id="f-suhu" step="0.1" placeholder="Memuat suhu otomatis..." required>
-              <button type="button" class="btn btn-ghost" id="btn-fetch-suhu" style="white-space:nowrap;padding:8px 12px;font-size:0.82rem" title="Ambil suhu cuaca terkini">🌡️ Ambil Suhu</button>
+              <input type="number" id="f-suhu" step="0.1" placeholder="Misal: 24.5">
+              <button type="button" class="btn btn-ghost" id="btn-api-suhu" style="padding:6px 12px;white-space:nowrap;font-size:.82rem" title="Ambil suhu real-time lokasi Sepasang Petani Farm (Jember)">API Suhu</button>
             </div>
-            <small id="suhu-status" style="color:#5d7549;font-size:.76rem;margin-top:3px;display:block">Suhu real-time via API cuaca</small>
           </div>
           <div class="field span-2"><label for="f-kondisi">Kondisi tanaman</label><textarea id="f-kondisi"></textarea></div>
-          <div class="field span-2"><label for="f-air">Kondisi air dan nutrisi</label><textarea id="f-air"></textarea></div>
+          <div class="field span-2"><label for="f-air">Nilai PPM (Nutrisi)</label><input type="text" id="f-air" placeholder="Contoh: 900 ppm atau 900 - 1200" required></div>
           <div class="field span-2"><label for="f-instalasi">Kondisi instalasi</label><textarea id="f-instalasi"></textarea></div>
           <div class="field span-2"><label for="f-lingkungan">Kondisi lingkungan</label><textarea id="f-lingkungan"></textarea></div>
           <div class="field span-2"><label for="f-catatan">Catatan</label><textarea id="f-catatan"></textarea></div>
@@ -230,6 +185,8 @@
     });
   </script>
   <script src="../assets/js/config.js?v=backend2"></script>
+  <script src="../assets/js/lonceng.js"></script>
+  <script src="../assets/js/avatar-profil.js"></script>
   <script src="../assets/js/guard.js?v=backend2"></script>
   <script src="../assets/js/budidaya.js?v=backend2"></script>
 </body>

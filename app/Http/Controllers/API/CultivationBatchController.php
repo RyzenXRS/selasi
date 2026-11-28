@@ -79,9 +79,10 @@ class CultivationBatchController extends Controller
 
         \Illuminate\Support\Facades\DB::transaction(function () use ($batch) {
             $batch->perpindahanFase()->delete();
-            $batch->panen()->delete();
             $batch->prediksiPanen()->delete();
+            $batch->panen()->delete();
             $batch->todoList()->delete();
+            $batch->notifikasi()->delete();
             $batch->delete();
         });
 

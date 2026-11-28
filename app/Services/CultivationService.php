@@ -15,8 +15,12 @@ class CultivationService
     {
         $batchCode = $data['kode_pengelolaan'] ?? $data['batch_code'] ?? null;
         if (empty($batchCode)) {
-            $nextNum = (Pengelolaan::max('id_pengelolaan') ?? 0) + 1;
-            $batchCode = 'SLD-' . str_pad((string) $nextNum, 3, '0', STR_PAD_LEFT);
+            $lastBatch = Pengelolaan::where('kode_pengelolaan', 'LIKE', 'SLD-%')->orderBy('id_pengelolaan', 'desc')->first();
+            $lastNum = 0;
+            if ($lastBatch && preg_match('/SLD-(\d+)/i', $lastBatch->kode_pengelolaan, $m)) {
+                $lastNum = (int) $m[1];
+            }
+            $batchCode = 'SLD-' . str_pad($lastNum + 1, 3, '0', STR_PAD_LEFT);
         }
 
         $pengelolaan = Pengelolaan::create([
@@ -30,22 +34,12 @@ class CultivationService
             'kondisi_instalasi'   => $data['kondisi_instalasi'] ?? $data['installation_condition'] ?? 'Baik',
             'kondisi_lingkungan'  => $data['kondisi_lingkungan'] ?? $data['environment_condition'] ?? 'Baik',
             'nilai_ph'            => $data['nilai_ph'] ?? $data['water_ph'] ?? null,
-            'suhu'                => $data['suhu'] ?? $data['temperature'] ?? null,
             'catatan'             => $data['catatan'] ?? $data['notes'] ?? null,
             'created_at'          => Carbon::now(),
             'updated_at'          => Carbon::now(),
         ]);
 
-        // Otomatis buat riwayat fase pertama: Semai (id_fase: 1)
-        if ($pengelolaan->perpindahanFase()->count() === 0) {
-            $this->recordPhaseTransition($pengelolaan, [
-                'id_fase'       => 1, // Semai
-                'tanggal_mulai' => $pengelolaan->tanggal_tanam->toDateString(),
-                'catatan'       => 'Fase awal semai otomatis dibuat saat batch didaftarkan.',
-            ]);
-        }
-
-        return $pengelolaan->fresh(['perpindahanFase.fase']);
+        return $pengelolaan;
     }
 
     public function updateBatch(Pengelolaan $pengelolaan, array $data): Pengelolaan
@@ -61,7 +55,6 @@ class CultivationService
             'kondisi_instalasi'   => ['kondisi_instalasi', 'installation_condition'],
             'kondisi_lingkungan'  => ['kondisi_lingkungan', 'environment_condition'],
             'nilai_ph'            => ['nilai_ph', 'water_ph'],
-            'suhu'                => ['suhu', 'temperature'],
             'catatan'             => ['catatan', 'notes'],
         ];
 
@@ -93,12 +86,15 @@ class CultivationService
 
     public function recordHarvest(Pengelolaan $pengelolaan, array $data): Panen
     {
+        $berat = $data['berat_panen'] ?? $data['berat_total_kg'] ?? $data['total_weight_kg'] ?? 0;
+        $kualitas = $data['kualitas'] ?? $data['kondisi_hasil_panen'] ?? $data['quality'] ?? 'Baik';
+
         return Panen::create([
             'id_pengelolaan' => $pengelolaan->id_pengelolaan,
             'tanggal_panen'  => $data['tanggal_panen'] ?? $data['harvest_date'] ?? Carbon::now()->toDateString(),
             'jumlah_panen'   => $data['jumlah_panen'] ?? $data['quantity'] ?? 0,
-            'berat_panen'    => $data['berat_panen'] ?? $data['berat_total_kg'] ?? $data['total_weight_kg'] ?? 0,
-            'kualitas'       => $data['kualitas'] ?? $data['kondisi_hasil_panen'] ?? $data['quality'] ?? 'Baik',
+            'berat_panen'    => $berat,
+            'kualitas'       => $kualitas,
             'created_at'     => Carbon::now(),
         ]);
     }

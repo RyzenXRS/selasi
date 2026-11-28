@@ -1,0 +1,88 @@
+/* Halaman Manajemen Produk (UC22 sampai UC25). Dipakai setelah dashboard.css.
+   Animasi dibuat ringan dan otomatis mati kalau pengguna memilih "kurangi gerakan". */
+
+[hidden]{display:none!important}
+:root{--ease:cubic-bezier(.2,.7,.2,1)}
+
+@keyframes naik{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes turun{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+@keyframes pudar{from{opacity:0}to{opacity:1}}
+@keyframes masuk{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
+
+.page-head{animation:naik .5s var(--ease) both}
+
+.alert{padding:12px 16px;border-radius:12px;margin:0 0 16px;background:#fde8e3;color:#b3321b;font-size:.92rem;line-height:1.5;animation:turun .35s var(--ease) both}
+.alert.success{background:#e3f3d2;color:#25611f}
+
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border:0;border-radius:999px;background:#2f5230;color:#fff;font:inherit;font-weight:600;font-size:.92rem;cursor:pointer;transition:background .18s,transform .15s var(--ease),box-shadow .18s}
+.btn:hover{background:#1f3a22;box-shadow:0 8px 18px rgba(47,82,48,.25)}
+.btn:active{transform:scale(.97)}
+.btn:disabled{background:#8fa58a;cursor:wait;box-shadow:none}
+.btn svg{width:18px;height:18px}
+.btn-ghost{background:transparent;color:#2f5230;box-shadow:inset 0 0 0 2px #2f5230}.btn-ghost:hover{background:#dde8b0;box-shadow:inset 0 0 0 2px #2f5230}
+.btn:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid #8fbf4d;outline-offset:2px}
+.bar-top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px;animation:naik .5s .08s var(--ease) both}
+.info{margin:0;color:#4d6a3a;font-weight:500}
+
+/* Daftar produk */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:18px}
+.produk{background:#fff;border:1px solid #e3ebc6;border-radius:20px;overflow:hidden;animation:naik .5s var(--ease) both;animation-delay:calc(var(--i,0)*70ms + 120ms);transition:transform .25s var(--ease),box-shadow .25s,border-color .25s}
+.produk:hover{transform:translateY(-5px);box-shadow:0 16px 30px rgba(49,87,44,.15);border-color:#b9d27c}
+.foto{aspect-ratio:4/3;background:#eef3d8;display:grid;place-items:center;color:#8fa58a;overflow:hidden}
+.foto img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .5s var(--ease)}
+.produk:hover .foto img{transform:scale(1.06)}
+.foto svg{width:44px;height:44px}
+.isi{padding:16px 18px 18px}
+.isi h3{margin:0 0 6px;font-size:1.02rem;color:#2f5230;overflow-wrap:anywhere}
+.isi p{margin:0 0 12px;font-size:.86rem;line-height:1.55;color:#4a6638;overflow-wrap:anywhere}
+.meta{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.harga{font-weight:700;color:#1f3a22}
+.stok{padding:3px 12px;border-radius:99px;background:#dde8b0;color:#2f5230;font-size:.8rem;font-weight:600;white-space:nowrap}
+.empty{margin:0;padding:24px;text-align:center;color:#5d7549;border:2px dashed #d5e2b3;border-radius:14px;animation:masuk .4s var(--ease) both}
+.aksi{display:flex;gap:8px;margin-top:14px}
+.btn-sm{padding:7px 16px;font-size:.82rem}
+.btn-danger{background:#b3321b}.btn-danger:hover{background:#8f2814;box-shadow:0 8px 18px rgba(179,50,27,.25)}
+
+/* Form input produk */
+.panel{background:#fff;border:1px solid #e3ebc6;border-radius:20px;padding:26px;animation:masuk .4s var(--ease) both}
+.panel-title{margin:0 0 16px;font-size:1.25rem;color:#2f5230}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.span-2{grid-column:1/-1}
+.field label{display:block;margin:0 0 6px;font-size:.84rem;font-weight:600;color:#2f5230}
+.field input,.field textarea,.field select{width:100%;padding:11px 14px;border:2px solid #d5e2b3;border-radius:12px;background:#fff;font:inherit;font-size:.92rem;color:#1f3a22;transition:border-color .2s,box-shadow .2s}
+.field input:focus,.field textarea:focus,.field select:focus{outline:none;border-color:#2f5230;box-shadow:0 0 0 4px #ECF39E}
+.field textarea{min-height:92px;resize:vertical}
+.help{margin:6px 0 0;font-size:.78rem;color:#5d7549}
+.preview{display:block;width:160px;max-width:100%;aspect-ratio:4/3;margin-top:10px;border-radius:12px;object-fit:cover;border:1px solid #d5e2b3;animation:masuk .35s var(--ease) both}
+#f-hapus-foto{display:inline-flex;margin-top:10px}
+#f-hapus-foto[hidden]{display:none}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+
+/* Pop up konfirmasi penghapusan */
+.modal{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:20px;background:rgba(31,58,34,.45);animation:pudar .2s ease both}
+.dialog{width:100%;max-width:400px;background:#fff;border-radius:20px;padding:26px;box-shadow:0 20px 40px rgba(0,0,0,.25);animation:masuk .28s var(--ease) both}
+.dialog h2{margin:0 0 8px;font-size:1.15rem;color:#2f5230}
+.dialog p{margin:0 0 18px;font-size:.92rem;line-height:1.6;color:#4a6638}
+
+.field select{appearance:none;cursor:pointer;padding-right:38px;background:#fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232f5230' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>") no-repeat right 12px center/18px}
+
+/* Ringkasan jadwal di kartu produk */
+.jadwal-ringkas{margin:12px 0 0!important;font-size:.8rem!important;color:#5d7549!important}
+
+/* Jadwal pengambilan di form: banyak tanggal, tiap tanggal banyak jam */
+.jd-judul{display:block;margin:0 0 4px;font-size:.84rem;font-weight:600;color:#2f5230}
+#jadwal-list{display:grid;gap:12px;margin:12px 0}
+.jd-tanggal{padding:16px;border:1.5px solid #d5e2b3;border-radius:14px;background:#f7f9e4;animation:masuk .3s var(--ease) both}
+.jd-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.jd-label{margin:0!important;font-size:.95rem!important;font-weight:700!important;color:#2f5230}
+.jd-tgl{margin-bottom:12px}
+.jd-tgl input{width:100%;max-width:260px}
+.jd-jams{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.jd-jam{display:inline-flex;align-items:center;gap:4px;padding:3px 4px 3px 3px;border-radius:12px;background:#fff;border:1.5px solid #d5e2b3;animation:masuk .25s var(--ease) both}
+.jd-jam input{width:auto;border:0;padding:7px 8px;background:transparent;border-radius:8px}
+.jd-jam input:focus{box-shadow:none;background:#ECF39E}
+.jd-x{width:28px;height:28px;border:0;border-radius:50%;background:#eef3d8;color:#2f5230;font-size:1.1rem;line-height:1;cursor:pointer;transition:background .15s,transform .15s var(--ease)}
+.jd-x:hover{background:#f6c7bd;color:#8f2814;transform:scale(1.1)}
+.jd-x:focus-visible{outline:3px solid #8fbf4d;outline-offset:2px}
+@media(max-width:700px){.form-grid{grid-template-columns:1fr}.jd-tgl input{max-width:none}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-delay:0ms!important;transition-duration:.01ms!important}}

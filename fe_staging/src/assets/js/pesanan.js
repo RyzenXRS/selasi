@@ -1,0 +1,466 @@
+// ---------- Helper ----------
+const $ = (id) => document.getElementById(id);
+const show = (id, on = true) => { $(id).hidden = !on; };
+function el(tag, text, cls) {
+  const e = document.createElement(tag);
+  if (text !== undefined) e.textContent = text;
+  if (cls) e.className = cls;
+  return e;
+}
+function showAlert(id, msg) { $(id).textContent = msg; show(id); }
+function notify(msg) { showAlert("notice", msg); $("notice").focus(); }
+
+// Integrasi backend (otomatis aktif jika USE_MOCK = false di config.js)
+const PAKAI_BE = typeof USE_MOCK !== "undefined" ? !USE_MOCK : true;
+const DEMO = new URLSearchParams(location.search).get("demo");
+const OFFLINE = !PAKAI_BE || DEMO === "contoh" || DEMO === "kosong";
+const PESANAN_PATH = (typeof ENDPOINTS !== "undefined" && ENDPOINTS.pesanan) || "/cultivator/orders";
+// Endpoint saat PAKAI_BE = true (sesuaikan dengan routes/api.php):
+//   GET   {PESANAN_PATH}                    daftar pesanan masuk (UC26)
+//   GET   {PESANAN_PATH}/{id}               detail pesanan (UC27)
+//   PATCH {PESANAN_PATH}/{id}/status        ubah status pesanan, body: { status_pesanan } (UC28)
+//   POST  {PESANAN_PATH}/{id}/konfirmasi-cod konfirmasi pembayaran COD (UC30) -- TEBAKAN
+
+// [UBAH] Pilihan di dropdown Edit Status (UC28): hanya 3 status
+const STATUS_LIST = ["Sedang Disiapkan", "Siap Diambil", "Selesai"];
+// [BARU] Nilai yang DIKIRIM ke BE untuk tiap status. Samakan dengan enum/validasi di backend kalau formatnya beda
+// (misalnya "SEDANG_DISIAPKAN"). Label di layar tetap memakai STATUS_LIST.
+const STATUS_KE_BE = {
+  "Sedang Disiapkan": "Sedang Disiapkan",
+  "Siap Diambil": "Siap Diambil",
+  "Selesai": "Selesai",
+};
+const STATUS_SUDAH_BAYAR = "Sudah Dibayar";
+
+// ---------- Format ----------
+const rupiah = (v) => {
+  const n = Number(v);
+  if (Number.isNaN(n)) return "-";
+  return "Rp " + n.toLocaleString("id-ID", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+};
+// Jumlah dengan satuan produk (kg atau pcs); satuan kosong dianggap kg
+const jumlahTeks = (v, satuan) => {
+  const n = Number(v);
+  return Number.isNaN(n) ? "-" : n.toLocaleString("id-ID", { maximumFractionDigits: 2 }) + " " + (String(satuan || "").toLowerCase() === "pcs" ? "pcs" : "kg");
+};
+// Tanggal dan jam pengambilan yang dipilih pembeli (UC27)
+function fmtTglAmbil(v) {
+  if (!v) return "-";
+  const d = new Date(String(v).slice(0, 10) + "T00:00:00");
+  return isNaN(d) ? String(v) : d.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+}
+const fmtJamAmbil = (v) => (v ? String(v).slice(0, 5).replace(":", ".") + " WIB" : "-");
+function fmtTanggal(v) {
+  if (!v) return "-";
+  const d = new Date(String(v).replace(" ", "T"));
+  if (isNaN(d)) return String(v);
+  const tgl = d.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+  const jam = d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }).replace(".", ":");
+  return tgl + ", " + jam;
+}
+function fotoUrl(p) {
+  if (!p) return "";
+  if (/^(https?:|data:|blob:|\.\.\/|\/)/.test(p)) return p;
+  return STORAGE_BASE_URL + String(p).replace(/^\/+/, "");
+}
+const idOf = (p) => p.id_pesanan ?? p.id;
+
+// Warna label status. Nilai dari BE dicocokkan tanpa peduli huruf besar/kecil atau garis bawah.
+const norm = (s) => String(s || "").toLowerCase().replace(/_/g, " ").trim();
+
+// [BARU] Teks status yang tampil di layar: "SIAP_DIAMBIL" / "siap diambil" -> "Siap Diambil".
+// Status lama dari BE (misalnya MENUNGGU_PEMBAYARAN) juga dirapikan jadi "Menunggu Pembayaran".
+const labelStatus = (s) =>
+  s ? String(s).replace(/_/g, " ").toLowerCase().replace(/(^|\s)\S/g, (c) => c.toUpperCase()) : "-";
+
+function badgeClass(status) {
+  switch (norm(status)) {
+    // [BARU] tiga status pesanan UC28
+    case "sedang disiapkan": return "badge perlu";
+    case "siap diambil":     return "badge panen";
+    case "selesai":          return "badge selesai";
+    // status lama (data lama di database)
+    case "menunggu pembayaran":
+    case "belum dibayar":
+    case "pending":        return "badge perlu";
+    case "diproses":
+    case "processing":     return "badge pindah";
+    case "dikirim":
+    case "shipped":        return "badge panen";
+    case "dibatalkan":
+    case "cancelled":
+    case "canceled":       return "badge batal";
+    default:               return "badge"; // Sudah Dibayar, Lunas, dan lainnya
+  }
+}
+
+// UC30: tombol COD hanya untuk pesanan COD yang statusnya masih "Belum Dibayar"
+const isCod = (p) => /\bcod\b|bayar di tempat/i.test(String(p.metode_pembayaran || ""));
+const belumDibayar = (p) => norm(p.status_pembayaran) === "belum dibayar";
+
+// ---------- Data contoh (hanya untuk mode FE saja atau ?demo=...) ----------
+function contoh() {
+  const t = (jam) => new Date(Date.now() - jam * 3600000).toISOString().slice(0, 19).replace("T", " ");
+  const foto = "../assets/img/selada2.jpeg";
+  const baris = (id, no, jam, pembeli, foto_produk, produk, jml, harga, metode, bayar, status) => ({
+    id_pesanan: id, nomor_pesanan: no, tanggal_pesanan: t(jam), nama_pembeli: pembeli, foto_produk,
+    nama_produk: produk, jumlah_produk: jml, harga_produk: harga, total_pembayaran: (jml * harga).toFixed(2),
+    metode_pembayaran: metode, status_pembayaran: bayar, status_pesanan: status,
+    tanggal_pengambilan: new Date(Date.now() + 86400000 * (1 + (id % 3))).toISOString().slice(0, 10), jam_pengambilan: id % 2 ? "09:00" : "14:00",
+  });
+  return [
+    baris(6, "ORD-20261003-006", 1,  "Maya Putri",     foto, "Selada Hijau Segar", 6, 15000, "COD",           "Belum Dibayar", "Sedang Disiapkan"),
+    baris(5, "ORD-20261003-005", 2,  "Rina Wulandari", foto, "Selada Hijau Segar", 3, 15000, "Transfer Bank", "Belum Dibayar", "Sedang Disiapkan"),
+    baris(4, "ORD-20261003-004", 9,  "Budi Santoso",   foto, "Selada Hijau Segar", 8, 15000, "QRIS",          "Sudah Dibayar", "Siap Diambil"),
+    baris(3, "ORD-20261002-003", 30, "Siti Aminah",    foto, "Selada Hijau Segar", 5, 15000, "E-Wallet",      "Sudah Dibayar", "Siap Diambil"),
+    baris(2, "ORD-20261001-002", 60, "Agus Pratama",   foto, "Selada Hijau Segar", 2, 15000, "COD",           "Sudah Dibayar", "Selesai"),
+    baris(1, "ORD-20260930-001", 90, "Dewi Lestari",   foto, "Selada Hijau Segar", 4, 15000, "Transfer Bank", "Sudah Dibayar", "Selesai"),
+  ];
+}
+
+// ---------- Mapping Data Backend ----------
+function mapOrderToPesanan(p) {
+  if (!p) return {};
+  const item = (p.detail_pesanan && p.detail_pesanan[0]) || (p.items && p.items[0]) || {};
+  const jml = Number(item.jumlah || p.jumlah_produk || 1);
+  const harga = Number(item.harga_satuan || p.harga_produk || 15000);
+  const total = Number(p.total_pembayaran || p.total_harga || (jml * harga));
+  const bayar = p.pembayaran?.status_pembayaran || p.status_pembayaran || "Belum Dibayar";
+  return {
+    id_pesanan: p.id_pesanan || p.id,
+    nomor_pesanan: p.nomor_pesanan || ("ORD-" + String(p.id_pesanan || p.id).padStart(3, "0")),
+    tanggal_pesanan: p.tanggal_pesanan,
+    nama_pembeli: p.nama_pembeli || p.pembeli?.nama || p.buyer?.name || "-",
+    foto_produk: p.foto_produk || item.foto_produk || "../assets/img/selada2.jpeg",
+    nama_produk: item.nama_produk || p.nama_produk || "Selada Hijau Segar",
+    jumlah_produk: jml,
+    harga_produk: harga,
+    total_pembayaran: total,
+    metode_pembayaran: p.metode_pembayaran || "-",
+    status_pembayaran: bayar,
+    status_pesanan: p.status_pesanan || "-",
+    satuan: item.satuan || p.satuan || "kg",
+    tanggal_pengambilan: String(p.tanggal_pengambilan ?? "").slice(0, 10),
+    jam_pengambilan: String(p.jam_pengambilan ?? "").slice(0, 5),
+  };
+}
+
+// ---------- Ambil dan simpan data ----------
+let semua = [];   // ringkasan semua pesanan (daftar)
+let aktif = null; // pesanan yang sedang dibuka (detail)
+
+async function fetchDaftar() {
+  if (DEMO === "kosong") return [];
+  if (OFFLINE) {
+    await new Promise((r) => setTimeout(r, 300));
+    return contoh();
+  }
+  try {
+    const res = await apiFetch(PESANAN_PATH + "?per_page=100");
+    if (!res) return []; // 401 -> sudah logout otomatis
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const json = await res.json();
+    const list = Array.isArray(json) ? json : (json.data?.data || json.data || []);
+    return list.map(mapOrderToPesanan);
+  } catch (err) {
+    console.warn("[PESANAN] Gagal fetch dari BE, menggunakan data contoh:", err);
+    return contoh();
+  }
+}
+
+async function fetchDetail(id) {
+  if (OFFLINE) {
+    await new Promise((r) => setTimeout(r, 200));
+    return semua.find((p) => idOf(p) === id) || null;
+  }
+  try {
+    const res = await apiFetch(PESANAN_PATH + "/" + encodeURIComponent(id));
+    if (!res) return null;
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const json = await res.json();
+    const d = json.data ?? json;
+    return mapOrderToPesanan(d);
+  } catch (err) {
+    return semua.find((p) => idOf(p) === id) || null;
+  }
+}
+
+async function simpanStatus(id, status) {
+  if (OFFLINE) {
+    await new Promise((r) => setTimeout(r, 400));
+    const p = semua.find((x) => idOf(x) === id);
+    if (p) p.status_pesanan = status;
+    return { ...p };
+  }
+  const res = await apiFetch(PESANAN_PATH + "/" + encodeURIComponent(id) + "/status", {
+    method: "PATCH",
+    body: JSON.stringify({ status_pesanan: STATUS_KE_BE[status] || status }), // [UBAH] lewat STATUS_KE_BE
+  });
+  if (!res) return null;
+  let json = {};
+  try { json = await res.json(); } catch (_) {}
+  if (!res.ok) throw new Error(json.message || "HTTP " + res.status);
+  const data = json.data ?? json;
+  return mapOrderToPesanan(data && data.status_pesanan ? data : { ...aktif, status_pesanan: status });
+}
+
+// UC30: konfirmasi pembayaran COD
+async function simpanBayarCod(id) {
+  if (OFFLINE) {
+    await new Promise((r) => setTimeout(r, 400));
+    const p = semua.find((x) => idOf(x) === id);
+    if (p) p.status_pembayaran = STATUS_SUDAH_BAYAR;
+    return { ...p };
+  }
+  const res = await apiFetch(PESANAN_PATH + "/" + encodeURIComponent(id) + "/konfirmasi-cod", { method: "POST" });
+  if (!res) return null;
+  let json = {};
+  try { json = await res.json(); } catch (_) {}
+  if (!res.ok) throw new Error(json.message || "HTTP " + res.status);
+  const data = json.data ?? json;
+  return mapOrderToPesanan(data && data.status_pembayaran ? data : { ...aktif, status_pembayaran: STATUS_SUDAH_BAYAR });
+}
+
+// ---------- Tampilan umum ----------
+function showOnly(name) {
+  ["list", "detail", "edit"].forEach((k) => show("v-" + k, k === name));
+  const judul = { list: "Pesanan Masuk", detail: "Detail Pesanan", edit: "Edit Status Pesanan" };
+  const sub = {
+    list: "Ringkasan pesanan yang dilakukan pembeli.",
+    detail: "Informasi lengkap pesanan yang dipilih.",
+    edit: "Pilih status baru untuk pesanan ini.",
+  };
+  $("page-title").textContent = judul[name];
+  $("page-sub").textContent = sub[name];
+}
+
+function placeholder(cls) {
+  const d = el("div", undefined, cls);
+  d.setAttribute("role", "img");
+  d.setAttribute("aria-label", "Tidak ada foto produk");
+  d.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-9"/><path d="M12 13c0-4 3-6 7-6 0 4-3 6-7 6z"/><path d="M12 16c0-3-2-5-6-5 0 3 2 5 6 5z"/></svg>';
+  return d;
+}
+function fotoNode(p, cls, clsKosong) {
+  const url = fotoUrl(p.foto_produk);
+  if (!url) return placeholder(clsKosong);
+  const img = el("img", undefined, cls);
+  img.src = url;
+  img.alt = "Foto produk pesanan " + (p.nomor_pesanan || "");
+  img.addEventListener("error", () => img.replaceWith(placeholder(clsKosong)));
+  return img;
+}
+
+// ---------- UC26: ringkasan ----------
+function renderList() {
+  showOnly("list");
+  show("loading", false);
+
+  if (!semua.length) {
+    show("list", false);
+    show("empty", true); // "Belum ada pesanan masuk"
+    return;
+  }
+  show("empty", false);
+  show("list", true);
+
+  const urut = semua.slice().sort((a, b) => String(b.tanggal_pesanan).localeCompare(String(a.tanggal_pesanan)));
+  const rows = $("rows");
+  rows.replaceChildren();
+  urut.forEach((p) => {
+    const tr = el("tr");
+    const tdFoto = el("td");
+    tdFoto.appendChild(fotoNode(p, "thumb", "thumb-kosong"));
+    const tdStatus = el("td");
+    tdStatus.appendChild(el("span", labelStatus(p.status_pesanan), badgeClass(p.status_pesanan)));
+    const tdAksi = el("td");
+    const btn = el("button", "Lihat Detail", "btn btn-ghost btn-sm");
+    btn.type = "button";
+    btn.setAttribute("aria-label", "Lihat detail pesanan " + (p.nomor_pesanan || ""));
+    btn.addEventListener("click", () => bukaDetail(idOf(p)));
+    tdAksi.appendChild(btn);
+    tr.append(
+      tdFoto,
+      el("td", p.nomor_pesanan || "-", "nomor"),
+      el("td", fmtTanggal(p.tanggal_pesanan)),
+      el("td", p.nama_pembeli || "-"),
+      el("td", rupiah(p.total_pembayaran), "num"),
+      tdStatus,
+      tdAksi
+    );
+    rows.appendChild(tr);
+  });
+}
+
+// ---------- UC27: detail ----------
+async function bukaDetail(id) {
+  show("alert", false);
+  show("notice", false);
+  show("v-list", false);
+  show("loading", true);
+  try {
+    const p = await fetchDetail(id);
+    show("loading", false);
+    if (!p) { renderList(); return showAlert("alert", "Pesanan tidak ditemukan."); }
+    aktif = p;
+    renderDetail();
+  } catch (err) {
+    show("loading", false);
+    renderList();
+    showAlert("alert", "Detail pesanan belum bisa dimuat (" + err.message + ").");
+  }
+}
+
+function renderDetail() {
+  const p = aktif;
+  showOnly("detail");
+  show("cod-modal", false);
+  $("dt-nomor").textContent = p.nomor_pesanan || "-";
+  const b = $("dt-status-badge");
+  b.textContent = labelStatus(p.status_pesanan);
+  b.className = badgeClass(p.status_pesanan);
+
+  const foto = $("dt-foto");
+  foto.replaceChildren(fotoNode(p, "foto-besar", "foto-kosong"));
+
+  $("dt-no").textContent = p.nomor_pesanan || "-";
+  $("dt-tgl").textContent = fmtTanggal(p.tanggal_pesanan);
+  $("dt-pembeli").textContent = p.nama_pembeli || "-";
+  $("dt-produk").textContent = p.nama_produk || "-";
+  $("dt-jumlah").textContent = jumlahTeks(p.jumlah_produk, p.satuan);
+  $("dt-harga").textContent = rupiah(p.harga_produk);
+  $("dt-total").textContent = rupiah(p.total_pembayaran);
+  $("dt-metode").textContent = p.metode_pembayaran || "-";
+  $("dt-tgl-ambil").textContent = fmtTglAmbil(p.tanggal_pengambilan);
+  $("dt-jam-ambil").textContent = fmtJamAmbil(p.jam_pengambilan);
+
+  const bayar = $("dt-bayar");
+  bayar.replaceChildren(el("span", labelStatus(p.status_pembayaran), badgeClass(p.status_pembayaran)));
+  const st = $("dt-status");
+  st.replaceChildren(el("span", labelStatus(p.status_pesanan), badgeClass(p.status_pesanan)));
+
+  // UC30: pre-condition tombol COD
+  $("btn-cod").hidden = !(isCod(p) && belumDibayar(p));
+
+  $("dt-nomor").focus();
+}
+
+// ---------- UC28: edit status ----------
+function bukaEdit() {
+  show("notice", false);
+  show("ed-alert", false);
+  showOnly("edit");
+
+  const sekarang = labelStatus(aktif.status_pesanan);
+  $("ed-info").textContent = "Pesanan " + (aktif.nomor_pesanan || "") + " saat ini berstatus " + sekarang + ".";
+
+  // [UBAH] dropdown hanya berisi 3 status. Kalau status pesanan masih status lama, tampil "Pilih status baru"
+  const sel = $("ed-status");
+  sel.replaceChildren();
+  const statusLama = !STATUS_LIST.includes(sekarang);
+  if (statusLama) {
+    const o = el("option", "Pilih status baru");
+    o.value = "";
+    o.disabled = true;
+    o.selected = true;
+    sel.appendChild(o);
+  }
+  STATUS_LIST.forEach((s) => {
+    const o = el("option", s);
+    o.value = s;
+    sel.appendChild(o);
+  });
+  if (!statusLama) sel.value = sekarang;
+  $("ed-title").focus();
+}
+
+$("btn-edit").addEventListener("click", bukaEdit);
+$("btn-back").addEventListener("click", () => { show("notice", false); renderList(); });
+
+// Alur alternatif: membatalkan perubahan -> kembali ke detail pesanan
+$("btn-cancel").addEventListener("click", () => renderDetail());
+
+$("v-edit").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  show("ed-alert", false);
+  const baru = $("ed-status").value;
+
+  if (!baru) return showAlert("ed-alert", "Pilih status pesanan terlebih dahulu.");
+  if (norm(baru) === norm(aktif.status_pesanan)) return showAlert("ed-alert", "Pilih status yang berbeda dari status saat ini.");
+
+  const btn = $("btn-save");
+  btn.disabled = true;
+  btn.textContent = "Menyimpan...";
+  try {
+    const hasil = await simpanStatus(idOf(aktif), baru);
+    if (!hasil) return; // 401 -> sudah logout
+    aktif = { ...aktif, ...hasil, status_pesanan: hasil.status_pesanan || baru };
+
+    // samakan juga dengan daftar, supaya saat kembali ke daftar statusnya sudah baru
+    const i = semua.findIndex((p) => idOf(p) === idOf(aktif));
+    if (i >= 0) semua[i] = { ...semua[i], status_pesanan: aktif.status_pesanan };
+
+    renderDetail();
+    notify("Berhasil Mengubah Status Pesanan");
+  } catch (err) {
+    showAlert("ed-alert", "Status pesanan gagal diubah (" + err.message + "). Status sebelumnya dipertahankan.");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Simpan";
+  }
+});
+
+// ---------- UC30: konfirmasi pembayaran COD ----------
+function bukaCod() {
+  show("notice", false);
+  show("cod-alert", false);
+  $("cod-text").textContent = "Pastikan uang tunai dari pembeli sudah diterima untuk pesanan " + (aktif.nomor_pesanan || "") + ".";
+  show("cod-modal", true);
+  $("cod-yes").focus();
+}
+function tutupCod() { show("cod-modal", false); $("btn-cod").focus(); }
+
+$("btn-cod").addEventListener("click", bukaCod);
+$("cod-no").addEventListener("click", tutupCod); // Batal: kembali ke detail pesanan
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !$("cod-modal").hidden) tutupCod();
+});
+
+$("cod-yes").addEventListener("click", async () => {
+  const btn = $("cod-yes");
+  btn.disabled = true;
+  show("cod-alert", false);
+  try {
+    const hasil = await simpanBayarCod(idOf(aktif));
+    if (!hasil) return; // 401 -> sudah logout
+    aktif = { ...aktif, ...hasil, status_pembayaran: hasil.status_pembayaran || STATUS_SUDAH_BAYAR };
+
+    const i = semua.findIndex((p) => idOf(p) === idOf(aktif));
+    if (i >= 0) semua[i] = { ...semua[i], status_pembayaran: aktif.status_pembayaran };
+
+    renderDetail(); // menutup pop up dan menyembunyikan tombol COD
+    notify("Pembayaran COD berhasil dikonfirmasi");
+  } catch (err) {
+    showAlert("cod-alert", "Pembayaran COD gagal dikonfirmasi (" + err.message + ").");
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+// ---------- Mulai ----------
+(async function init() {
+  try {
+    const u = JSON.parse(localStorage.getItem("user") || "{}");
+    $("user-email").textContent = u.email || "";
+  } catch (_) {}
+  $("btn-logout").addEventListener("click", logout);
+
+  show("loading", true);
+  try {
+    semua = await fetchDaftar();
+    renderList();
+  } catch (err) {
+    show("loading", false);
+    showAlert("alert", "Pesanan belum bisa dimuat (" + err.message + "). Pastikan BE sudah jalan dan path endpoint pesanan sudah benar di config.js.");
+  }
+})();

@@ -1,0 +1,93 @@
+/* Halaman To-Do List (UC14, UC15). Dipakai setelah dashboard.css. */
+[hidden]{display:none!important}
+.alert{padding:12px 16px;border-radius:12px;margin:0 0 16px;background:#fde8e3;color:#b3321b;font-size:.92rem;line-height:1.5}
+.alert.success{background:#e3f3d2;color:#25611f}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border:0;border-radius:999px;background:#2f5230;color:#fff;font:inherit;font-weight:600;font-size:.92rem;cursor:pointer}
+.btn:hover{background:#1f3a22}
+.btn:disabled{background:#8fa58a;cursor:wait}
+.btn svg{width:18px;height:18px}
+.btn-ghost{background:transparent;color:#2f5230;box-shadow:inset 0 0 0 2px #2f5230}.btn-ghost:hover{background:#dde8b0}
+.btn:focus-visible,input:focus-visible{outline:3px solid #8fbf4d;outline-offset:2px}
+
+.bar-top{display:flex;justify-content:flex-end;margin-bottom:18px}
+
+.panel{background:#fff;border:1px solid #e3ebc6;border-radius:20px;padding:24px;margin-bottom:22px}
+.panel-title{margin:0 0 14px;font-size:1.15rem;color:#2f5230}
+.field{margin-bottom:18px}
+.field label{display:block;margin:0 0 6px;font-size:.84rem;font-weight:600;color:#2f5230}
+.field input{width:100%;padding:11px 14px;border:2px solid #d5e2b3;border-radius:12px;background:#fff;font:inherit;font-size:.92rem;color:#1f3a22}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+
+.group{margin-bottom:24px}
+.group h3{margin:0 0 10px;font-size:1rem;color:#2f5230;display:flex;align-items:center;gap:8px}
+.group h3 .n{display:inline-block;min-width:24px;padding:1px 8px;border-radius:99px;background:#dde8b0;font-size:.8rem;text-align:center}
+.todo-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.todo-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;border-radius:14px;background:#fff;border:1px solid #e3ebc6}
+.todo-item label{display:flex;align-items:center;gap:14px;flex:1;cursor:pointer;font-size:.97rem;color:#1f3a22}
+.todo-item input[type=checkbox]{width:22px;height:22px;accent-color:#2f5230;cursor:pointer;flex-shrink:0}
+.todo-item input[type=checkbox]:disabled{cursor:default}
+.todo-item.done{background:#f7f9e4}
+.todo-item.done .nama{text-decoration:line-through;color:#6b7f55}
+.tgl{display:inline-block;padding:3px 12px;border-radius:99px;background:#dde8b0;color:#2f5230;font-size:.8rem;font-weight:600;white-space:nowrap}
+.empty{margin:0;padding:18px;text-align:center;color:#5d7549;border:2px dashed #d5e2b3;border-radius:14px}
+
+/* ======================================================================
+   Animasi halaman To-Do List (hanya tambahan; aturan di atas tidak diubah).
+   Otomatis mati kalau pengguna memilih "kurangi gerakan".
+   ====================================================================== */
+:root{--ease:cubic-bezier(.2,.7,.2,1)}
+
+@keyframes td-naik{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes td-turun{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+@keyframes td-masuk{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes td-pudar{from{opacity:0}to{opacity:1}}
+@keyframes td-mendarat{0%{opacity:0;transform:scale(.94)}60%{transform:scale(1.02)}100%{opacity:1;transform:none}}
+
+/* Kepala halaman dan tombol tambah */
+.page-head{animation:td-naik .5s var(--ease) both}
+.bar-top{animation:td-naik .5s .08s var(--ease) both}
+
+/* Pesan (berhasil / gagal) */
+.alert{animation:td-turun .35s var(--ease) both}
+
+/* Form tambah kegiatan: muncul lembut setiap kali dibuka */
+.panel{animation:td-masuk .4s var(--ease) both}
+
+/* Dua kelompok daftar naik bergantian */
+.group{animation:td-naik .5s var(--ease) both}
+.group:nth-of-type(1){animation-delay:.14s}
+.group:nth-of-type(2){animation-delay:.24s}
+
+/* Setiap kegiatan muncul berurutan; kegiatan yang selesai "mendarat" di daftar Selesai */
+.todo-item{animation:td-naik .4s var(--ease) both;transition:transform .2s var(--ease),box-shadow .2s,border-color .2s,background .2s}
+.todo-item:nth-child(1){animation-delay:.18s}
+.todo-item:nth-child(2){animation-delay:.23s}
+.todo-item:nth-child(3){animation-delay:.28s}
+.todo-item:nth-child(4){animation-delay:.33s}
+.todo-item:nth-child(5){animation-delay:.38s}
+.todo-item:nth-child(n+6){animation-delay:.42s}
+.todo-item.done{animation-name:td-mendarat;animation-duration:.45s}
+.todo-item:hover{transform:translateY(-2px);box-shadow:0 8px 18px rgba(49,87,44,.12);border-color:#b9d27c}
+.todo-item input[type=checkbox]{transition:transform .15s var(--ease)}
+.todo-item input[type=checkbox]:not(:disabled):hover{transform:scale(1.12)}
+.todo-item input[type=checkbox]:not(:disabled):active{transform:scale(.9)}
+.todo-item .nama{transition:color .25s}
+
+/* Pesan daftar kosong */
+.empty{animation:td-pudar .4s ease both}
+
+/* Tombol */
+.btn{transition:background .18s,transform .15s var(--ease),box-shadow .18s}
+.btn:hover{box-shadow:0 8px 18px rgba(47,82,48,.25)}
+.btn:active{transform:scale(.97)}
+.btn-ghost:hover{box-shadow:inset 0 0 0 2px #2f5230}
+#btn-add svg{transition:transform .25s var(--ease)}
+#btn-add:hover svg{transform:rotate(90deg)}
+
+/* Kolom isian */
+.field input{transition:border-color .2s,box-shadow .2s}
+.field input:focus{outline:none;border-color:#2f5230;box-shadow:0 0 0 4px #ECF39E}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-delay:0ms!important;transition-duration:.01ms!important}
+}

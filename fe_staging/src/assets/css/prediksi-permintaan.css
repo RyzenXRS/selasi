@@ -1,0 +1,60 @@
+/* Prediksi Permintaan Pasar (UC19). Dipakai setelah dashboard.css. */
+
+@keyframes naik   { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+@keyframes geser  { from { opacity: 0; transform: translateX(-14px); } to { opacity: 1; transform: none; } }
+@keyframes garis  { from { stroke-dashoffset: var(--len); } to { stroke-dashoffset: 0; } }
+@keyframes pudar  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes titik  { from { opacity: 0; transform: scale(0); } to { opacity: 1; transform: scale(1); } }
+@keyframes gelembung { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes kilau  { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+.pred-head { display: flex; align-items: center; gap: 16px; margin-bottom: 26px; animation: naik .5s ease both; }
+.pred-ico { flex: 0 0 56px; width: 56px; height: 56px; border-radius: 16px; display: grid; place-items: center; background: var(--forest); color: var(--leaf); box-shadow: 0 10px 20px rgba(49, 87, 44, .22); }
+.pred-ico svg { width: 28px; height: 28px; }
+.pred-head h1 { margin: 0 0 2px; font-size: 1.6rem; }
+
+.panel { background: #fff; border: 1.5px solid #e3ebc6; border-radius: 20px; padding: 22px 24px; margin-bottom: 18px; box-shadow: 0 8px 22px rgba(49, 87, 44, .06);
+  animation: naik .55s ease both; animation-delay: var(--d, 0ms); }
+.panel-title { display: flex; align-items: center; gap: 10px; margin: 0 0 16px; font-size: 1.02rem; font-weight: 600; color: var(--forest); }
+.panel-title svg { width: 20px; height: 20px; color: var(--grass); flex: 0 0 20px; }
+
+/* ---------- Grafik ---------- */
+.chart-row { display: flex; align-items: center; gap: 12px; }
+.chart-scroll { flex: 1; min-width: 0; overflow-x: auto; }
+.chart-scroll svg { display: block; width: 100%; min-width: 560px; height: auto; overflow: visible; }
+.ch-grid { stroke: #e6eccf; stroke-width: 1; }
+.ch-axis { stroke: #c9d6a0; stroke-width: 1.2; }
+.ch-text { font-family: "Poppins", system-ui, sans-serif; font-size: 12px; fill: #5d7549; }
+.ch-judul { font-weight: 600; fill: var(--forest); }
+.ch-line { fill: none; stroke: var(--grass); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: var(--len); animation: garis 1.2s .25s cubic-bezier(.22, .8, .3, 1) both; }
+.ch-area { animation: pudar .9s 1s ease both; }
+.ch-dot { fill: var(--grass); stroke: #fff; stroke-width: 2; transform-box: fill-box; transform-origin: center; animation: titik .45s cubic-bezier(.3, 1.6, .5, 1) both; transition: transform .2s; cursor: default; }
+.ch-dot:hover { transform: scale(1.35); }
+.ch-bubble { animation: gelembung .5s ease both; }
+.ch-bubble rect { fill: #e6f1c8; }
+.ch-bubble text { font-family: "Poppins", system-ui, sans-serif; font-size: 12px; font-weight: 600; fill: var(--forest); }
+
+/* ---------- Tabel data aktual ---------- */
+.pred-table { border: 1px solid #e3ebc6; border-radius: 14px; overflow: hidden; }
+.pred-table table { min-width: 0; }
+.pred-table thead th { background: #e6f1c8; color: var(--forest); font-weight: 600; }
+.pred-table tbody tr { border-top: 1px solid #eef3d8; animation: geser .45s ease both; animation-delay: calc(var(--i, 0) * 90ms + 200ms); transition: background .2s; }
+.pred-table tbody tr:hover { background: #f7f9e4; }
+.pred-table td:first-child, .pred-table th:first-child { width: 55%; }
+
+/* ---------- Memuat ---------- */
+.skel { border-radius: 14px; background: linear-gradient(90deg, #eef3d8 25%, #f7f9e4 50%, #eef3d8 75%); background-size: 200% 100%; animation: kilau 1.4s linear infinite; }
+.skel.chart { height: 280px; }
+.skel.tabel { height: 150px; }
+
+@media (max-width: 700px) {
+  .pred-head h1 { font-size: 1.3rem; }
+  .chart-row { flex-direction: column; align-items: stretch; }
+  .panel { padding: 18px 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pred-head, .panel, .ch-line, .ch-area, .ch-dot, .ch-bubble, .pred-table tbody tr { animation-duration: .01ms !important; animation-delay: 0ms !important; }
+  .skel { animation: none; }
+}
+
+.skel[hidden], .pred-table[hidden] { display: none; }

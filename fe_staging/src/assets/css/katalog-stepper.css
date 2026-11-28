@@ -1,0 +1,33 @@
+/* Stepper jumlah (−/+) di katalog. Dimuat SETELAH pembeli-belanja.css. */
+.beli-jumlah .qty { display:inline-flex; align-items:center; width:auto; border:1.5px solid #cfe0a6; border-radius:999px; background:#fff; overflow:hidden; }
+.beli-jumlah .qty:focus-within { border-color:#4F772D; }
+.beli-jumlah .qty-btn { flex:0 0 32px; width:32px; height:32px; padding:0; border:0; background:transparent; color:#2f5230; font-family:inherit; font-size:16px; font-weight:600; line-height:1; cursor:pointer; transition:background .15s; }
+.beli-jumlah .qty-btn:hover:not(:disabled) { background:#eef4d6; }
+.beli-jumlah .qty-btn:disabled { opacity:.4; cursor:not-allowed; }
+.beli-jumlah .qty input { flex:0 0 auto; width:48px; min-width:0; height:32px; padding:0; border:0; border-radius:0; box-shadow:none; background:transparent; text-align:center; font-family:inherit; font-size:14px; font-weight:600; color:#2f5230; -moz-appearance:textfield; appearance:textfield; }
+.beli-jumlah .qty input:focus { outline:none; box-shadow:none; }
+.beli-jumlah .qty input::-webkit-outer-spin-button,
+.beli-jumlah .qty input::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+
+/* Tombol Tambah ke Keranjang: versi ringkas */
+.produk .beli .btn.btn-beli { height:36px; min-height:0; padding:0 16px; font-size:13px; font-weight:600; border-radius:999px; width:auto; align-self:flex-start; line-height:1; }
+.produk .beli { gap:10px; }
+
+/* Sejajarkan bagian bawah semua kartu: kolom jumlah + tombol selalu di dasar kartu */
+.grid-produk { align-items:stretch; }
+.produk { display:flex; flex-direction:column; height:100%; }
+.produk .isi { display:flex; flex-direction:column; flex:1; }
+.produk .isi .desk { margin-bottom:auto; }
+.produk .beli { margin-top:auto; padding-top:12px; display:flex; flex-direction:column; align-items:flex-start; }
+.produk .beli-jumlah { display:flex; flex-direction:column; align-items:flex-start; gap:6px; }
+
+/* Stepper dan tombol satu baris, sejajar bawahnya & sama tinggi */
+.produk .beli { flex-direction:row; flex-wrap:wrap; align-items:flex-end; gap:10px; }
+.beli-jumlah .qty { box-sizing:border-box; height:36px; }
+.beli-jumlah .qty-btn, .beli-jumlah .qty input { height:100%; }
+.produk .beli .btn.btn-beli { box-sizing:border-box; height:36px; align-self:flex-end; margin:0; }
+
+/* Tautan Rating dan Ulasan pada kartu produk (UC13) */
+.produk .rating-link { display:inline-flex; align-items:center; gap:5px; margin-top:6px; font-size:.82rem; font-weight:600; color:#2f5230; text-decoration:none; }
+.produk .rating-link:hover { text-decoration:underline; text-underline-offset:3px; }
+.produk .rating-link svg { width:15px; height:15px; flex:0 0 15px; fill:#e0a100; }
